@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Users, Building, Newspaper, MessageSquareWarning, PhoneCall, MapPin, Mail, Clock } from "lucide-react";
+import { FileText, Users, Building, Newspaper, MessageSquareWarning, PhoneCall, MapPin, Mail, Clock, Instagram } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
 
@@ -71,16 +71,18 @@ export function Footer() {
                 Pelayanan mandiri online aktif 24 jam
               </div>
             </div>
-            {/* Social Links */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+            {/* Social Media & Tautan Resmi (Brand Icon Logos) */}
+            <div className="flex items-center gap-2.5 pt-2">
               {config.instagramUrl && (
                 <a
                   href={config.instagramUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-[#c9971c] text-white px-2.5 py-1 rounded-md transition-colors"
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-[#E1306C] text-white flex items-center justify-center transition-all duration-200 border border-white/10 hover:scale-105 shadow-xs"
+                  title="Instagram Resmi @kel.banjaragung"
+                  aria-label="Instagram Resmi Kelurahan Banjar Agung"
                 >
-                  <span>Instagram Resmi</span>
+                  <Instagram className="w-4 h-4" />
                 </a>
               )}
               {config.linktreeUrl && (
@@ -88,9 +90,31 @@ export function Footer() {
                   href={config.linktreeUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-md transition-colors"
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-[#43E660] hover:text-black text-white flex items-center justify-center transition-all duration-200 border border-white/10 hover:scale-105 shadow-xs"
+                  title="Linktree Resmi Kelurahan Banjar Agung"
+                  aria-label="Linktree Resmi Kelurahan Banjar Agung"
                 >
-                  <span>Linktree Resmi</span>
+                  <svg
+                    role="img"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-4 h-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="m13.51 5.92 2.78-3.42h3.42l-4.36 5.34h3.71l-4.36 5.34h3.71L12 21.5l-6.41-8.32h3.71L4.94 7.84h3.71L4.29 2.5h3.42l2.78 3.42V0h3.02v5.92Z" />
+                  </svg>
+                </a>
+              )}
+              {waPhone && (
+                <a
+                  href={`https://wa.me/${waPhone}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-[#25D366] text-white flex items-center justify-center transition-all duration-200 border border-white/10 hover:scale-105 shadow-xs"
+                  title="WhatsApp Pelayanan Kelurahan"
+                  aria-label="WhatsApp Pelayanan Kelurahan"
+                >
+                  <PhoneCall className="w-4 h-4" />
                 </a>
               )}
             </div>
