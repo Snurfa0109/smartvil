@@ -14,7 +14,6 @@ import {
   Home,
   Clock,
   FileText,
-  Sparkles,
   Phone,
   ArrowRight,
 } from "lucide-react";
@@ -79,111 +78,93 @@ export default function ProfilePage() {
 
       {/* Sejarah & Selayang Pandang */}
       <section className="grid md:grid-cols-2 gap-8 items-stretch">
-        <div className="relative rounded-3xl p-6 md:p-8 flex flex-col justify-between bg-gradient-to-br from-[#1b365d] via-[#162e50] to-[#0d1e36] text-white shadow-xl border border-white/10 overflow-hidden">
-          {/* Decorative Glow Elements */}
-          <div className="absolute -top-16 -right-16 w-52 h-52 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Top Bar: Brand & Status */}
-          <div className="relative z-10 flex items-center justify-between gap-3 pb-4 border-b border-white/10">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 md:p-7 flex flex-col justify-between shadow-xs space-y-6">
+          {/* Top Header */}
+          <div className="flex items-center justify-between gap-4 pb-5 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur p-1.5 flex items-center justify-center border border-white/20 shadow-xs shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center shrink-0">
                 <Image
                   src="/images/logo-kota-serang.png"
                   alt="Logo Kota Serang"
-                  width={34}
-                  height={34}
+                  width={28}
+                  height={28}
                   className="object-contain"
                 />
               </div>
               <div>
-                <span className="text-[10px] font-bold tracking-wider uppercase text-blue-200 block">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Pemerintah Kota Serang
-                </span>
-                <span className="text-sm font-bold text-white tracking-tight block">
+                </p>
+                <h3 className="text-sm font-bold text-slate-900">
                   {profile.villageName || "Kelurahan Banjar Agung"}
-                </span>
+                </h3>
               </div>
             </div>
-            <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Pelayanan Aktif</span>
-            </div>
+            <span className="text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md shrink-0">
+              Kecamatan Cipocok Jaya
+            </span>
           </div>
 
-          {/* Center Info: 3 Pillar Services */}
-          <div className="relative z-10 py-5 space-y-3.5 my-auto">
+          {/* Core Services */}
+          <div className="space-y-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs text-amber-300 font-semibold tracking-wide uppercase mb-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                Pusat Informasi & Pelayanan
-              </div>
-              <h3 className="text-lg md:text-xl font-bold text-white leading-snug">
+              <h4 className="text-base font-bold text-slate-900">
                 Pelayanan Administrasi Terpadu (PATEN)
-              </h3>
-              <p className="text-xs text-blue-100/80 mt-1 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-blue-300 shrink-0" />
-                Senin – Jumat • 08.00 – 15.30 WIB
+              </h4>
+              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Jam Kerja: Senin – Jumat, 08.00 – 15.30 WIB</span>
               </p>
             </div>
 
-            <div className="grid gap-2.5 pt-1">
-              <div className="flex items-start gap-3 bg-white/5 hover:bg-white/10 transition-colors p-3 rounded-xl border border-white/10">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Layanan Surat Online</h4>
-                  <p className="text-[11px] text-blue-100/70 leading-relaxed mt-0.5">
-                    Pengajuan SKU, SKTM, Domisili, dan Pengantar KTP langsung lewat portal.
-                  </p>
-                </div>
+            <div className="space-y-2.5">
+              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                <p className="text-xs font-semibold text-slate-800">
+                  Layanan Surat Keterangan Warga
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Pengurusan SKU, SKTM, Keterangan Domisili, dan Pengantar Administrasi Kependudukan.
+                </p>
               </div>
 
-              <div className="flex items-start gap-3 bg-white/5 hover:bg-white/10 transition-colors p-3 rounded-xl border border-white/10">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
-                  <HeartHandshake className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Gerakan Warga “Rabu Asri”</h4>
-                  <p className="text-[11px] text-blue-100/70 leading-relaxed mt-0.5">
-                    Kerja bakti kebersihan dan penghijauan lingkungan di seluruh RW kelurahan.
-                  </p>
-                </div>
+              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                <p className="text-xs font-semibold text-slate-800">
+                  Program Warga & Kebersihan Lingkungan
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Kegiatan gotong royong terpadu &quot;Rabu Asri&quot; dan pembinaan kemasyarakatan di wilayah RW.
+                </p>
               </div>
 
-              <div className="flex items-start gap-3 bg-white/5 hover:bg-white/10 transition-colors p-3 rounded-xl border border-white/10">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Sinergi Fasilitas Publik</h4>
-                  <p className="text-[11px] text-blue-100/70 leading-relaxed mt-0.5">
-                    Dekat dengan Puskesmas Banjar Agung, Posyandu, BAP I & II, serta Bumi Mutiara.
-                  </p>
-                </div>
+              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                <p className="text-xs font-semibold text-slate-800">
+                  Integrasi Fasilitas Publik
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Kawasan layanan terpadu dengan Puskesmas Banjar Agung dan Posyandu kelurahan.
+                </p>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="relative z-10 pt-4 border-t border-white/10 flex flex-wrap sm:flex-nowrap gap-2.5">
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5">
             <Link
               href="/layanan"
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-[#1b365d] hover:bg-blue-50 font-bold text-xs py-2.5 px-4 rounded-xl shadow-md transition-all group"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Ajukan Surat Online</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <span>Layanan Permohonan Surat</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
             <a
               href={`https://wa.me/${(profile.villagePhone || "0813-1505-3901").replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm"
+              className="inline-flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors"
             >
               <Phone className="w-3.5 h-3.5" />
-              <span>WhatsApp Petugas</span>
+              <span>Kontak WhatsApp</span>
             </a>
           </div>
         </div>
