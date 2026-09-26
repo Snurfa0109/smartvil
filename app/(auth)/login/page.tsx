@@ -24,7 +24,6 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
 
-      // Check Firestore user record for role & active status
       const userDoc = await getDoc(doc(db, "users", user.uid));
       let role = "admin";
       let displayName = user.displayName || "Admin";
@@ -47,7 +46,6 @@ export default function LoginPage() {
         role = data.role || "admin";
         displayName = data.displayName || displayName;
 
-        // Update last login timestamp
         await updateDoc(doc(db, "users", user.uid), {
           lastLogin: serverTimestamp(),
         }).catch(() => {});
@@ -77,7 +75,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0d1b2a] via-[#1b365d] to-[#0d1b2a] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo / Header */}
         <div className="text-center mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -89,9 +86,7 @@ export default function LoginPage() {
           <p className="text-blue-200 text-xs mt-1">Kecamatan Cipocok Jaya, Kota Serang</p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Card Header */}
           <div className="bg-[#1b365d] px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
@@ -104,7 +99,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Card Body */}
           <div className="px-6 py-6">
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
@@ -163,7 +157,6 @@ export default function LoginPage() {
             </form>
           </div>
 
-          {/* Card Footer */}
           <div className="border-t border-slate-100 px-6 py-4 bg-slate-50 text-center">
             <p className="text-[11px] text-slate-500">
               Akses terbatas untuk perangkat Kelurahan Banjar Agung yang berwenang.

@@ -26,7 +26,6 @@ interface StoredPhone {
 export default function ComplaintsPage() {
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
-  // Form State - strictly not anonymous, requires real name and phone
   const [formData, setFormData] = useState({
     nama: "",
     email: "",
@@ -46,13 +45,11 @@ export default function ComplaintsPage() {
     category: string;
   } | null>(null);
 
-  // Tracking State by Phone Number
-  const [trackPhone, setTrackPhone] = useState("");
+  const [trackQuery, setTrackQuery] = useState("");
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackedComplaints, setTrackedComplaints] = useState<any[] | null>(null);
   const [recentPhones, setRecentPhones] = useState<StoredPhone[]>([]);
 
-  // Load recent tracked phones from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem("banjaragung_saved_phones");

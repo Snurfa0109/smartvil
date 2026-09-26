@@ -155,7 +155,6 @@ export default function AuditLogsPage() {
     return matchSearch && matchAction && matchModule;
   });
 
-  // Export to CSV
   const handleExportCSV = () => {
     if (filteredLogs.length === 0) return;
     const headers = ["Waktu", "User", "Email", "Role", "Aksi", "Modul", "Keterangan"];
@@ -179,14 +178,12 @@ export default function AuditLogsPage() {
     document.body.removeChild(link);
   };
 
-  // Metrics
   const loginCount = logs.filter((l) => l.action === "LOGIN").length;
   const rejectedCount = logs.filter((l) => l.action === "AKSES_DITOLAK").length;
   const changesCount = logs.filter((l) => ["CREATE", "UPDATE", "DELETE"].includes(l.action)).length;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -219,7 +216,6 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#1b365d] flex items-center justify-center shrink-0">
@@ -262,7 +258,6 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -276,7 +271,6 @@ export default function AuditLogsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          {/* Action Filter */}
           <select
             value={selectedAction}
             onChange={(e) => setSelectedAction(e.target.value)}
@@ -291,7 +285,6 @@ export default function AuditLogsPage() {
             <option value="AKSES_DITOLAK">AKSES DITOLAK</option>
           </select>
 
-          {/* Module Filter */}
           <select
             value={selectedModule}
             onChange={(e) => setSelectedModule(e.target.value)}
@@ -310,7 +303,6 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* Logs Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">

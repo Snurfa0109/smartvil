@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Fetch Chatbot Settings from Firestore (or use default)
     let settings: ChatbotSettings = { ...DEFAULT_CHATBOT_SETTINGS };
     try {
       const chatbotSnap = await getDoc(doc(db, "settings", "chatbot"));
@@ -26,7 +25,6 @@ export async function POST(req: NextRequest) {
       console.warn("Could not fetch chatbot settings from DB, using defaults:", e);
     }
 
-    // Check if chatbot is disabled by admin
     if (!settings.enabled) {
       return NextResponse.json({
         reply: "Mohon maaf, layanan asisten virtual saat ini sedang dinonaktifkan oleh pengelola desa.",
@@ -34,7 +32,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Resolve Gemini API Key
     const apiKey = settings.customApiKey?.trim() || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -43,7 +40,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Fetch Live Village Context (if enabled)
     let liveContext = "";
     if (settings.includeLiveContext) {
       try {
@@ -84,7 +80,6 @@ Warga dapat menyampaikan aspirasi atau laporan pengaduan melalui halaman "Pengad
       }
     }
 
-    // 4. Construct Guardrail System Instruction
     const systemInstruction = `
 Anda adalah Arba, asisten virtual Kelurahan Banjar Agung yang ramah dan mudah diajak ngobrol. Bayangkan Anda seperti petugas kelurahan yang bersahabat — tidak kaku, tidak terlalu formal, tapi tetap sopan dan dapat dipercaya.
 
@@ -117,7 +112,6 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
 - Untuk urusan yang butuh penanganan langsung, ajak warga datang ke Kantor Kelurahan atau gunakan fitur Layanan Mandiri di website ini.
     `.trim();
 
-    // 5. Prepare conversation history
     const sanitizedHistory = Array.isArray(history)
       ? history.slice(-8).map((item) => ({
           role: item.role === "user" ? "user" : "model",
@@ -136,7 +130,7 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
     const requestedModel = settings.selectedModel?.trim() || "gemini-3.5-flash";
     const temperature = typeof settings.temperature === "number" ? settings.temperature : 0.2;
 
-    // 6. Call Google Gemini API with automatic fallback in case of model overload (503) or rate-limit (429)
+    // Fallback antar model saat 503/429.
     const candidateModels = Array.from(
       new Set([
         requestedModel,
@@ -174,7 +168,7 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
           const resJson = await geminiRes.json();
           if (resJson?.candidates?.[0]?.content?.parts?.length) {
             data = resJson;
-            break; // Berhasil mendapatkan respon
+            break;
           }
         } else {
           lastError = await geminiRes.text();

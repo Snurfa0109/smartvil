@@ -196,6 +196,7 @@ export default function AdminsManagementPage() {
       };
 
       await setDoc(doc(db, "users", userCred.user.uid), newAdminData);
+
       await signOut(secondaryAuth);
 
       await writeAuditLog(
@@ -589,7 +590,6 @@ export default function AdminsManagementPage() {
         </div>
       </div>
 
-      {/* Modal Tambah Admin */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">

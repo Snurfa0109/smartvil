@@ -67,7 +67,6 @@ export default function DashboardPage() {
           requests: pendingRequestsSnapshot.data().count,
         });
 
-        // Request Breakdown
         const allRequestsSnap = await getDocs(requestsColl);
         const breakdown = { pending: 0, processed: 0, ready: 0, completed: 0 };
         allRequestsSnap.docs.forEach((d) => {

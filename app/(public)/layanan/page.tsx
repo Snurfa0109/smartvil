@@ -45,6 +45,7 @@ export default function ServicesPage() {
     keperluan: "",
     phone: "",
   });
+  const [customFormData, setCustomFormData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<{
     ticketCode: string;
@@ -54,14 +55,12 @@ export default function ServicesPage() {
     keperluan: string;
   } | null>(null);
 
-  // Tracking state
   const [trackInput, setTrackInput] = useState("");
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackedRequests, setTrackedRequests] = useState<any[] | null>(null);
   const [recentTickets, setRecentTickets] = useState<StoredTicket[]>([]);
   const [copied, setCopied] = useState(false);
 
-  // Load recent tickets from device storage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("banjaragung_saved_tickets");
@@ -73,7 +72,6 @@ export default function ServicesPage() {
     }
   }, []);
 
-  // Fetch dynamic letter types from Firestore
   useEffect(() => {
     const fetchTypes = async () => {
       try {
@@ -121,6 +119,13 @@ export default function ServicesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLetter) return;
+    const requiredMissing = (activeLetterObj?.customFields || []).filter(
+      (f) => f.required && !(customFormData[f.key] || "").trim()
+    );
+    if (requiredMissing.length > 0) {
+      alert(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -131,6 +136,7 @@ export default function ServicesPage() {
 
       await addDoc(collection(db, "requests"), {
         ...formData,
+        formData: customFormData,
         ticketCode,
         type: letterObj?.code || selectedLetter,
         typeName: letterName,
@@ -165,6 +171,7 @@ export default function ServicesPage() {
       });
 
       setFormData({ nik: "", nama: "", keperluan: "", phone: "" });
+      setCustomFormData({});
       setSelectedLetter(null);
     } catch (error) {
       console.error("Error submitting request:", error);
@@ -184,12 +191,10 @@ export default function ServicesPage() {
       const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
       const cleanedDigits = rawSearch.replace(/\D/g, "");
 
-      // 1. Search by exact ticketCode
       const qByCode = query(collection(db, "requests"), where("ticketCode", "==", rawSearch));
       const snapCode = await getDocs(qByCode);
       snapCode.docs.forEach((d) => results.push({ id: d.id, ...d.data() }));
 
-      // 2. If search looks like NIK (16 digits)
       if (isDigitsOnly && cleanedDigits.length >= 15) {
         const qByNik = query(collection(db, "requests"), where("nik", "==", cleanedDigits));
         const snapNik = await getDocs(qByNik);
@@ -200,7 +205,6 @@ export default function ServicesPage() {
         });
       }
 
-      // 3. Search by Phone (bila berupa nomor telepon/whatsapp)
       if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
         // Coba variasi 08xx dan 628xx
         let phoneVariations = [cleanedDigits];
@@ -222,7 +226,6 @@ export default function ServicesPage() {
         }
       }
 
-      // Sort by creation or fallback
       setTrackedRequests(results);
     } catch (err) {
       console.error("Error tracking request:", err);
@@ -261,7 +264,6 @@ export default function ServicesPage() {
 
   return (
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      {/* Header Utama */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
           <FileCheck className="h-3.5 w-3.5" /> Pelayanan Administrasi Terpadu Kelurahan (PATEN)
@@ -273,7 +275,6 @@ export default function ServicesPage() {
           Pengajuan surat pengantar dan keterangan resmi Kelurahan Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang. Cepat, transparan, dan 100% bebas biaya retribusi (Gratis).
         </p>
 
-        {/* Tab Navigasi */}
         <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-4 shadow-2xs">
           <button
             type="button"
@@ -300,7 +301,6 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* === ALUR PERMOHONAN SURAT === */}
       <section id="alur" className="scroll-mt-24">
         <div className="rounded-2xl bg-gradient-to-br from-[#1b365d]/5 to-blue-50 border border-[#1b365d]/10 p-6 md:p-8 space-y-5">
           <div className="text-center space-y-1">
@@ -357,7 +357,6 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Standar Layanan Info Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-xl bg-white border border-slate-200 shadow-2xs text-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-slate-100 text-[#1b365d] flex items-center justify-center shrink-0">
@@ -397,7 +396,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* JARING PENGAMAN 1: SUCCESS BOX DENGAN WHATSAPP OTOMATIS */}
+      {/* Jaring pengaman: success box dengan simpan otomatis ke WhatsApp */}
       {submittedTicket && (
         <div className="max-w-2xl mx-auto bg-emerald-50/80 border border-emerald-300 rounded-2xl p-6 text-emerald-950 text-center space-y-4 shadow-sm animate-in fade-in">
           <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
@@ -410,7 +409,6 @@ export default function ServicesPage() {
             </p>
           </div>
 
-          {/* Kotak Kode Tiket */}
           <div className="bg-white border border-emerald-300 rounded-xl p-3 inline-flex flex-wrap items-center justify-center gap-3 shadow-2xs">
             <span className="text-xs font-semibold text-slate-600">NOMOR TIKET PELACAKAN:</span>
             <span className="font-mono text-lg font-bold text-[#1b365d] tracking-wider">
@@ -426,7 +424,6 @@ export default function ServicesPage() {
             </button>
           </div>
 
-          {/* Tombol Simpan Otomatis ke WhatsApp (Ramah Lansia / Awam) */}
           <div className="pt-2 space-y-2 max-w-md mx-auto">
             <a
               href={generateWhatsAppUrl(submittedTicket)}
@@ -458,10 +455,8 @@ export default function ServicesPage() {
         </div>
       )}
 
-      {/* KONTEN TAB 1: FORMULIR PENGAJUAN */}
       {activeTab === "apply" ? (
         <div className="grid md:grid-cols-12 gap-8">
-          {/* Kolom Kiri: Pilihan Surat */}
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -471,7 +466,6 @@ export default function ServicesPage() {
               <span className="text-xs text-slate-500">{filteredLetterTypes.length} Jenis Tersedia</span>
             </div>
 
-            {/* Pencarian Surat */}
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input
@@ -490,7 +484,7 @@ export default function ServicesPage() {
                 return (
                   <div
                     key={letterKey}
-                    onClick={() => setSelectedLetter(letterKey)}
+                    onClick={() => { setSelectedLetter(letterKey); setCustomFormData({}); }}
                     className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                       isSelected
                         ? "border-[#1b365d] bg-blue-50/50 ring-1 ring-[#1b365d] shadow-2xs"
@@ -524,7 +518,6 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          {/* Kolom Kanan: Detail & Formulir Pengajuan */}
           <div className="md:col-span-7 space-y-4">
             <Card className="border-slate-200 shadow-2xs">
               <CardHeader className="border-b border-slate-100 pb-4">
@@ -540,7 +533,6 @@ export default function ServicesPage() {
               <CardContent className="pt-5">
                 {activeLetterObj ? (
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Persyaratan Dokumen */}
                     {Array.isArray(activeLetterObj.requirements) && activeLetterObj.requirements.length > 0 && (
                       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
                         <span className="font-bold text-slate-900 flex items-center gap-1.5">
@@ -615,6 +607,40 @@ export default function ServicesPage() {
                       />
                     </div>
 
+                    {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <p className="text-xs font-bold text-slate-800">Data tambahan sesuai template surat ini:</p>
+                        {activeLetterObj.customFields.map((f) => (
+                          <div key={f.key} className="space-y-1.5">
+                            <label htmlFor={`custom-${f.key}`} className="text-xs font-semibold text-slate-700">
+                              {f.label} {f.required && <span className="text-red-500">*</span>}
+                            </label>
+                            {f.type === "textarea" ? (
+                              <textarea
+                                id={`custom-${f.key}`}
+                                required={f.required}
+                                rows={3}
+                                className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                                placeholder={`Isi ${f.label.toLowerCase()}...`}
+                                value={customFormData[f.key] || ""}
+                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                              />
+                            ) : (
+                              <input
+                                id={`custom-${f.key}`}
+                                type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+                                required={f.required}
+                                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                                placeholder={`Isi ${f.label.toLowerCase()}...`}
+                                value={customFormData[f.key] || ""}
+                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-lg text-xs text-slate-600 space-y-1">
                       <p className="font-semibold text-slate-800 flex items-center gap-1.5">
                         <AlertCircle className="h-4 w-4 text-[#1b365d]" /> Ketentuan Pengambilan Berkas:
@@ -656,7 +682,6 @@ export default function ServicesPage() {
           </div>
         </div>
       ) : (
-        /* KONTEN TAB 2: PELACAKAN MANDIRI (RAMAH LANSIA & BEBAS HAFALAN KODE) */
         <div className="max-w-3xl mx-auto space-y-6">
           <Card className="border-slate-200 shadow-2xs">
             <CardHeader className="pb-3">
@@ -697,7 +722,7 @@ export default function ServicesPage() {
                 </Button>
               </form>
 
-              {/* JARING PENGAMAN 2: CATATAN RAMAH LANSIA */}
+              {/* Jaring pengaman: warga lupa tiket cukup pakai WA/NIK */}
               <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-[#1b365d] flex items-start gap-2.5">
                 <HelpCircle className="h-4 w-4 mt-0.5 shrink-0 text-[#1b365d]" />
                 <div>
@@ -708,7 +733,7 @@ export default function ServicesPage() {
                 </div>
               </div>
 
-              {/* JARING PENGAMAN 3: TIKET TERSIMPAN DI PERANGKAT INI */}
+              {/* Jaring pengaman: tiket terakhir tersimpan di perangkat ini */}
               {recentTickets.length > 0 && (
                 <div className="pt-2 border-t border-slate-200">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-2">
@@ -737,7 +762,6 @@ export default function ServicesPage() {
             </CardContent>
           </Card>
 
-          {/* HASIL PELACAKAN */}
           {trackedRequests !== null && (
             <div className="space-y-4">
               {trackedRequests.length === 0 ? (
@@ -749,7 +773,6 @@ export default function ServicesPage() {
                       Pastikan nomor tiket, nomor WhatsApp, atau NIK yang Anda masukkan sudah sesuai.
                     </p>
                   </div>
-                  {/* Bantuan Loket Langsung via WA */}
                   <div className="pt-2">
                     <a
                       href="https://wa.me/6281315053901?text=Halo%20Admin%20Kelurahan%20Banjar%20Agung,%20saya%20ingin%20menanyakan%20status%20surat%20saya"
@@ -819,7 +842,6 @@ export default function ServicesPage() {
                           )}
                         </div>
 
-                        {/* Progress Stepper Visual */}
                         <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
                           <p className="text-xs font-bold text-slate-700 mb-4">Progres Pelayanan Administrasi:</p>
                           <div className="relative flex items-center justify-between w-full">
@@ -856,7 +878,6 @@ export default function ServicesPage() {
                           </div>
                         </div>
 
-                        {/* Pesan Kesiapan Surat */}
                         {item.status === "ready" && (
                           <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 text-emerald-950 text-xs sm:text-sm flex items-start gap-3">
                             <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
@@ -869,7 +890,6 @@ export default function ServicesPage() {
                           </div>
                         )}
 
-                        {/* Catatan Khusus dari Admin Kelurahan jika ada */}
                         {item.adminNotes && (
                           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1">
                             <span className="font-bold flex items-center gap-1.5">

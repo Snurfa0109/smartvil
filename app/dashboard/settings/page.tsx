@@ -50,28 +50,23 @@ function SettingsContent() {
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  // Site Configuration State
   const [siteForm, setSiteForm] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [siteLoading, setSiteLoading] = useState(true);
   const [savingSite, setSavingSite] = useState(false);
   const [siteMsg, setSiteMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Photo upload states
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
 
-  // Chatbot State
   const [chatbotForm, setChatbotForm] = useState<ChatbotSettings>(DEFAULT_CHATBOT_SETTINGS);
   const [savingChatbot, setSavingChatbot] = useState(false);
   const [chatbotLoading, setChatbotLoading] = useState(true);
 
-  // Account State
   const [accountName, setAccountName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingAccount, setSavingAccount] = useState(false);
   const [accountMsg, setAccountMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // System Seeding
   const [seeding, setSeeding] = useState(false);
 
   // Kategori Berita State

@@ -1,3 +1,10 @@
+export interface LetterCustomFieldDef {
+  key: string;
+  label: string;
+  type: "text" | "number" | "date" | "textarea";
+  required: boolean;
+}
+
 export interface LetterType {
   id?: string;
   code: string;
@@ -7,6 +14,10 @@ export interface LetterType {
   templateNarrative?: string;
   active: boolean;
   order?: number;
+  templateFileUrl?: string;
+  templateStoragePath?: string;
+  templatePlaceholders?: string[];
+  customFields?: LetterCustomFieldDef[];
 }
 
 export const DEFAULT_LETTER_TYPES: LetterType[] = [
