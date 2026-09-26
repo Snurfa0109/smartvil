@@ -31,7 +31,12 @@ import {
   X,
   RefreshCw,
   Info,
+  Lock,
 } from "lucide-react";
+import {
+  MANAGEABLE_FEATURES,
+  DEFAULT_ADMIN_PERMISSIONS,
+} from "@/lib/permissions";
 
 interface AdminUser {
   id: string;
@@ -43,6 +48,7 @@ interface AdminUser {
   active: boolean;
   createdAt?: any;
   lastLogin?: any;
+  permissions?: string[];
 }
 
 const DEPARTMENTS = [
@@ -60,12 +66,10 @@ export default function AdminsManagementPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  // Modal states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
 
-  // Form states
   const [formData, setFormData] = useState({
     displayName: "",
     email: "",
@@ -73,6 +77,7 @@ export default function AdminsManagementPage() {
     role: "admin" as "superadmin" | "admin" | "operator",
     department: DEPARTMENTS[0],
     active: true,
+    permissions: [...DEFAULT_ADMIN_PERMISSIONS],
   });
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -95,9 +100,13 @@ export default function AdminsManagementPage() {
           active: data.active !== false,
           createdAt: data.createdAt,
           lastLogin: data.lastLogin,
+          permissions: Array.isArray(data.permissions)
+            ? data.permissions
+            : data.role === "superadmin"
+            ? []
+            : DEFAULT_ADMIN_PERMISSIONS,
         });
       });
-      // Sort superadmins first, then name
       list.sort((a, b) => {
         if (a.role === "superadmin" && b.role !== "superadmin") return -1;
         if (b.role === "superadmin" && a.role !== "superadmin") return 1;
@@ -125,6 +134,7 @@ export default function AdminsManagementPage() {
       role: "admin",
       department: DEPARTMENTS[1],
       active: true,
+      permissions: [...DEFAULT_ADMIN_PERMISSIONS],
     });
     setIsCreateOpen(true);
   };
@@ -140,11 +150,11 @@ export default function AdminsManagementPage() {
       role: admin.role,
       department: admin.department || DEPARTMENTS[0],
       active: admin.active,
+      permissions: admin.permissions ? [...admin.permissions] : [...DEFAULT_ADMIN_PERMISSIONS],
     });
     setIsEditOpen(true);
   };
 
-  // Create admin using secondary Firebase App to not log out the current Superadmin
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.displayName.trim() || !formData.email.trim() || !formData.password) {
@@ -160,7 +170,6 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      // Secondary auth instance
       const secondaryAppName = `SecondaryApp_${Date.now()}`;
       const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
       const secondaryAuth = getAuth(secondaryApp);
@@ -175,23 +184,20 @@ export default function AdminsManagementPage() {
         displayName: formData.displayName.trim(),
       });
 
-      // Save user to Firestore
       const newAdminData = {
         uid: userCred.user.uid,
         displayName: formData.displayName.trim(),
         email: formData.email.trim(),
         role: formData.role,
         department: formData.department,
+        permissions: formData.role === "superadmin" ? [] : formData.permissions,
         active: true,
         createdAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, "users", userCred.user.uid), newAdminData);
-
-      // Sign out from secondary auth
       await signOut(secondaryAuth);
 
-      // Write audit log
       await writeAuditLog(
         "CREATE",
         "admin",
@@ -225,6 +231,7 @@ export default function AdminsManagementPage() {
         displayName: formData.displayName.trim(),
         role: formData.role,
         department: formData.department,
+        permissions: formData.role === "superadmin" ? [] : formData.permissions,
         active: formData.active,
         updatedAt: serverTimestamp(),
       };
@@ -336,7 +343,6 @@ export default function AdminsManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -359,7 +365,6 @@ export default function AdminsManagementPage() {
         </button>
       </div>
 
-      {/* Role explanation cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/60">
           <div className="flex items-center gap-2 text-purple-800 font-semibold text-sm mb-1">
@@ -404,7 +409,6 @@ export default function AdminsManagementPage() {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -440,7 +444,6 @@ export default function AdminsManagementPage() {
         </div>
       </div>
 
-      {/* Admin Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -496,22 +499,33 @@ export default function AdminsManagementPage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            admin.role === "superadmin"
-                              ? "bg-purple-100 text-purple-700 border border-purple-200"
+                        <div className="space-y-1">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              admin.role === "superadmin"
+                                ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                : admin.role === "operator"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-blue-100 text-[#1b365d] border border-blue-200"
+                            }`}
+                          >
+                            <Shield size={12} />
+                            {admin.role === "superadmin"
+                              ? "Super Admin"
                               : admin.role === "operator"
-                              ? "bg-amber-100 text-amber-800 border border-amber-200"
-                              : "bg-blue-100 text-[#1b365d] border border-blue-200"
-                          }`}
-                        >
-                          <Shield size={12} />
-                          {admin.role === "superadmin"
-                            ? "Super Admin"
-                            : admin.role === "operator"
-                            ? "Operator"
-                            : "Admin Seksi"}
-                        </span>
+                              ? "Operator"
+                              : "Admin Seksi"}
+                          </span>
+                          <div>
+                            {admin.role === "superadmin" ? (
+                              <span className="text-[11px] text-purple-700 font-medium">Akses Penuh + Audit</span>
+                            ) : (
+                              <span className="text-[11px] text-slate-500 font-medium">
+                                {admin.permissions?.length ?? MANAGEABLE_FEATURES.length} dari {MANAGEABLE_FEATURES.length} Fitur
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </td>
 
                       <td className="px-6 py-4">
@@ -578,8 +592,8 @@ export default function AdminsManagementPage() {
       {/* Modal Tambah Admin */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-[#1b365d] px-6 py-4 text-white flex items-center justify-between">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+            <div className="bg-[#1b365d] px-6 py-4 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <UserPlus size={18} />
                 <h3 className="font-bold text-base">Tambah Admin / Petugas</h3>
@@ -589,7 +603,7 @@ export default function AdminsManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateAdmin} className="p-6 space-y-4">
+            <form onSubmit={handleCreateAdmin} className="p-6 space-y-4 overflow-y-auto">
               {errorMsg && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
                   <AlertTriangle size={15} className="shrink-0" />
@@ -679,6 +693,90 @@ export default function AdminsManagementPage() {
                 </div>
               </div>
 
+              {formData.role === "superadmin" ? (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 flex items-start gap-2.5">
+                  <ShieldCheck className="h-4 w-4 text-purple-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Akses Penuh Super Admin</p>
+                    <p className="text-purple-700/90 text-[11px] mt-0.5">
+                      Super Admin memiliki akses tak terbatas ke seluruh fitur dan <strong>Log Aktivitas (Sistem Audit)</strong>.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Hak Akses Fitur / Menu
+                      </label>
+                      <p className="text-[11px] text-slate-400">Pilih menu mana saja yang boleh dilihat oleh admin ini</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, permissions: MANAGEABLE_FEATURES.map((f) => f.key) })}
+                        className="text-[11px] text-[#1b365d] hover:underline font-semibold"
+                      >
+                        Pilih Semua
+                      </button>
+                      <span className="text-slate-300">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, permissions: [] })}
+                        className="text-[11px] text-slate-500 hover:underline"
+                      >
+                        Kosongkan
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {MANAGEABLE_FEATURES.map((feat) => {
+                      const isChecked = formData.permissions.includes(feat.key);
+                      return (
+                        <label
+                          key={feat.key}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                            isChecked
+                              ? "bg-blue-50/70 border-blue-200 text-slate-900"
+                              : "bg-slate-50/40 border-slate-200 text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  permissions: [...formData.permissions, feat.key],
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  permissions: formData.permissions.filter((k) => k !== feat.key),
+                                });
+                              }
+                            }}
+                            className="mt-0.5 rounded text-[#1b365d] focus:ring-[#1b365d]"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-800 leading-tight">{feat.label}</p>
+                            <p className="text-[10px] text-slate-500 truncate mt-0.5">{feat.description}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800">
+                    <Lock size={13} className="shrink-0 text-amber-600" />
+                    <span>Fitur <strong>Sistem Audit & Kelola Admin</strong> terkunci otomatis khusus Super Admin.</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                 <button
                   type="button"
@@ -700,11 +798,10 @@ export default function AdminsManagementPage() {
         </div>
       )}
 
-      {/* Modal Edit Admin */}
       {isEditOpen && editingAdmin && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-[#1b365d] px-6 py-4 text-white flex items-center justify-between">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+            <div className="bg-[#1b365d] px-6 py-4 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <Edit2 size={18} />
                 <h3 className="font-bold text-base">Ubah Data Admin</h3>
@@ -714,7 +811,7 @@ export default function AdminsManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateAdmin} className="p-6 space-y-4">
+            <form onSubmit={handleUpdateAdmin} className="p-6 space-y-4 overflow-y-auto">
               {errorMsg && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
                   <AlertTriangle size={15} className="shrink-0" />
@@ -808,6 +905,90 @@ export default function AdminsManagementPage() {
                   </label>
                 </div>
               </div>
+
+              {formData.role === "superadmin" ? (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 flex items-start gap-2.5">
+                  <ShieldCheck className="h-4 w-4 text-purple-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Akses Penuh Super Admin</p>
+                    <p className="text-purple-700/90 text-[11px] mt-0.5">
+                      Super Admin memiliki akses tak terbatas ke seluruh fitur dan <strong>Log Aktivitas (Sistem Audit)</strong>.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Hak Akses Fitur / Menu
+                      </label>
+                      <p className="text-[11px] text-slate-400">Pilih menu mana saja yang boleh dilihat oleh admin ini</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, permissions: MANAGEABLE_FEATURES.map((f) => f.key) })}
+                        className="text-[11px] text-[#1b365d] hover:underline font-semibold"
+                      >
+                        Pilih Semua
+                      </button>
+                      <span className="text-slate-300">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, permissions: [] })}
+                        className="text-[11px] text-slate-500 hover:underline"
+                      >
+                        Kosongkan
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {MANAGEABLE_FEATURES.map((feat) => {
+                      const isChecked = formData.permissions.includes(feat.key);
+                      return (
+                        <label
+                          key={feat.key}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                            isChecked
+                              ? "bg-blue-50/70 border-blue-200 text-slate-900"
+                              : "bg-slate-50/40 border-slate-200 text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  permissions: [...formData.permissions, feat.key],
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  permissions: formData.permissions.filter((k) => k !== feat.key),
+                                });
+                              }
+                            }}
+                            className="mt-0.5 rounded text-[#1b365d] focus:ring-[#1b365d]"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-800 leading-tight">{feat.label}</p>
+                            <p className="text-[10px] text-slate-500 truncate mt-0.5">{feat.description}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800">
+                    <Lock size={13} className="shrink-0 text-amber-600" />
+                    <span>Fitur <strong>Sistem Audit & Kelola Admin</strong> terkunci otomatis khusus Super Admin.</span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                 <button

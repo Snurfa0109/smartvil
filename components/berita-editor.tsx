@@ -33,15 +33,9 @@ import { db } from "@/lib/firebase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { writeAuditLog } from "@/lib/audit";
 import { useState } from "react";
+import { getBeritaCategories, DEFAULT_BERITA_CATEGORIES } from "@/lib/site-config";
 
-const categories = [
-  "Pengumuman",
-  "Kegiatan",
-  "Kesehatan",
-  "Pelatihan",
-  "Pemerintahan",
-  "Lainnya",
-];
+// Categories loaded dynamically — see BeritaEditor component
 
 type BeritaEditorProps = {
   id?: string | null;
@@ -177,6 +171,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!id);
   const [loadedContent, setLoadedContent] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_BERITA_CATEGORIES);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -245,6 +240,10 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       editorRef.current = null;
     };
   }, [editor]);
+
+  useEffect(() => {
+    getBeritaCategories().then(setCategories).catch(() => setCategories(DEFAULT_BERITA_CATEGORIES));
+  }, []);
 
   useEffect(() => {
     if (!id) {

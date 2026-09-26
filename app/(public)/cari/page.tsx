@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { stripHtml } from "@/lib/utils";
 
 interface SearchItem {
   id: string;
@@ -131,7 +132,7 @@ function SearchContent() {
             id: `news-${doc.id}`,
             title: d.title || "Berita Kelurahan",
             category: "berita",
-            subtitle: d.content ? d.content.substring(0, 140) + "..." : "",
+            subtitle: d.content ? stripHtml(d.content).substring(0, 140) + "..." : "",
             url: `/berita/${doc.id}`,
             date: d.date,
           };

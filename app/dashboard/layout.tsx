@@ -16,7 +16,9 @@ import {
   Globe, 
   CalendarDays,
   ShieldCheck,
-  History
+  History,
+  ShieldAlert,
+  ArrowLeft
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +31,7 @@ export default function DashboardLayout({
 }>) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, signOut, role, adminProfile, isSuperAdmin } = useAuth();
+  const { user, loading, signOut, role, adminProfile, isSuperAdmin, canAccess } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -69,30 +71,50 @@ export default function DashboardLayout({
   }
 
   interface NavItem {
+    key: string;
     href: string;
     label: string;
     icon: any;
     exact?: boolean;
   }
 
-  // Base navigation
-  const baseNavItems: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: "/dashboard/berita", label: "Berita & Artikel", icon: FileText },
-    { href: "/dashboard/agenda", label: "Agenda Kegiatan", icon: CalendarDays },
-    { href: "/dashboard/layanan", label: "Permohonan Surat", icon: FileText },
-    { href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
-    { href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
-    { href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe },
+  const allBaseNavItems: NavItem[] = [
+    { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { key: "berita", href: "/dashboard/berita", label: "Berita & Artikel", icon: FileText },
+    { key: "agenda", href: "/dashboard/agenda", label: "Agenda Kegiatan", icon: CalendarDays },
+    { key: "layanan", href: "/dashboard/layanan", label: "Permohonan Surat", icon: FileText },
+    { key: "penduduk", href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
+    { key: "pengaduan", href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
+    { key: "settings", href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe },
   ];
 
-  // Superadmin & Admin specific navigation
-  const systemNavItems: NavItem[] = [
-    ...(isSuperAdmin
-      ? [{ href: "/dashboard/admins", label: "Kelola Admin", icon: ShieldCheck }]
-      : []),
-    { href: "/dashboard/audit", label: "Log Aktivitas (Audit)", icon: History },
-  ];
+  const baseNavItems = allBaseNavItems.filter((item) => canAccess(item.key));
+
+  const systemNavItems: NavItem[] = isSuperAdmin
+    ? [
+        { key: "admins", href: "/dashboard/admins", label: "Kelola Admin", icon: ShieldCheck },
+        { key: "audit", href: "/dashboard/audit", label: "Log Aktivitas (Audit)", icon: History },
+      ]
+    : [];
+
+  let isCurrentRouteForbidden = false;
+  let forbiddenModuleName = "";
+
+  if (pathname.startsWith("/dashboard/admins") && !isSuperAdmin) {
+    isCurrentRouteForbidden = true;
+    forbiddenModuleName = "Kelola Admin";
+  } else if (pathname.startsWith("/dashboard/audit") && !isSuperAdmin) {
+    isCurrentRouteForbidden = true;
+    forbiddenModuleName = "Log Aktivitas (Audit Sistem)";
+  } else {
+    const matchedBase = allBaseNavItems.find((item) =>
+      item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/")
+    );
+    if (matchedBase && !canAccess(matchedBase.key)) {
+      isCurrentRouteForbidden = true;
+      forbiddenModuleName = matchedBase.label;
+    }
+  }
 
   const initials = (user.displayName || user.email || "A").charAt(0).toUpperCase();
 
@@ -262,7 +284,31 @@ export default function DashboardLayout({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
+          {isCurrentRouteForbidden ? (
+            <div className="max-w-xl mx-auto my-12 bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-xs">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Akses Menu Dibatasi</h2>
+              <p className="text-slate-600 text-sm mt-2 leading-relaxed">
+                Akun Anda tidak memiliki hak akses untuk membuka modul <strong>{forbiddenModuleName}</strong>.
+              </p>
+              <p className="text-xs text-slate-400 mt-2">
+                Silakan hubungi <strong>Super Administrator (Lurah / Seklur)</strong> jika Anda memerlukan akses ke fitur ini.
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <Link
+                  href={baseNavItems[0]?.href || "/dashboard"}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#1b365d] hover:bg-[#152a48] text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <ArrowLeft size={16} />
+                  <span>Kembali ke Menu Utama</span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

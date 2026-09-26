@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
+import { stripHtml } from "@/lib/utils";
 
 type LandingNewsItem = {
   id: string;
@@ -580,7 +581,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col pt-0">
                   <CardDescription className="line-clamp-2 mb-3 text-xs text-slate-500">
-                    {item.content || "Tidak ada ringkasan teks."}
+                    {stripHtml(item.content) || "Tidak ada ringkasan teks."}
                   </CardDescription>
                   <Link href={`/berita/${item.id}`} className="mt-auto text-xs font-semibold text-[#1b365d] hover:underline flex items-center gap-1">
                     Baca dokumen lengkap <ArrowRight className="h-3 w-3" />

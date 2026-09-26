@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, FileText, Newspaper, UserCheck, MapPin, Phone, ArrowRight, Building2, HelpCircle } from "lucide-react";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { stripHtml } from "@/lib/utils";
 
 interface SearchResultItem {
   id: string;
@@ -142,7 +143,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
             id: `news-${doc.id}`,
             title: d.title || "Berita",
             category: "berita",
-            subtitle: `${d.category || "Berita"} • ${d.content ? d.content.substring(0, 90) + "..." : ""}`,
+            subtitle: `${d.category || "Berita"} • ${d.content ? stripHtml(d.content).substring(0, 90) + "..." : ""}`,
             url: `/berita/${doc.id}`,
           };
         });

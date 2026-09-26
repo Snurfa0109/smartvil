@@ -173,3 +173,32 @@ export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise
   const ref = doc(db, "settings", "profile");
   await setDoc(ref, settings, { merge: true });
 }
+export const DEFAULT_BERITA_CATEGORIES = [
+  "Pengumuman",
+  "Kegiatan",
+  "Kesehatan",
+  "Pelatihan",
+  "Pemerintahan",
+  "Lainnya",
+];
+
+export async function getBeritaCategories(): Promise<string[]> {
+  try {
+    const ref = doc(db, "settings", "beritaCategories");
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (Array.isArray(data?.categories) && data.categories.length > 0) {
+        return data.categories as string[];
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching berita categories:", error);
+  }
+  return DEFAULT_BERITA_CATEGORIES;
+}
+
+export async function saveBeritaCategories(categories: string[]): Promise<void> {
+  const ref = doc(db, "settings", "beritaCategories");
+  await setDoc(ref, { categories }, { merge: false });
+}

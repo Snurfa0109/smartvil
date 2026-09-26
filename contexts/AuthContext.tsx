@@ -20,6 +20,7 @@ export interface AdminProfile {
   active: boolean;
   department?: string;
   lastLogin?: string;
+  permissions?: string[];
 }
 
 interface AuthContextType {
@@ -28,6 +29,7 @@ interface AuthContextType {
   adminProfile: AdminProfile | null;
   loading: boolean;
   isSuperAdmin: boolean;
+  canAccess: (featureKey: string) => boolean;
   signOut: () => Promise<void>;
 }
 
@@ -37,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   adminProfile: null,
   loading: true,
   isSuperAdmin: false,
+  canAccess: () => false,
   signOut: async () => {},
 });
 
@@ -71,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               active,
               department: data.department ?? "",
               lastLogin: data.lastLogin ?? null,
+              permissions: Array.isArray(data.permissions) ? (data.permissions as string[]) : undefined,
             });
           } else {
             // First time or legacy admin: bootstrap as superadmin
@@ -128,8 +132,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const isSuperAdmin = role === "superadmin";
 
+  const canAccess = (featureKey: string): boolean => {
+    if (!user) return false;
+    if (featureKey === "audit" || featureKey === "admins") {
+      return role === "superadmin";
+    }
+    if (role === "superadmin") {
+      return true;
+    }
+    if (adminProfile && Array.isArray(adminProfile.permissions)) {
+      return adminProfile.permissions.includes(featureKey);
+    }
+    return true;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, role, adminProfile, loading, isSuperAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, role, adminProfile, loading, isSuperAdmin, canAccess, signOut }}>
       {children}
     </AuthContext.Provider>
   );

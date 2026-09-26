@@ -20,9 +20,12 @@ import {
   Shield,
   FileSpreadsheet,
   CheckCircle2,
+  Lock,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuditLogsPage() {
+  const { isSuperAdmin } = useAuth();
   const [logs, setLogs] = useState<(AuditEntry & { id: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

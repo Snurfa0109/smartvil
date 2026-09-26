@@ -5,6 +5,7 @@ import Link from "next/link";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Calendar, ChevronLeft, ChevronRight, Search, X, Tag, RotateCcw } from "lucide-react";
+import { stripHtml } from "@/lib/utils";
 
 interface NewsItem {
   id: string;
@@ -120,7 +121,7 @@ export default function NewsPage() {
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         const matchTitle = item.title?.toLowerCase().includes(q);
-        const matchContent = item.content?.toLowerCase().includes(q);
+        const matchContent = stripHtml(item.content).toLowerCase().includes(q);
         const matchCategory = item.category?.toLowerCase().includes(q);
         if (!matchTitle && !matchContent && !matchCategory) return false;
       }
@@ -351,7 +352,7 @@ export default function NewsPage() {
                     {featuredItem.title}
                   </h2>
                   <p className="text-slate-600 text-xs md:text-sm leading-relaxed line-clamp-3">
-                    {featuredItem.content}
+                    {stripHtml(featuredItem.content)}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-slate-100 flex items-center text-xs font-semibold text-[#1b365d] group-hover:translate-x-1 transition-transform">
@@ -421,7 +422,7 @@ export default function NewsPage() {
                       </h3>
 
                       <p className="text-slate-500 text-xs leading-relaxed line-clamp-3">
-                        {item.content}
+                        {stripHtml(item.content)}
                       </p>
                     </div>
 

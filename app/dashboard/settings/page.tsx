@@ -24,6 +24,10 @@ import {
   Sparkles,
   HeartPulse,
   ShieldAlert,
+  Tag,
+  Plus,
+  Trash2,
+  GripVertical,
 } from "lucide-react";
 import { seedDatabase } from "@/utils/seedData";
 import { db, auth, storage } from "@/lib/firebase";
@@ -36,6 +40,9 @@ import {
   DEFAULT_SITE_SETTINGS,
   getSiteSettings,
   saveSiteSettings,
+  getBeritaCategories,
+  saveBeritaCategories,
+  DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
 
 function SettingsContent() {
@@ -67,6 +74,14 @@ function SettingsContent() {
   // System Seeding
   const [seeding, setSeeding] = useState(false);
 
+  // Kategori Berita State
+  const [beritaCategories, setBeritaCategories] = useState<string[]>(DEFAULT_BERITA_CATEGORIES);
+  const [newCategoryInput, setNewCategoryInput] = useState("");
+  const [editingCategoryIdx, setEditingCategoryIdx] = useState<number | null>(null);
+  const [editingCategoryVal, setEditingCategoryVal] = useState("");
+  const [savingCategories, setSavingCategories] = useState(false);
+  const [categoryMsg, setCategoryMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
     if (tabFromUrl) {
@@ -78,6 +93,7 @@ function SettingsContent() {
     const loadData = async () => {
       try {
         const config = await getSiteSettings();
+
         setSiteForm(config);
       } catch (err) {
         console.error("Error loading site settings:", err);
@@ -95,6 +111,15 @@ function SettingsContent() {
         console.error("Error loading chatbot settings:", err);
       } finally {
         setChatbotLoading(false);
+      }
+
+      try {
+        const cats = await getBeritaCategories();
+        if (cats && cats.length > 0) {
+          setBeritaCategories(cats);
+        }
+      } catch (err) {
+        console.error("Error loading berita categories:", err);
       }
     };
 
@@ -250,6 +275,9 @@ function SettingsContent() {
           </TabsTrigger>
           <TabsTrigger value="contact" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
             <PhoneCall className="h-4 w-4" /> Kontak & Medsos
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
+            <Tag className="h-4 w-4" /> Kategori Berita
           </TabsTrigger>
           <TabsTrigger value="chatbot" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
             <Bot className="h-4 w-4" /> Chatbot AI
@@ -1273,6 +1301,165 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* TAB: KATEGORI BERITA */}
+        <TabsContent value="categories" className="space-y-6">
+          <Card className="border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Tag className="h-5 w-5 text-[#1b365d]" /> Manajemen Kategori Berita
+              </CardTitle>
+              <CardDescription>
+                Kelola daftar kategori yang tersedia saat membuat atau mengedit berita. Perubahan langsung berlaku di form tambah/edit berita.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {categoryMsg && (
+                <div className={`p-3 rounded-lg text-sm flex items-center gap-2 border ${
+                  categoryMsg.type === "success"
+                    ? "bg-emerald-50 text-emerald-900 border-emerald-200"
+                    : "bg-rose-50 text-rose-900 border-rose-200"
+                }`}>
+                  <CheckCircle className={`h-4 w-4 shrink-0 ${categoryMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
+                  {categoryMsg.text}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Tambah Kategori Baru</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    placeholder="Nama kategori baru..."
+                    className="text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const trimmed = newCategoryInput.trim();
+                        if (!trimmed || beritaCategories.includes(trimmed)) return;
+                        setBeritaCategories((prev) => [...prev, trimmed]);
+                        setNewCategoryInput("");
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = newCategoryInput.trim();
+                      if (!trimmed || beritaCategories.includes(trimmed)) return;
+                      setBeritaCategories((prev) => [...prev, trimmed]);
+                      setNewCategoryInput("");
+                    }}
+                    className="bg-[#1b365d] hover:bg-[#152a48] text-white shrink-0"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Tambah
+                  </Button>
+                </div>
+                <p className="text-[11px] text-slate-400">Tekan Enter atau klik Tambah untuk menambahkan kategori baru.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Daftar Kategori Saat Ini</Label>
+                {beritaCategories.length === 0 ? (
+                  <p className="text-sm text-slate-400 py-4 text-center">Belum ada kategori.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {beritaCategories.map((cat, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                        <GripVertical className="h-4 w-4 text-slate-300 shrink-0" />
+                        {editingCategoryIdx === idx ? (
+                          <Input
+                            value={editingCategoryVal}
+                            onChange={(e) => setEditingCategoryVal(e.target.value)}
+                            className="text-sm h-7 py-0 flex-1"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const trimmed = editingCategoryVal.trim();
+                                if (!trimmed) return;
+                                setBeritaCategories((prev) => prev.map((c, i) => i === idx ? trimmed : c));
+                                setEditingCategoryIdx(null);
+                              }
+                              if (e.key === "Escape") setEditingCategoryIdx(null);
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="flex-1 text-sm text-slate-800 cursor-pointer hover:text-[#1b365d]"
+                            onClick={() => { setEditingCategoryIdx(idx); setEditingCategoryVal(cat); }}
+                            title="Klik untuk edit nama"
+                          >
+                            {cat}
+                          </span>
+                        )}
+                        {editingCategoryIdx === idx ? (
+                          <Button
+                            type="button" size="sm" variant="ghost"
+                            className="h-7 px-2 text-xs text-emerald-700 hover:bg-emerald-50"
+                            onClick={() => {
+                              const trimmed = editingCategoryVal.trim();
+                              if (!trimmed) return;
+                              setBeritaCategories((prev) => prev.map((c, i) => i === idx ? trimmed : c));
+                              setEditingCategoryIdx(null);
+                            }}
+                          >Simpan</Button>
+                        ) : null}
+                        <Button
+                          type="button" size="sm" variant="ghost"
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                          onClick={() => {
+                            setBeritaCategories((prev) => prev.filter((_, i) => i !== idx));
+                            if (editingCategoryIdx === idx) setEditingCategoryIdx(null);
+                          }}
+                          title="Hapus kategori"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs border-slate-300 text-slate-600"
+                  onClick={() => {
+                    setBeritaCategories(DEFAULT_BERITA_CATEGORIES);
+                    setCategoryMsg(null);
+                  }}
+                >
+                  Reset ke Default
+                </Button>
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    setSavingCategories(true);
+                    try {
+                      await saveBeritaCategories(beritaCategories);
+                      setCategoryMsg({ type: "success", text: "Kategori berita berhasil disimpan!" });
+                      setTimeout(() => setCategoryMsg(null), 3000);
+                    } catch {
+                      setCategoryMsg({ type: "error", text: "Gagal menyimpan kategori. Coba lagi." });
+                    } finally {
+                      setSavingCategories(false);
+                    }
+                  }}
+                  disabled={savingCategories}
+                  className="bg-[#1b365d] hover:bg-[#152a48] text-white text-sm"
+                >
+                  <Save className="h-4 w-4 mr-1.5" />
+                  {savingCategories ? "Menyimpan..." : "Simpan Kategori"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );
