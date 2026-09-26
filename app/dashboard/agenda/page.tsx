@@ -29,7 +29,6 @@ import {
   EyeOff,
   Clock,
   AlertTriangle,
-  Tag,
 } from "lucide-react";
 
 type AgendaItem = {
@@ -188,7 +187,7 @@ export default function AgendaDashboardPage() {
         <div>
           <p className="font-semibold">Agenda ini tampil otomatis di Halaman Beranda Publik</p>
           <p className="text-xs text-blue-700 mt-0.5">
-            Hingga 3 agenda aktif pertama (urutan terkecil) akan ditampilkan di bagian "Program Kerja & Jadwal Pelayanan Masyarakat" pada halaman utama website.
+            Hingga 3 agenda aktif pertama (urutan terkecil) akan ditampilkan di bagian &quot;Program Kerja &amp; Jadwal Pelayanan Masyarakat&quot; pada halaman utama website.
           </p>
         </div>
       </div>
@@ -211,7 +210,7 @@ export default function AgendaDashboardPage() {
             <div className="text-center py-16 text-slate-500">
               <CalendarDays className="h-12 w-12 mx-auto mb-3 text-slate-300" />
               <p className="font-medium">Belum ada agenda yang dibuat.</p>
-              <p className="text-sm mt-1">Klik "Tambah Agenda Baru" untuk menambahkan program pertama.</p>
+              <p className="text-sm mt-1">Klik &quot;Tambah Agenda Baru&quot; untuk menambahkan program pertama.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

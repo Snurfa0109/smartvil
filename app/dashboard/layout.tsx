@@ -78,43 +78,22 @@ export default function DashboardLayout({
     exact?: boolean;
   }
 
-  const allBaseNavItems: NavItem[] = [
-    { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { key: "berita", href: "/dashboard/berita", label: "Berita & Artikel", icon: FileText },
-    { key: "agenda", href: "/dashboard/agenda", label: "Agenda Kegiatan", icon: CalendarDays },
-    { key: "layanan", href: "/dashboard/layanan", label: "Permohonan Surat", icon: FileText },
-    { key: "penduduk", href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
-    { key: "pengaduan", href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
-    { key: "settings", href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe },
+  const baseNavItems: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: "/dashboard/berita", label: "Berita & Artikel", icon: FileText },
+    { href: "/dashboard/agenda", label: "Agenda Kegiatan", icon: CalendarDays },
+    { href: "/dashboard/layanan", label: "Permohonan Surat", icon: FileText },
+    { href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
+    { href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
+    { href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe },
   ];
 
-  const baseNavItems = allBaseNavItems.filter((item) => canAccess(item.key));
-
-  const systemNavItems: NavItem[] = isSuperAdmin
-    ? [
-        { key: "admins", href: "/dashboard/admins", label: "Kelola Admin", icon: ShieldCheck },
-        { key: "audit", href: "/dashboard/audit", label: "Log Aktivitas (Audit)", icon: History },
-      ]
-    : [];
-
-  let isCurrentRouteForbidden = false;
-  let forbiddenModuleName = "";
-
-  if (pathname.startsWith("/dashboard/admins") && !isSuperAdmin) {
-    isCurrentRouteForbidden = true;
-    forbiddenModuleName = "Kelola Admin";
-  } else if (pathname.startsWith("/dashboard/audit") && !isSuperAdmin) {
-    isCurrentRouteForbidden = true;
-    forbiddenModuleName = "Log Aktivitas (Audit Sistem)";
-  } else {
-    const matchedBase = allBaseNavItems.find((item) =>
-      item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/")
-    );
-    if (matchedBase && !canAccess(matchedBase.key)) {
-      isCurrentRouteForbidden = true;
-      forbiddenModuleName = matchedBase.label;
-    }
-  }
+  const systemNavItems: NavItem[] = [
+    ...(isSuperAdmin
+      ? [{ href: "/dashboard/admins", label: "Kelola Admin", icon: ShieldCheck }]
+      : []),
+    { href: "/dashboard/audit", label: "Log Aktivitas (Audit)", icon: History },
+  ];
 
   const initials = (user.displayName || user.email || "A").charAt(0).toUpperCase();
 

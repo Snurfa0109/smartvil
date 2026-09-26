@@ -43,8 +43,6 @@ type BeritaEditorProps = {
 
 function Toolbar({ editor }: { editor: Editor | null }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<Editor | null>(editor);
-  editorRef.current = editor;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

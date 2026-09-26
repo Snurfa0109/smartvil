@@ -39,9 +39,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# local documents and proposals
-/docs/
-*.mht
-*.docx
-*.pdf
+SURAT KETERANGAN SUAMI ISTRI.docx
