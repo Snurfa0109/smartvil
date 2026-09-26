@@ -45,7 +45,7 @@ export default function ComplaintsPage() {
     category: string;
   } | null>(null);
 
-  const [trackQuery, setTrackQuery] = useState("");
+  const [trackPhone, setTrackPhone] = useState("");
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackedComplaints, setTrackedComplaints] = useState<any[] | null>(null);
   const [recentPhones, setRecentPhones] = useState<StoredPhone[]>([]);
