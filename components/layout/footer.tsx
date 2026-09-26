@@ -7,8 +7,8 @@ import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site
 
 const quickLinks = [
   { href: "/layanan", label: "Layanan Surat", icon: FileText },
-  { href: "/data", label: "Data Penduduk", icon: Users },
-  { href: "/profil", label: "Profil Kelurahan", icon: Building },
+  { href: "/data", label: "Informasi", icon: Users },
+  { href: "/profil", label: "Profil", icon: Building },
   { href: "/berita", label: "Berita & Pengumuman", icon: Newspaper },
   { href: "/pengaduan", label: "Pengaduan Warga", icon: MessageSquareWarning },
 ];

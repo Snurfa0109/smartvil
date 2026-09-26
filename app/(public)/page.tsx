@@ -334,8 +334,8 @@ export default function Home() {
               icon: FileText,
             },
             {
-              title: "Data Kependudukan",
-              desc: "Statistik demografi resmi, sebaran penduduk per wilayah, dan data kepala keluarga.",
+              title: "Informasi & Data",
+              desc: "Infografis statistik kependudukan, data demografi, dan tautan layanan resmi pemerintah terkait.",
               href: "/data",
               badge: "Transparansi",
               icon: Users,
@@ -348,7 +348,7 @@ export default function Home() {
               icon: Phone,
             },
             {
-              title: "Profil Kelurahan",
+              title: "Profil",
               desc: "Susunan aparatur kelurahan, wilayah perumahan, visi misi, dan fasilitas umum.",
               href: "/profil",
               badge: "Informasi Wilayah",
@@ -688,7 +688,7 @@ export default function Home() {
               <div className="pt-1">
                 <Link href="/data">
                   <Button className="bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold rounded-lg text-xs">
-                    Lihat Infografis Kependudukan Lengkap <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    Lihat Halaman Informasi & Data <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
