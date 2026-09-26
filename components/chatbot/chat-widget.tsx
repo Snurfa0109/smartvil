@@ -435,7 +435,7 @@ export function ChatWidget() {
           <img
             src="/images/Arba_Chatbot.png"
             alt="Tanya Kang Arba"
-            className="h-20 sm:h-24 w-auto object-contain pointer-events-none"
+            className="h-16 sm:h-20 w-auto object-contain pointer-events-none"
           />
         </button>
       )}
