@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Calendar, ChevronRight, Search, X, Tag, RotateCcw } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Search, X, Tag, RotateCcw } from "lucide-react";
 
 interface NewsItem {
   id: string;
@@ -16,12 +16,17 @@ interface NewsItem {
   author?: string;
 }
 
+const ITEMS_PER_PAGE = 9;
+
 export default function NewsPage() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArchive, setSelectedArchive] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const listTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -42,6 +47,29 @@ export default function NewsPage() {
 
     fetchNews();
   }, []);
+
+  // Reset to page 1 whenever filters change
+  const handleCategoryChange = (category: string | null) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
+
+  const handleArchiveChange = (archive: string | null) => {
+    setSelectedArchive(archive);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory(null);
+    setSelectedArchive(null);
+    setCurrentPage(1);
+  };
 
   const categories = useMemo(() => {
     return Array.from(
@@ -102,13 +130,25 @@ export default function NewsPage() {
   }, [newsItems, selectedCategory, selectedArchive, searchTerm]);
 
   const isFiltering = Boolean(searchTerm.trim() || (selectedCategory && selectedCategory !== "Semua") || selectedArchive);
-  const featuredItem = !isFiltering && filteredNews.length > 0 ? filteredNews[0] : null;
-  const regularItems = featuredItem ? filteredNews.slice(1) : filteredNews;
 
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedCategory(null);
-    setSelectedArchive(null);
+  // If not filtering, the first item on page 1 is shown as featured hero
+  const featuredItem = !isFiltering && currentPage === 1 && filteredNews.length > 0 ? filteredNews[0] : null;
+  const listPool = !isFiltering ? filteredNews.slice(1) : filteredNews;
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(listPool.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedItems = listPool.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const startEntryNumber = listPool.length === 0 ? 0 : startIndex + 1;
+  const endEntryNumber = Math.min(startIndex + paginatedItems.length, listPool.length);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    if (listTopRef.current) {
+      listTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const activeArchiveLabel = archives.find((a) => a.key === selectedArchive)?.label;
@@ -136,13 +176,13 @@ export default function NewsPage() {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Cari berdasarkan judul, isi berita, atau kata kunci..."
             className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] transition-all"
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm("")}
+              onClick={() => handleSearchChange("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
               title="Hapus pencarian"
             >
@@ -159,7 +199,7 @@ export default function NewsPage() {
               Kategori:
             </span>
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => handleCategoryChange(null)}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors border ${
                 !selectedCategory || selectedCategory === "Semua"
                   ? "bg-[#1b365d] text-white border-[#1b365d]"
@@ -171,7 +211,7 @@ export default function NewsPage() {
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => handleCategoryChange(cat)}
                 className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors border ${
                   selectedCategory === cat
                     ? "bg-[#1b365d] text-white border-[#1b365d]"
@@ -189,7 +229,7 @@ export default function NewsPage() {
               {selectedArchive && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
                   Arsip: {activeArchiveLabel}
-                  <button onClick={() => setSelectedArchive(null)} className="hover:text-slate-900">
+                  <button onClick={() => handleArchiveChange(null)} className="hover:text-slate-900">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -206,16 +246,23 @@ export default function NewsPage() {
         </div>
       </div>
 
+      <div ref={listTopRef} />
+
       {/* Result Status Indicator */}
       {!loading && (
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
           <span>
-            Menampilkan <strong className="text-slate-800">{filteredNews.length}</strong> berita
+            Total <strong className="text-slate-800">{filteredNews.length}</strong> berita
             {searchTerm.trim() && (
               <span> untuk pencarian &quot;<strong className="text-slate-800">{searchTerm}</strong>&quot;</span>
             )}
             {selectedCategory && selectedCategory !== "Semua" && (
               <span> pada kategori &quot;<strong className="text-slate-800">{selectedCategory}</strong>&quot;</span>
+            )}
+            {totalPages > 1 && (
+              <span className="text-slate-400 ml-2">
+                (Halaman {currentPage} dari {totalPages})
+              </span>
             )}
           </span>
         </div>
@@ -262,7 +309,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Featured News Hero Card (when not searching) */}
+      {/* Featured News Hero Card (Only on Page 1 when not filtering) */}
       {!loading && featuredItem && (
         <div className="space-y-4">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -317,16 +364,22 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Regular News Grid (3 Columns) */}
-      {!loading && regularItems.length > 0 && (
-        <div className="space-y-4">
+      {/* Regular News Grid (9 Items per page) */}
+      {!loading && paginatedItems.length > 0 && (
+        <div className="space-y-6">
           {featuredItem && (
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Warta Lainnya
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Warta Lainnya
+              </span>
+              <span className="text-xs text-slate-500">
+                Menampilkan {startEntryNumber} – {endEntryNumber} dari {listPool.length} warta
+              </span>
+            </div>
           )}
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {regularItems.map((item) => (
+            {paginatedItems.map((item) => (
               <Link key={item.id} href={`/berita/${item.id}`} className="group">
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden hover:border-[#1b365d] hover:shadow-md transition-all h-full flex flex-col">
                   {/* Thumbnail Image */}
@@ -381,6 +434,72 @@ export default function NewsPage() {
               </Link>
             ))}
           </div>
+
+          {/* Pagination Controls (Entries Pages) */}
+          {totalPages > 1 && (
+            <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span className="text-xs text-slate-600">
+                Menampilkan halaman <strong className="text-slate-900">{currentPage}</strong> dari{" "}
+                <strong className="text-slate-900">{totalPages}</strong> ({listPool.length} total entri)
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Sebelumnya</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const pageNum = idx + 1;
+                    // Show a window of page numbers if pages > 5
+                    if (
+                      totalPages > 6 &&
+                      pageNum !== 1 &&
+                      pageNum !== totalPages &&
+                      Math.abs(pageNum - currentPage) > 1
+                    ) {
+                      if (pageNum === 2 || pageNum === totalPages - 1) {
+                        return (
+                          <span key={pageNum} className="px-1 text-slate-400 text-xs">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                          currentPage === pageNum
+                            ? "bg-[#1b365d] text-white"
+                            : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span>Selanjutnya</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -391,7 +510,7 @@ export default function NewsPage() {
             <h3 className="font-bold text-sm text-slate-900">Arsip Berita Berdasarkan Bulan</h3>
             {selectedArchive && (
               <button
-                onClick={() => setSelectedArchive(null)}
+                onClick={() => handleArchiveChange(null)}
                 className="text-xs text-[#1b365d] hover:underline font-semibold"
               >
                 Hapus Filter Arsip
@@ -402,7 +521,7 @@ export default function NewsPage() {
             {archives.map((a) => (
               <button
                 key={a.key}
-                onClick={() => setSelectedArchive(selectedArchive === a.key ? null : a.key)}
+                onClick={() => handleArchiveChange(selectedArchive === a.key ? null : a.key)}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
                   selectedArchive === a.key
                     ? "bg-[#1b365d] text-white border-[#1b365d]"
