@@ -19,7 +19,11 @@ export const metadata: Metadata = {
   title: "Kelurahan Banjar Agung - Pemerintah Kota Serang",
   description: "Portal Resmi Pelayanan Publik dan Administrasi Kependudukan Kelurahan Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang, Banten.",
   icons: {
-    icon: "/images/logo-kota-serang.png",
+    icon: [
+      { url: "/images/logo-kota-serang.png", type: "image/png" },
+    ],
+    shortcut: "/images/logo-kota-serang.png",
+    apple: "/images/logo-kota-serang.png",
   },
 };
 

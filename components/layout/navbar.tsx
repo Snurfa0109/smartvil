@@ -9,9 +9,9 @@ import { GlobalSearchModal } from "@/components/search/global-search-modal";
 
 const navLinks = [
   { href: "/", label: "Beranda" },
-  { href: "/profil", label: "Profil Kelurahan" },
+  { href: "/profil", label: "Profil" },
   { href: "/berita", label: "Berita" },
-  { href: "/data", label: "Informasi & Infografis" },
+  { href: "/data", label: "Informasi" },
   { href: "/layanan", label: "Layanan Surat" },
   { href: "/pengaduan", label: "Pengaduan" },
 ];
