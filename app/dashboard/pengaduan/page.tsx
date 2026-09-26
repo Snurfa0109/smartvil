@@ -1,11 +1,11 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { collection, query, orderBy, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, ExternalLink, X, PhoneCall } from "lucide-react";
+import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function PengaduanDashboardPage() {
@@ -15,6 +15,10 @@ export default function PengaduanDashboardPage() {
   const [replyText, setReplyText] = useState("");
   const [savingReply, setSavingReply] = useState(false);
   const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
+
+  // Search & Filter
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPhone, setFilterPhone] = useState<string | null>(null);
 
   const fetchComplaints = async () => {
     try {
@@ -35,6 +39,37 @@ export default function PengaduanDashboardPage() {
   useEffect(() => {
     fetchComplaints();
   }, []);
+
+  // Compute how many times each phone number has reported
+  const phoneCountMap = useMemo(() => {
+    const counts: Record<string, number> = {};
+    complaints.forEach((c) => {
+      if (c.phone) {
+        const clean = c.phone.replace(/\D/g, "");
+        if (clean) counts[clean] = (counts[clean] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [complaints]);
+
+  const filteredComplaints = useMemo(() => {
+    return complaints.filter((item) => {
+      if (filterPhone) {
+        const clean = item.phone?.replace(/\D/g, "") || "";
+        if (clean !== filterPhone) return false;
+      }
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const matchTitle = (item.title || item.judul || "").toLowerCase().includes(q);
+        const matchName = (item.nama || "").toLowerCase().includes(q);
+        const matchPhone = (item.phone || "").toLowerCase().includes(q);
+        const matchCategory = (item.category || "").toLowerCase().includes(q);
+        const matchMsg = (item.message || item.isi || "").toLowerCase().includes(q);
+        if (!matchTitle && !matchName && !matchPhone && !matchCategory && !matchMsg) return false;
+      }
+      return true;
+    });
+  }, [complaints, searchTerm, filterPhone]);
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
@@ -109,7 +144,6 @@ export default function PengaduanDashboardPage() {
       `Yth. Bpk/Ibu *${item.nama || "Pelapor"}*,\n\n` +
       `Kami menginformasikan bahwa pengaduan Anda:\n` +
       `• *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
-      `• *Nomor Tiket:* ${item.ticketCode || "-"}\n` +
       `• *Status:* ${statusText}.\n\n` +
       (item.adminResponse ? `*Tanggapan Resmi Kami:*\n${item.adminResponse}\n\n` : "") +
       `Jika ada pertanyaan, silakan balas pesan ini.\n\n` +
@@ -134,59 +168,125 @@ export default function PengaduanDashboardPage() {
         </div>
       </div>
 
+      {/* Filter and Search Bar */}
+      <div className="bg-white border border-slate-200/90 rounded-xl p-4 space-y-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari berdasarkan nama pelapor, nomor telepon, atau judul laporan..."
+              className="w-full pl-9 pr-8 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {filterPhone && (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2 rounded-lg shrink-0">
+              <span>Filter No: <strong>{filterPhone}</strong></span>
+              <button
+                onClick={() => setFilterPhone(null)}
+                className="text-blue-600 hover:text-blue-900"
+                title="Hapus filter nomor"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {(searchTerm || filterPhone) && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setFilterPhone(null);
+              }}
+              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reset
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="grid gap-4">
-        {complaints.length === 0 ? (
+        {filteredComplaints.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p>Belum ada pengaduan yang masuk dari warga.</p>
+              <p>Tidak ditemukan pengaduan yang sesuai.</p>
             </CardContent>
           </Card>
         ) : (
-          complaints.map((item) => {
+          filteredComplaints.map((item) => {
             const title = item.title || item.judul || "Laporan Pengaduan";
             const message = item.message || item.isi || "(Tanpa isi pesan)";
             const isDone = item.status === "resolved" || item.status === "completed";
             const isProcessed = item.status === "processed";
+            const cleanPhone = item.phone ? item.phone.replace(/\D/g, "") : "";
+            const countForPhone = cleanPhone ? phoneCountMap[cleanPhone] || 1 : 1;
 
             return (
               <Card key={item.id} className="hover:shadow-sm transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg font-medium">{title}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CardTitle className="text-base font-bold text-slate-900">{title}</CardTitle>
                       {item.ticketCode && (
-                        <span className="text-xs font-mono bg-slate-100 px-2 py-0.5 rounded text-muted-foreground">
+                        <span className="text-[11px] font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
                           {item.ticketCode}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Kategori: <span className="font-semibold text-foreground">{item.category || "Umum"}</span>
+                    <p className="text-xs text-slate-500">
+                      Kategori: <span className="font-semibold text-slate-800">{item.category || "Umum"}</span>
                     </p>
                   </div>
                   <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    isDone ? "bg-green-100 text-green-700" :
-                    isProcessed ? "bg-blue-100 text-blue-700" :
-                    "bg-yellow-100 text-yellow-700"
+                    isDone ? "bg-emerald-100 text-emerald-800" :
+                    isProcessed ? "bg-blue-100 text-blue-800" :
+                    "bg-amber-100 text-amber-800"
                   }`}>
                     {isDone ? "Selesai" : isProcessed ? "Diproses" : "Menunggu"}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <p className="text-sm text-foreground/80 mb-3 line-clamp-2">{message}</p>
+                  <p className="text-sm text-slate-700 mb-3 line-clamp-2">{message}</p>
                   
-                  <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground gap-2 pt-2 border-t">
-                    <div className="flex items-center gap-4">
-                      <span>Pelapor: <strong className="text-foreground">{item.nama || "Anonim"}</strong></span>
-                      {item.phone && <span>WA/HP: <strong>{item.phone}</strong></span>}
+                  <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2 pt-2 border-t border-slate-100">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-slate-400" />
+                        Pelapor: <strong className="text-slate-900">{item.nama || "Warga"}</strong>
+                      </span>
+                      {item.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <span>WA: <strong className="text-slate-900">{item.phone}</strong></span>
+                          <button
+                            type="button"
+                            onClick={() => setFilterPhone(cleanPhone)}
+                            className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer"
+                            title="Klik untuk menyaring seluruh laporan dari warga ini"
+                          >
+                            Total {countForPhone}x Melapor
+                          </button>
+                        </div>
+                      )}
                       {item.photoUrl && (
-                        <span className="inline-flex items-center gap-1 text-primary font-medium">
+                        <span className="inline-flex items-center gap-1 text-[#1b365d] font-medium">
                           <ImageIcon className="h-3 w-3" /> Ada Foto
                         </span>
                       )}
                       {item.adminResponse && (
-                        <span className="text-emerald-600 font-medium">✓ Sudah Ditanggapi</span>
+                        <span className="text-emerald-700 font-medium">✓ Sudah Ditanggapi</span>
                       )}
                     </div>
                     <span>
@@ -247,7 +347,7 @@ export default function PengaduanDashboardPage() {
                   <CardTitle className="text-xl">Detail & Tanggapan Pengaduan</CardTitle>
                   {selectedComplaint.ticketCode && (
                     <p className="text-xs font-mono text-muted-foreground mt-0.5">
-                      No. Tiket: {selectedComplaint.ticketCode}
+                      No. Registrasi: {selectedComplaint.ticketCode}
                     </p>
                   )}
                 </div>
@@ -255,10 +355,30 @@ export default function PengaduanDashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-5 p-6 overflow-y-auto">
+              {/* Frequency Notice */}
+              {selectedComplaint.phone && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-bold">Riwayat Pelapor:</span> Warga dengan nomor telepon <strong>{selectedComplaint.phone}</strong> telah mengirim sebanyak <strong>{phoneCountMap[selectedComplaint.phone.replace(/\D/g, "")] || 1} kali laporan</strong>.
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs bg-white text-blue-700 border-blue-300 hover:bg-blue-100 shrink-0"
+                    onClick={() => {
+                      setFilterPhone(selectedComplaint.phone.replace(/\D/g, ""));
+                      setSelectedComplaint(null);
+                    }}
+                  >
+                    Lihat Semua ({phoneCountMap[selectedComplaint.phone.replace(/\D/g, "")] || 1})
+                  </Button>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm bg-slate-50 p-4 rounded-lg">
                 <div>
                   <p className="text-xs text-muted-foreground">Pelapor</p>
-                  <p className="font-semibold">{selectedComplaint.nama || "Anonim"}</p>
+                  <p className="font-semibold">{selectedComplaint.nama || "Warga"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Kontak (WA/Telp)</p>

@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Phone, Mail, MapPin, Upload, Image as ImageIcon, X, CheckCircle, Clock, Search, ShieldCheck, Copy, Check, ExternalLink, MessageCircle, ArrowRight, History } from "lucide-react";
+import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 
@@ -17,17 +17,16 @@ const complaintCategories = [
   "Lainnya",
 ];
 
-interface StoredComplaint {
-  ticketCode: string;
-  judul: string;
-  category: string;
-  date: string;
+interface StoredPhone {
+  phone: string;
+  name: string;
+  lastDate: string;
 }
 
 export default function ComplaintsPage() {
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
-  // Form State
+  // Form State - strictly not anonymous, requires real name and phone
   const [formData, setFormData] = useState({
     nama: "",
     email: "",
@@ -35,36 +34,33 @@ export default function ComplaintsPage() {
     category: complaintCategories[0],
     judul: "",
     isi: "",
-    isAnonim: false,
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [submittedComplaintInfo, setSubmittedComplaintInfo] = useState<{
-    ticketCode: string;
-    judul: string;
+  const [submittedInfo, setSubmittedInfo] = useState<{
     nama: string;
-    category: string;
     phone: string;
+    judul: string;
+    category: string;
   } | null>(null);
-  const [copied, setCopied] = useState(false);
 
-  // Tracking State
-  const [trackQuery, setTrackQuery] = useState("");
+  // Tracking State by Phone Number
+  const [trackPhone, setTrackPhone] = useState("");
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackedComplaints, setTrackedComplaints] = useState<any[] | null>(null);
-  const [recentComplaints, setRecentComplaints] = useState<StoredComplaint[]>([]);
+  const [recentPhones, setRecentPhones] = useState<StoredPhone[]>([]);
 
-  // Load recent complaints from device storage on mount
+  // Load recent tracked phones from localStorage
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("banjaragung_saved_complaints");
+      const stored = localStorage.getItem("banjaragung_saved_phones");
       if (stored) {
-        setRecentComplaints(JSON.parse(stored));
+        setRecentPhones(JSON.parse(stored));
       }
     } catch (e) {
-      console.error("Error reading saved complaints:", e);
+      console.error("Error reading saved phones:", e);
     }
   }, []);
 
@@ -82,40 +78,13 @@ export default function ComplaintsPage() {
     setFilePreview(null);
   };
 
-  const handleCopyTicket = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Kirim ke nomor WA warga sendiri — sebagai catatan/reminder simpan tiket
-  const generateWhatsAppSelfReminderUrl = (ticket: {
-    ticketCode: string;
-    judul: string;
-    nama: string;
-    category: string;
-    phone: string;
-  }) => {
-    const text = encodeURIComponent(
-      `📋 *CATATAN TIKET PENGADUAN SAYA*\n` +
-      `Kelurahan Banjar Agung — ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}\n\n` +
-      `• *Nomor Tiket:* ${ticket.ticketCode}\n` +
-      `• *Kategori:* ${ticket.category}\n` +
-      `• *Judul Laporan:* ${ticket.judul}\n` +
-      (ticket.nama !== "Anonim (Dirahasiakan)" ? `• *Nama Pelapor:* ${ticket.nama}\n` : `• Dilaporkan secara Anonim\n`) +
-      `\n🔍 Lacak status pengaduan di:\n` +
-      `https://banjaragung.go.id/pengaduan → Tab "Lacak Status"\nMasukkan kode tiket di atas.\n\n` +
-      `💡 Simpan pesan ini agar tidak kehilangan nomor tiket.`
-    );
-    // Format nomor WA warga: hapus karakter bukan digit, normalize ke format 62xxx
-    let cleanPhone = ticket.phone.replace(/\D/g, "");
-    if (cleanPhone.startsWith("0")) cleanPhone = "62" + cleanPhone.slice(1);
-    else if (!cleanPhone.startsWith("62")) cleanPhone = "62" + cleanPhone;
-    return `https://wa.me/${cleanPhone}?text=${text}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.nama.trim() || !formData.phone.trim()) {
+      alert("Nama lengkap dan nomor telepon wajib diisi.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -130,18 +99,20 @@ export default function ComplaintsPage() {
 
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const ticketCode = `PGD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
-      const pelaporNama = formData.isAnonim ? "Anonim (Dirahasiakan)" : formData.nama || "Warga";
+
+      // Clean phone representation
+      const rawPhone = formData.phone.trim();
 
       const payload = {
         ticketCode,
-        nama: pelaporNama,
-        email: formData.email || "",
-        phone: formData.phone || "",
+        nama: formData.nama.trim(),
+        email: formData.email.trim(),
+        phone: rawPhone,
         category: formData.category,
-        title: formData.judul,
-        judul: formData.judul,
-        message: formData.isi,
-        isi: formData.isi,
+        title: formData.judul.trim(),
+        judul: formData.judul.trim(),
+        message: formData.isi.trim(),
+        isi: formData.isi.trim(),
         photoUrl,
         status: "pending",
         adminResponse: "",
@@ -150,33 +121,29 @@ export default function ComplaintsPage() {
 
       await addDoc(collection(db, "complaints"), payload);
 
-      const newInfo = {
-        ticketCode,
-        judul: formData.judul,
-        nama: pelaporNama,
+      setSubmittedInfo({
+        nama: formData.nama.trim(),
+        phone: rawPhone,
+        judul: formData.judul.trim(),
         category: formData.category,
-        phone: formData.phone,
-      };
+      });
 
-      setSubmittedComplaintInfo(newInfo);
-
-      // Simpan ke localStorage agar warga tidak kehilangan tiket
+      // Save phone to localStorage for easy return
       try {
-        const stored = localStorage.getItem("banjaragung_saved_complaints");
-        const prevList: StoredComplaint[] = stored ? JSON.parse(stored) : [];
+        const stored = localStorage.getItem("banjaragung_saved_phones");
+        const prevList: StoredPhone[] = stored ? JSON.parse(stored) : [];
         const updated = [
           {
-            ticketCode,
-            judul: formData.judul,
-            category: formData.category,
-            date: new Date().toISOString(),
+            phone: rawPhone,
+            name: formData.nama.trim(),
+            lastDate: new Date().toISOString(),
           },
-          ...prevList.filter((item) => item.ticketCode !== ticketCode),
+          ...prevList.filter((item) => item.phone !== rawPhone),
         ].slice(0, 5);
-        localStorage.setItem("banjaragung_saved_complaints", JSON.stringify(updated));
-        setRecentComplaints(updated);
+        localStorage.setItem("banjaragung_saved_phones", JSON.stringify(updated));
+        setRecentPhones(updated);
       } catch (err) {
-        console.error("Error saving complaint to localStorage:", err);
+        console.error("Error saving phone to localStorage:", err);
       }
 
       setFormData({
@@ -186,7 +153,6 @@ export default function ComplaintsPage() {
         category: complaintCategories[0],
         judul: "",
         isi: "",
-        isAnonim: false,
       });
       removeFile();
     } catch (error) {
@@ -197,72 +163,90 @@ export default function ComplaintsPage() {
     }
   };
 
-  const handleTrackWithQuery = async (queryParam?: string) => {
-    const rawSearch = (queryParam || trackQuery).trim();
+  const handleTrackWithPhone = async (phoneNumber?: string) => {
+    const rawSearch = (phoneNumber || trackPhone).trim();
     if (!rawSearch) return;
 
     setTrackingLoading(true);
     try {
-      const cleaned = rawSearch.trim();
-      const digitsOnly = cleaned.replace(/\D/g, "");
+      const digitsOnly = rawSearch.replace(/\D/g, "");
 
-      // 1. Exact ticketCode match
-      const qByTicket = query(collection(db, "complaints"), where("ticketCode", "==", cleaned));
-      const snapTicket = await getDocs(qByTicket);
-
-      let results: any[] = snapTicket.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-      // 2. Search by phone number variations
-      if (results.length === 0 && (digitsOnly.length >= 8 || cleaned.includes("+62"))) {
-        const phoneCandidates = [cleaned];
+      // Generate phone variations (08xxx, 628xxx, +628xxx)
+      const phoneCandidates = [rawSearch];
+      if (digitsOnly.length >= 8) {
+        phoneCandidates.push(digitsOnly);
         if (digitsOnly.startsWith("0")) {
-          phoneCandidates.push(digitsOnly);
           phoneCandidates.push("62" + digitsOnly.slice(1));
           phoneCandidates.push("+62" + digitsOnly.slice(1));
         } else if (digitsOnly.startsWith("62")) {
-          phoneCandidates.push(digitsOnly);
           phoneCandidates.push("0" + digitsOnly.slice(2));
           phoneCandidates.push("+" + digitsOnly);
         }
-
-        for (const phoneVal of Array.from(new Set(phoneCandidates))) {
-          const qByPhone = query(collection(db, "complaints"), where("phone", "==", phoneVal));
-          const snapPhone = await getDocs(qByPhone);
-          snapPhone.docs.forEach((d) => {
-            if (!results.some((r) => r.id === d.id)) {
-              results.push({ id: d.id, ...d.data() });
-            }
-          });
-        }
       }
+
+      // Also support legacy search by exact ticketCode if user happens to enter one
+      const qByTicket = query(collection(db, "complaints"), where("ticketCode", "==", rawSearch));
+      const snapTicket = await getDocs(qByTicket);
+      const results: any[] = snapTicket.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      // Query by phone variants
+      for (const phoneVal of Array.from(new Set(phoneCandidates))) {
+        const qByPhone = query(collection(db, "complaints"), where("phone", "==", phoneVal));
+        const snapPhone = await getDocs(qByPhone);
+        snapPhone.docs.forEach((d) => {
+          if (!results.some((r) => r.id === d.id)) {
+            results.push({ id: d.id, ...d.data() });
+          }
+        });
+      }
+
+      // Sort newest first
+      results.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || 0;
+        const timeB = b.createdAt?.seconds || 0;
+        return timeB - timeA;
+      });
 
       setTrackedComplaints(results);
     } catch (err) {
-      console.error("Error tracking complaint:", err);
+      console.error("Error tracking complaint by phone:", err);
       alert("Gagal memuat status pengaduan. Coba beberapa saat lagi.");
     } finally {
       setTrackingLoading(false);
     }
   };
 
-  const handleTrack = async (e: React.FormEvent) => {
+  const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleTrackWithQuery();
+    await handleTrackWithPhone();
   };
 
+  // Status statistics for tracked phone
+  const stats = trackedComplaints
+    ? {
+        total: trackedComplaints.length,
+        pending: trackedComplaints.filter((c) => c.status === "pending").length,
+        processed: trackedComplaints.filter((c) => c.status === "processed").length,
+        completed: trackedComplaints.filter((c) => c.status === "completed" || c.status === "resolved").length,
+      }
+    : null;
+
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12">
-      <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
-          Kanal Aspirasi Resmi Warga
-        </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Layanan Pengaduan &amp; Aspirasi</h1>
-        <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-          Sampaikan aspirasi, keluhan fasilitas publik, atau saran untuk kemajuan Kelurahan Banjar Agung.
+    <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto space-y-3">
+        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+          Kanal Aspirasi & Pengaduan Resmi
+        </span>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+          Layanan Pengaduan Masyarakat
+        </h1>
+        <p className="text-slate-600 text-sm leading-relaxed">
+          Sampaikan keluhan fasilitas lingkungan, pelayanan publik, atau aspirasi warga. Semua laporan diverifikasi secara transparan melalui nomor telepon Anda.
         </p>
 
         {/* Navigation Tabs */}
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-4 shadow-2xs">
+        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-2">
           <button
             type="button"
             onClick={() => setActiveTab("form")}
@@ -270,7 +254,7 @@ export default function ComplaintsPage() {
               activeTab === "form" ? "bg-white text-[#1b365d] shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Kirim Pengaduan Baru
+            Formulir Pengaduan Baru
           </button>
           <button
             type="button"
@@ -279,133 +263,52 @@ export default function ComplaintsPage() {
               activeTab === "track" ? "bg-white text-[#1b365d] shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            Lacak Status Pengaduan
+            Cek Riwayat via No. Telepon
           </button>
         </div>
       </div>
 
-      {/* === ALUR PENGADUAN === */}
-      <section id="alur" className="scroll-mt-24 mb-8">
-        <div className="rounded-2xl bg-gradient-to-br from-[#1b365d]/5 to-slate-50 border border-[#1b365d]/10 p-6 md:p-8 space-y-5">
-          <div className="text-center space-y-1">
-            <h2 className="text-xl md:text-2xl font-bold text-[#1b365d]">Alur Pengaduan Masyarakat</h2>
-            <p className="text-sm text-slate-600">Prosedur dan tata kelola penyampaian aspirasi serta pengaduan warga kepada Pemerintah Kelurahan Banjar Agung</p>
+      {/* Success Notification after submission */}
+      {submittedInfo && (
+        <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-950 space-y-4 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <CheckCircle className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-emerald-900">Pengaduan Anda Berhasil Terkirim</h3>
+              <p className="text-xs text-emerald-700 mt-0.5">
+                Laporan tercatat atas nama <strong>{submittedInfo.nama}</strong> ({submittedInfo.phone}).
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                step: "1",
-                title: "Klasifikasi Laporan",
-                desc: "Pilih kategori pengaduan: infrastruktur, pelayanan publik, ketertiban umum, kebersihan, atau sosial kemasyarakatan.",
-                color: "bg-[#1b365d]",
-              },
-              {
-                step: "2",
-                title: "Pengisian Laporan",
-                desc: "Uraikan substansi laporan secara objektif dan sertakan bukti pendukung jika ada. Laporan dapat dikirim secara anonim.",
-                color: "bg-blue-600",
-              },
-              {
-                step: "3",
-                title: "Registrasi & Nomor Tiket",
-                desc: "Sistem menerbitkan nomor tiket registrasi resmi sebagai bukti penerimaan pengaduan untuk pemantauan tindak lanjut.",
-                color: "bg-amber-600",
-              },
-              {
-                step: "4",
-                title: "Tindak Lanjut & Verifikasi",
-                desc: "Petugas kelurahan memproses laporan. Perkembangan penanganan dapat dipantau melalui menu Lacak Status Pengaduan.",
-                color: "bg-emerald-600",
-              },
-            ].map((item) => (
-              <div key={item.step} className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col gap-3">
-                <div className={`w-9 h-9 rounded-full ${item.color} text-white font-extrabold text-base flex items-center justify-center shrink-0`}>
-                  {item.step}
-                </div>
-                <div>
-                  <p className="font-bold text-slate-800 text-sm">{item.title}</p>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("form")}
-              className="inline-flex items-center gap-2 bg-[#1b365d] hover:bg-[#152a48] text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
-            >
-              Sampaikan Pengaduan Masyarakat <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </section>
 
-      {submittedComplaintInfo && (
-        <div className="max-w-2xl mx-auto mb-8 bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-emerald-900 text-center space-y-4 shadow-sm">
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="h-6 w-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-xl font-bold">Laporan Pengaduan Berhasil Terkirim!</h3>
-            <p className="text-sm text-emerald-800">
-              Laporan Anda sudah otomatis diterima oleh Kelurahan. Simpan <strong>Nomor Tiket</strong> di bawah ke WhatsApp Anda sendiri agar bisa digunakan untuk lacak status kapan saja:
+          <div className="bg-white/80 rounded-xl p-4 border border-emerald-200/80 text-xs space-y-1.5 text-slate-700">
+            <p><strong>Judul Laporan:</strong> {submittedInfo.judul}</p>
+            <p><strong>Kategori:</strong> {submittedInfo.category}</p>
+            <p className="text-emerald-800 pt-1">
+              Petugas kelurahan akan menindaklanjuti laporan ini. Anda dapat mengecek status dan riwayat pengaduan kapan saja cukup dengan nomor telepon Anda.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <div className="bg-white border-2 border-emerald-400 px-5 py-2.5 rounded-lg font-mono text-xl font-extrabold text-emerald-800 tracking-wider shadow-inner">
-              {submittedComplaintInfo.ticketCode}
-            </div>
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
             <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleCopyTicket(submittedComplaintInfo.ticketCode)}
-              className="bg-white hover:bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold gap-1.5 h-10"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 text-emerald-600" /> Tersalin!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" /> Salin Tiket
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Tombol Simpan Catatan Tiket ke WhatsApp Sendiri */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
-            {submittedComplaintInfo.phone ? (
-              <a
-                href={generateWhatsAppSelfReminderUrl(submittedComplaintInfo)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow transition-colors"
-              >
-                <MessageCircle className="h-4 w-4 fill-white" />
-                Simpan Tiket ke WhatsApp Saya
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            ) : (
-              <p className="text-xs text-emerald-700 italic">
-                Anda melapor secara anonim — salin kode tiket di atas untuk disimpan.
-              </p>
-            )}
-
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto text-emerald-900 border-emerald-300 hover:bg-emerald-100"
+              className="bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-semibold"
               onClick={() => {
-                setTrackQuery(submittedComplaintInfo.ticketCode);
+                setTrackPhone(submittedInfo.phone);
                 setActiveTab("track");
-                handleTrackWithQuery(submittedComplaintInfo.ticketCode);
-                setSubmittedComplaintInfo(null);
+                handleTrackWithPhone(submittedInfo.phone);
+                setSubmittedInfo(null);
               }}
             >
-              Lacak Pengaduan <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              Lihat Riwayat Laporan Saya <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+            <Button
+              variant="outline"
+              className="text-xs border-slate-300 text-slate-700 hover:bg-slate-50"
+              onClick={() => setSubmittedInfo(null)}
+            >
+              Tutup Notifikasi
             </Button>
           </div>
         </div>
@@ -413,23 +316,26 @@ export default function ComplaintsPage() {
 
       {activeTab === "form" ? (
         <div className="grid md:grid-cols-3 gap-8">
+          {/* Side Info */}
           <div className="space-y-6">
-            <Card className="border-slate-200">
-              <CardHeader className="pb-3">
+            <Card className="border-slate-200/90 shadow-xs">
+              <CardHeader className="pb-3 border-b border-slate-100">
                 <CardTitle className="text-sm font-bold text-slate-900">Kontak Resmi Kelurahan</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3.5 text-sm">
+              <CardContent className="pt-4 space-y-3.5 text-sm">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 mt-0.5">
                     <MapPin className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900 text-xs">Alamat Kantor</p>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">Jl. Syech Nawawi Albantani No. 16, Kel. Banjar Agung, Kec. Cipocok Jaya, Kota Serang 42122</p>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      Jl. Syech Nawawi Albantani No. 16, Kel. Banjar Agung, Kec. Cipocok Jaya, Kota Serang 42122
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
                     <Phone className="h-4 w-4" />
                   </div>
                   <div>
@@ -438,7 +344,7 @@ export default function ComplaintsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
                     <Mail className="h-4 w-4" />
                   </div>
                   <div>
@@ -449,84 +355,74 @@ export default function ComplaintsPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-amber-50 border-amber-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-amber-800 flex items-center gap-2 text-sm">
-                  <ShieldCheck className="h-4 w-4 text-amber-600" /> Jaminan Kerahasiaan
+            <Card className="border-slate-200/90 shadow-xs bg-slate-50/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Petunjuk Pelaporan
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-amber-900">
-                <p className="text-xs">Identitas pelapor dilindungi dan dapat memilih opsi <strong>Anonim</strong> jika diinginkan.</p>
-                <ol className="list-decimal list-inside space-y-1.5 pt-1 text-xs text-amber-800">
-                  <li>Tuliskan pokok keluhan secara jelas.</li>
-                  <li>Sertakan bukti foto kondisi lapangan.</li>
-                  <li>Petugas akan memverifikasi dalam 1x24 jam kerja.</li>
-                  <li>Pantau tindak lanjut berkala lewat nomor tiket.</li>
-                </ol>
+              <CardContent className="text-xs text-slate-600 space-y-2">
+                <p>1. Masukkan nama lengkap dan nomor telepon aktif Anda agar petugas dapat melakukan verifikasi.</p>
+                <p>2. Jelaskan pokok permasalahan lokasi kejadian dengan detail dan objektif.</p>
+                <p>3. Sertakan lampiran foto kondisi riil di lapangan jika memungkinkan.</p>
+                <p>4. Semua riwayat pengaduan otomatis terhubung ke nomor telepon Anda tanpa perlu kode rahasia.</p>
               </CardContent>
             </Card>
           </div>
 
+          {/* Form Pengaduan */}
           <div className="md:col-span-2">
-            <Card className="border-slate-200">
+            <Card className="border-slate-200/90 shadow-xs">
               <CardHeader className="border-b border-slate-100 pb-4">
-                <CardTitle className="text-base font-bold">Formulir Pengaduan Online</CardTitle>
-                <CardDescription className="text-xs">
-                  Isi formulir di bawah ini dengan lengkap dan objektif untuk ditindaklanjuti perangkat kelurahan.
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Formulir Pengaduan Warga
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Isi data di bawah ini secara jelas. Data identitas digunakan untuk koordinasi tindak lanjut petugas lapangan.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-5">
+              <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="p-3 bg-slate-50 border rounded-lg flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Laporkan sebagai Anonim?</p>
-                      <p className="text-xs text-muted-foreground">Nama Anda tidak akan dipublikasikan ke umum.</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="nama" className="text-xs font-semibold text-slate-800">
+                        Nama Lengkap Pelapor <span className="text-red-500">*</span>
+                      </label>
                       <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={formData.isAnonim}
-                        onChange={(e) => setFormData({ ...formData, isAnonim: e.target.checked })}
+                        id="nama"
+                        type="text"
+                        required
+                        className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+                        placeholder="Contoh: Budi Santoso"
+                        value={formData.nama}
+                        onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label htmlFor="phone" className="text-xs font-semibold text-slate-800">
+                        Nomor WhatsApp / HP Aktif <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="phone"
+                        type="tel"
+                        required
+                        className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+                        placeholder="Contoh: 081234567890"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      />
+                    </div>
                   </div>
 
-                  {!formData.isAnonim && (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="nama" className="text-sm font-medium">Nama Pelapor</label>
-                        <input
-                          id="nama"
-                          type="text"
-                          required={!formData.isAnonim}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                          placeholder="Nama lengkap Anda"
-                          value={formData.nama}
-                          onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="email" className="text-sm font-medium">Email (Opsional)</label>
-                        <input
-                          id="email"
-                          type="email"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                          placeholder="email@contoh.com"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  )}
-
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="category" className="text-sm font-medium">Kategori Pengaduan</label>
+                    <div className="space-y-1.5">
+                      <label htmlFor="category" className="text-xs font-semibold text-slate-800">
+                        Kategori Pengaduan <span className="text-red-500">*</span>
+                      </label>
                       <select
                         id="category"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       >
@@ -536,53 +432,61 @@ export default function ComplaintsPage() {
                       </select>
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="phone" className="text-sm font-medium">Nomor WhatsApp / HP Aktif</label>
+                    <div className="space-y-1.5">
+                      <label htmlFor="email" className="text-xs font-semibold text-slate-800">
+                        Alamat Email (Opsional)
+                      </label>
                       <input
-                        id="phone"
-                        type="tel"
-                        required
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        placeholder="Contoh: 08123456789"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        id="email"
+                        type="email"
+                        className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+                        placeholder="nama@email.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="judul" className="text-sm font-medium">Judul Laporan</label>
+                  <div className="space-y-1.5">
+                    <label htmlFor="judul" className="text-xs font-semibold text-slate-800">
+                      Pokok / Judul Laporan <span className="text-red-500">*</span>
+                    </label>
                     <input
                       id="judul"
                       type="text"
                       required
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      placeholder="Contoh: Lampu Penerangan Jalan RT 03 Padam"
+                      className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+                      placeholder="Contoh: Saluran Drainase Tersumbat di RT 03 RW 05"
                       value={formData.judul}
                       onChange={(e) => setFormData({ ...formData, judul: e.target.value })}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="isi" className="text-sm font-medium">Isi & Kronologi Laporan</label>
+                  <div className="space-y-1.5">
+                    <label htmlFor="isi" className="text-xs font-semibold text-slate-800">
+                      Uraian Detail Laporan & Lokasi Kejadian <span className="text-red-500">*</span>
+                    </label>
                     <textarea
                       id="isi"
                       required
-                      className="flex min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      placeholder="Jelaskan detail lokasi, waktu kejadian, dan dampak yang dialami..."
+                      rows={4}
+                      className="flex w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+                      placeholder="Jelaskan secara lengkap lokasi, waktu, dan situasi masalah yang Anda laporkan..."
                       value={formData.isi}
                       onChange={(e) => setFormData({ ...formData, isi: e.target.value })}
                     />
                   </div>
 
-                  {/* Upload Foto Bukti */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Lampiran Foto Bukti (Opsional)</label>
+                  {/* Foto Bukti */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-800 block">
+                      Lampiran Foto Pendukung (Opsional)
+                    </label>
                     {!filePreview ? (
-                      <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-slate-50 transition-colors">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-sm font-medium text-primary">Klik untuk memilih foto</span>
-                        <span className="text-xs text-muted-foreground mt-1">Format JPG, PNG (Maks 5MB)</span>
+                      <label className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                        <Upload className="h-6 w-6 text-slate-400 mb-1" />
+                        <span className="text-xs text-slate-600 font-medium">Unggah Foto Lokasi / Bukti</span>
+                        <span className="text-[11px] text-slate-400 mt-0.5">Format JPG atau PNG (Maks 5 MB)</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -591,26 +495,31 @@ export default function ComplaintsPage() {
                         />
                       </label>
                     ) : (
-                      <div className="relative inline-block border rounded-lg overflow-hidden bg-slate-100">
+                      <div className="relative inline-block border rounded-xl overflow-hidden bg-slate-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={filePreview} alt="Bukti pengaduan" className="h-44 w-auto object-cover rounded-lg" />
+                        <img src={filePreview} alt="Bukti pengaduan" className="h-40 w-auto object-cover rounded-xl" />
                         <button
                           type="button"
                           onClick={removeFile}
                           className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black text-white rounded-full transition-colors"
+                          title="Hapus foto"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading} size="lg">
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold text-sm py-2.5 rounded-xl shadow-xs"
+                    disabled={loading}
+                  >
                     {loading ? (
                       "Mengirim Laporan..."
                     ) : (
                       <>
-                        <Send className="mr-2 h-4 w-4" /> Kirim Pengaduan Sekarang
+                        <Send className="mr-2 h-4 w-4" /> Kirim Pengaduan Warga
                       </>
                     )}
                   </Button>
@@ -620,53 +529,60 @@ export default function ComplaintsPage() {
           </div>
         </div>
       ) : (
-        /* Tracking Tab */
+        /* Tracking Tab via Phone Number */
         <div className="max-w-3xl mx-auto space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cek Status Pengaduan Warga</CardTitle>
-              <CardDescription>
-                Masukkan <strong>Kode Tiket</strong> (contoh: <code>PGD-202609-1234</code>) atau <strong>Nomor WhatsApp</strong> yang digunakan saat melapor.
+          <Card className="border-slate-200/90 shadow-xs">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <CardTitle className="text-base font-bold text-slate-900">
+                Lacak Riwayat Pengaduan Berdasarkan Nomor Telepon
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Masukkan nomor telepon atau WhatsApp yang Anda gunakan saat mengajukan laporan untuk melihat status dan berapa kali Anda telah melapor.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <form onSubmit={handleTrack} className="flex gap-2">
+            <CardContent className="pt-5 space-y-4">
+              <form onSubmit={handleTrackSubmit} className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
-                    type="text"
+                    type="tel"
                     required
-                    placeholder="Masukkan Kode Tiket atau Nomor HP..."
-                    className="w-full h-11 pl-10 pr-4 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    value={trackQuery}
-                    onChange={(e) => setTrackQuery(e.target.value)}
+                    placeholder="Masukkan Nomor Telepon / WhatsApp (contoh: 081234567890)..."
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
+                    value={trackPhone}
+                    onChange={(e) => setTrackPhone(e.target.value)}
                   />
                 </div>
-                <Button type="submit" size="lg" disabled={trackingLoading}>
-                  {trackingLoading ? "Mencari..." : "Lacak"}
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={trackingLoading}
+                  className="bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-semibold px-5 rounded-xl"
+                >
+                  {trackingLoading ? "Mencari..." : "Cek Laporan"}
                 </Button>
               </form>
 
-              {/* Riwayat Pengaduan di Perangkat Ini */}
-              {recentComplaints.length > 0 && (
+              {/* Laporan Terakhir Tersimpan di Perangkat Ini */}
+              {recentPhones.length > 0 && (
                 <div className="pt-2 border-t border-slate-100">
-                  <div className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1.5">
-                    <History className="h-3.5 w-3.5 text-primary" />
-                    Laporan Terakhir Anda di Perangkat Ini:
-                  </div>
+                  <p className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
+                    <History className="h-3.5 w-3.5 text-slate-400" />
+                    Nomor Terakhir Anda di Perangkat Ini:
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    {recentComplaints.map((c) => (
+                    {recentPhones.map((p) => (
                       <button
-                        key={c.ticketCode}
+                        key={p.phone}
                         type="button"
                         onClick={() => {
-                          setTrackQuery(c.ticketCode);
-                          handleTrackWithQuery(c.ticketCode);
+                          setTrackPhone(p.phone);
+                          handleTrackWithPhone(p.phone);
                         }}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-md px-2.5 py-1 text-left transition-colors flex items-center gap-1.5"
+                        className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg px-3 py-1.5 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
-                        <span className="font-mono font-bold text-primary">{c.ticketCode}</span>
-                        <span className="text-slate-500 max-w-[140px] truncate">({c.judul})</span>
+                        <span className="font-semibold">{p.phone}</span>
+                        <span className="text-slate-400">({p.name})</span>
                         <ArrowRight className="h-3 w-3 text-slate-400" />
                       </button>
                     ))}
@@ -676,76 +592,121 @@ export default function ComplaintsPage() {
             </CardContent>
           </Card>
 
+          {/* Results Section */}
           {trackedComplaints !== null && (
             <div className="space-y-4">
               {trackedComplaints.length === 0 ? (
-                <div className="text-center py-10 bg-white border rounded-xl text-muted-foreground">
-                  <p className="font-medium text-foreground">Tidak ditemukan laporan pengaduan.</p>
-                  <p className="text-sm mt-1">Pastikan kode tiket atau nomor HP yang Anda masukkan sudah sesuai.</p>
+                <div className="text-center py-12 bg-white border border-slate-200 rounded-2xl p-6 text-slate-500 space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm">Tidak Ditemukan Pengaduan</h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Tidak ada laporan pengaduan yang tercatat dengan nomor telepon <strong>{trackPhone}</strong>. Pastikan nomor yang dimasukkan sama dengan saat mengisi formulir.
+                  </p>
                 </div>
               ) : (
-                trackedComplaints.map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <CardHeader className="bg-slate-50 border-b flex flex-row items-center justify-between py-3">
-                      <div>
-                        <span className="text-xs font-mono font-semibold bg-white border px-2 py-0.5 rounded text-primary">
-                          {item.ticketCode || "Tiket Laporan"}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-3">
-                          Kategori: {item.category || "Umum"}
-                        </span>
-                      </div>
-                      <div className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        item.status === "completed" || item.status === "resolved"
-                          ? "bg-green-100 text-green-700"
-                          : item.status === "processed"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {item.status === "completed" || item.status === "resolved"
-                          ? "Selesai Ditindaklanjuti"
-                          : item.status === "processed"
-                          ? "Sedang Diproses"
-                          : "Menunggu Verifikasi"}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                      <div>
-                        <h3 className="font-bold text-lg text-foreground">{item.title || item.judul}</h3>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
-                          {item.message || item.isi}
-                        </p>
-                      </div>
+                <>
+                  {/* Summary Card for Phone Number */}
+                  <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                        Riwayat Pelapor
+                      </span>
+                      <h3 className="text-lg font-bold text-white mt-0.5">
+                        {trackedComplaints[0]?.nama || "Warga"} ({trackPhone})
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-1">
+                        Tercatat telah mengajukan total <strong>{stats?.total} kali pengaduan</strong> ke Kelurahan Banjar Agung.
+                      </p>
+                    </div>
 
-                      {item.photoUrl && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted-foreground mb-1">Bukti Foto Terlampir:</p>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.photoUrl}
-                            alt="Bukti Pengaduan"
-                            className="h-44 rounded-lg border object-cover cursor-pointer hover:opacity-95"
-                            onClick={() => window.open(item.photoUrl, "_blank")}
-                          />
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <div className="text-center px-3 py-1.5 rounded-lg bg-white/10 border border-white/10">
+                        <div className="text-sm font-bold text-amber-300">{stats?.pending}</div>
+                        <div className="text-[10px] text-slate-300">Menunggu</div>
+                      </div>
+                      <div className="text-center px-3 py-1.5 rounded-lg bg-white/10 border border-white/10">
+                        <div className="text-sm font-bold text-blue-300">{stats?.processed}</div>
+                        <div className="text-[10px] text-slate-300">Diproses</div>
+                      </div>
+                      <div className="text-center px-3 py-1.5 rounded-lg bg-white/10 border border-white/10">
+                        <div className="text-sm font-bold text-emerald-300">{stats?.completed}</div>
+                        <div className="text-[10px] text-slate-300">Selesai</div>
+                      </div>
+                    </div>
+                  </div>
 
-                      {/* Admin Response Box */}
-                      {item.adminResponse ? (
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-1">
-                          <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                            <CheckCircle className="h-4 w-4 text-emerald-600" /> Tanggapan & Tindak Lanjut Kelurahan:
-                          </p>
-                          <p className="text-sm text-emerald-950 whitespace-pre-line">{item.adminResponse}</p>
-                        </div>
-                      ) : (
-                        <div className="bg-slate-50 border rounded-lg p-3 text-xs text-muted-foreground flex items-center gap-2">
-                          <Clock className="h-4 w-4" /> Belum ada tanggapan tertulis dari petugas kelurahan. Laporan Anda sedang dalam antrean tindak lanjut.
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
+                  {/* List of Complaints */}
+                  <div className="space-y-4">
+                    {trackedComplaints.map((item, idx) => (
+                      <Card key={item.id} className="border-slate-200/90 shadow-xs overflow-hidden">
+                        <CardHeader className="bg-slate-50/80 border-b border-slate-100 py-3.5 px-5 flex flex-row items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md">
+                              Laporan #{trackedComplaints.length - idx}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              Kategori: <strong>{item.category || "Umum"}</strong>
+                            </span>
+                          </div>
+                          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border ${
+                            item.status === "completed" || item.status === "resolved"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : item.status === "processed"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}>
+                            {item.status === "completed" || item.status === "resolved"
+                              ? "Selesai Ditindaklanjuti"
+                              : item.status === "processed"
+                              ? "Sedang Ditindaklanjuti"
+                              : "Menunggu Verifikasi"}
+                          </span>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4">
+                          <div>
+                            <h4 className="text-base font-bold text-slate-900">{item.title || item.judul}</h4>
+                            <p className="text-xs text-slate-600 mt-1 whitespace-pre-line leading-relaxed">
+                              {item.message || item.isi}
+                            </p>
+                          </div>
+
+                          {item.photoUrl && (
+                            <div>
+                              <p className="text-[11px] font-semibold text-slate-500 mb-1">Bukti Foto Terlampir:</p>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={item.photoUrl}
+                                alt="Bukti Pengaduan"
+                                className="h-40 rounded-xl border border-slate-200 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => window.open(item.photoUrl, "_blank")}
+                              />
+                            </div>
+                          )}
+
+                          {/* Tanggapan Resmi Kelurahan */}
+                          {item.adminResponse ? (
+                            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 space-y-1">
+                              <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                                <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                                Tindak Lanjut & Tanggapan Resmi Kelurahan:
+                              </p>
+                              <p className="text-xs text-emerald-950 whitespace-pre-line leading-relaxed">
+                                {item.adminResponse}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-500 flex items-center gap-2">
+                              <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span>Laporan Anda telah masuk antrean sistem dan sedang dalam proses verifikasi petugas kelurahan.</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
