@@ -11,7 +11,7 @@ const navLinks = [
   { href: "/", label: "Beranda" },
   { href: "/profil", label: "Profil Kelurahan" },
   { href: "/berita", label: "Berita" },
-  { href: "/data", label: "Data Penduduk" },
+  { href: "/data", label: "Informasi & Infografis" },
   { href: "/layanan", label: "Layanan Surat" },
   { href: "/pengaduan", label: "Pengaduan" },
 ];
