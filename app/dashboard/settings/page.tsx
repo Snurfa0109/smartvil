@@ -29,7 +29,7 @@ import {
   Trash2,
   GripVertical,
 } from "lucide-react";
-import { seedDatabase } from "@/utils/seedData";
+import { seedDatabase } from "@/lib/seed";
 import { db, auth, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -40,6 +40,7 @@ import {
   DEFAULT_SITE_SETTINGS,
   getSiteSettings,
   saveSiteSettings,
+  invalidateSiteSettings,
   getBeritaCategories,
   saveBeritaCategories,
   DEFAULT_BERITA_CATEGORIES,
@@ -130,6 +131,7 @@ function SettingsContent() {
     setSiteMsg(null);
     try {
       await saveSiteSettings(siteForm);
+      invalidateSiteSettings();
       setSiteMsg({
         type: "success",
         text: `Berhasil! ${sectionName} telah diperbarui dan otomatis tampil di halaman website.`,

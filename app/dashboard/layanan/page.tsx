@@ -38,7 +38,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LetterType, LetterCustomFieldDef, DEFAULT_LETTER_TYPES } from "@/lib/letters";
+import { LetterType, LetterCustomFieldDef, DEFAULT_LETTER_TYPES, getLetterTypes, invalidateLetterTypes } from "@/lib/letters";
 import {
   extractPlaceholdersFromDocx,
   smartTemplateFromStaticDocx,
@@ -46,9 +46,12 @@ import {
   buildTemplateData,
   generateFilledDocx,
   downloadBlob,
+  blobToDataUrl,
+  dataUrlToBuffer,
   BUILTIN_FIELDS,
 } from "@/lib/letter-template";
 import LetterSimulationPreview from "@/components/letter-simulation-preview";
+import LetterPrintDocument from "@/components/letter-print-document";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 
@@ -72,6 +75,7 @@ export default function LayananDashboardPage() {
     active: true,
     templateFileUrl: "",
     templateStoragePath: "",
+    templateData: "",
     templatePlaceholders: [] as string[],
     customFields: [] as LetterCustomFieldDef[],
   });
@@ -111,8 +115,8 @@ export default function LayananDashboardPage() {
   const fetchLetterTypes = async () => {
     setLoadingTypes(true);
     try {
-      const snap = await getDocs(collection(db, "letter_types"));
-      if (snap.empty) {
+      const types = await getLetterTypes();
+      if (types.length === 0) {
         const initialList: LetterType[] = [];
         for (const item of DEFAULT_LETTER_TYPES) {
           const docRef = await addDoc(collection(db, "letter_types"), {
@@ -121,12 +125,9 @@ export default function LayananDashboardPage() {
           });
           initialList.push({ ...item, id: docRef.id });
         }
+        invalidateLetterTypes();
         setLetterTypes(initialList);
       } else {
-        const types = snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as LetterType),
-        }));
         setLetterTypes(types);
       }
     } catch (err) {
@@ -211,6 +212,7 @@ export default function LayananDashboardPage() {
       active: true,
       templateFileUrl: "",
       templateStoragePath: "",
+      templateData: "",
       templatePlaceholders: [],
       customFields: [],
     });
@@ -231,6 +233,7 @@ export default function LayananDashboardPage() {
       active: item.active !== false,
       templateFileUrl: item.templateFileUrl || "",
       templateStoragePath: item.templateStoragePath || "",
+      templateData: item.templateData || "",
       templatePlaceholders: item.templatePlaceholders || [],
       customFields: item.customFields || [],
     });
@@ -245,6 +248,12 @@ export default function LayananDashboardPage() {
       try {
         const res = await fetch(item.templateFileUrl);
         if (res.ok) setTemplateBuffer(await res.arrayBuffer());
+      } catch {
+        // simulasi opsional
+      }
+    } else if (item.templateData) {
+      try {
+        setTemplateBuffer(await dataUrlToBuffer(item.templateData));
       } catch {
         // simulasi opsional
       }
@@ -300,19 +309,38 @@ export default function LayananDashboardPage() {
         const safeCode = (typeForm.code || `srt_${Date.now()}`).trim().toLowerCase().replace(/\s+/g, "_");
         const storagePath = `letter_templates/${safeCode}_${Date.now()}.docx`;
         const storageRef = ref(storage, storagePath);
-        await uploadBytes(storageRef, uploadBlob);
-        const url = await getDownloadURL(storageRef);
+        // Batasi maksimal 20 detik: Storage yang tidak terjangkau membuat SDK
+        // retry sampai bermenit-menit. Lewat batas langsung pakai database.
+        const UPLOAD_TIMEOUT_MS = 20_000;
+        const url: string = await Promise.race([
+          uploadBytes(storageRef, uploadBlob).then(() => getDownloadURL(storageRef)),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Koneksi ke Storage terlalu lama (timeout 20 detik).")), UPLOAD_TIMEOUT_MS)
+          ),
+        ]);
         setTypeForm((prev) => ({
           ...prev,
           templateFileUrl: url,
           templateStoragePath: storagePath,
+          templateData: "",
         }));
       } catch (upErr) {
-        console.error("Upload Storage gagal (hasil scan tetap tampil):", upErr);
-        const msg = upErr instanceof Error ? upErr.message : String(upErr);
-        setTemplateError(
-          `Hasil scan OK (${placeholders.length} field tampil di bawah), tapi upload file gagal sehingga belum bisa disimpan. Penyebab umum: Storage Rules belum mengizinkan tulis. Pilih ulang file untuk coba lagi. Detail: ${msg}`
-        );
+        console.warn("Upload Storage gagal, pakai penyimpanan database:", upErr);
+        try {
+          const dataUrl = await blobToDataUrl(uploadBlob);
+          setTypeForm((prev) => ({
+            ...prev,
+            templateFileUrl: "",
+            templateStoragePath: "",
+            templateData: dataUrl,
+          }));
+          setTemplateError("");
+        } catch {
+          const msg = upErr instanceof Error ? upErr.message : String(upErr);
+          setTemplateError(
+            `Hasil scan OK (${placeholders.length} field tampil di bawah), tapi penyimpanan file gagal. Pilih ulang file untuk coba lagi. Detail: ${msg}`
+          );
+        }
       } finally {
         setUploadingTemplate(false);
       }
@@ -346,8 +374,8 @@ export default function LayananDashboardPage() {
   const handleSaveType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!typeForm.name.trim()) return;
-    if (typeForm.templatePlaceholders.length > 0 && !typeForm.templateFileUrl) {
-      setTemplateError("File template belum selesai diupload. Tunggu hingga tulisan 'Mengunggah...' hilang, atau pilih ulang file bila ada pesan gagal.");
+    if (typeForm.templatePlaceholders.length > 0 && !typeForm.templateFileUrl && !typeForm.templateData) {
+      setTemplateError("File template belum selesai diproses. Tunggu hingga tulisan 'Mengunggah...' hilang, atau pilih ulang file bila ada pesan gagal.");
       return;
     }
 
@@ -366,6 +394,7 @@ export default function LayananDashboardPage() {
         active: typeForm.active,
         templateFileUrl: typeForm.templateFileUrl || "",
         templateStoragePath: typeForm.templateStoragePath || "",
+        templateData: typeForm.templateData || "",
         templatePlaceholders: typeForm.templatePlaceholders || [],
         customFields: typeForm.customFields || [],
         updatedAt: serverTimestamp(),
@@ -386,6 +415,7 @@ export default function LayananDashboardPage() {
       setTemplateBuffer(null);
       setTemplateFileName("");
       setTemplateError("");
+      invalidateLetterTypes();
       fetchLetterTypes();
     } catch (err) {
       console.error("Error saving letter type:", err);
@@ -397,6 +427,7 @@ export default function LayananDashboardPage() {
     if (confirm(`Apakah Anda yakin ingin menghapus jenis surat "${name}"?`)) {
       try {
         await deleteDoc(doc(db, "letter_types", id));
+        invalidateLetterTypes();
         fetchLetterTypes();
       } catch (err) {
         console.error("Error deleting letter type:", err);
@@ -431,14 +462,14 @@ export default function LayananDashboardPage() {
   const handleDownloadFilledDocx = async () => {
     if (!printRequest) return;
     const letterType = letterTypes.find((lt) => lt.code === printRequest.type);
-    const templateUrl = letterType?.templateFileUrl;
-    if (!templateUrl) {
+    const templateSource = letterType?.templateFileUrl || letterType?.templateData;
+    if (!templateSource) {
       alert("Jenis surat ini belum memiliki template .docx. Upload template dulu di tab Kelola Jenis Surat.");
       return;
     }
     setDownloadingDocx(true);
     try {
-      const res = await fetch(templateUrl);
+      const res = await fetch(templateSource);
       if (!res.ok) throw new Error("Gagal mengunduh template");
       const buf = await res.arrayBuffer();
       const data = buildTemplateData(printRequest, printConfig);
@@ -772,6 +803,12 @@ export default function LayananDashboardPage() {
                       <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-center gap-1.5 font-medium">
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
                         <span>Template terpasang • {typeForm.templatePlaceholders.length} field terdeteksi • <a href={typeForm.templateFileUrl} target="_blank" rel="noreferrer" className="underline">Lihat file</a></span>
+                      </p>
+                    )}
+                    {typeForm.templateData && !typeForm.templateFileUrl && !templateError && (
+                      <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center gap-1.5 font-medium">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <span>Template tersimpan di database ({typeForm.templatePlaceholders.length} field) — Storage tidak terjangkau, tapi cetak & unduh tetap berfungsi penuh.</span>
                       </p>
                     )}
                     {typeForm.templatePlaceholders.length > 0 && (
@@ -1112,96 +1149,7 @@ export default function LayananDashboardPage() {
               </div>
 
               <div className="max-w-[760px] mx-auto bg-white p-12 shadow-2xl border border-gray-300 rounded-sm font-serif text-[11pt] leading-relaxed text-black">
-                <div className="text-center border-b-4 border-double border-black pb-3 mb-6">
-                  <h4 className="font-bold text-sm tracking-wider uppercase">PEMERINTAH KOTA SERANG</h4>
-                  <h4 className="font-bold text-sm tracking-wider uppercase">KECAMATAN CIPOCOK JAYA</h4>
-                  <h2 className="font-black text-xl tracking-widest uppercase">KANTOR KELURAHAN BANJAR AGUNG</h2>
-                  <p className="text-[9pt] font-sans mt-0.5 text-gray-700">
-                    Jl. Syech Nawawi Albantani No. 16, Kota Serang, Banten 42122 | Telp/WA: +62 813-1505-3901
-                  </p>
-                </div>
-
-                <div className="text-center mb-6">
-                  <h3 className="font-bold text-base underline uppercase tracking-wide">
-                    {printRequest.typeName || "SURAT KETERANGAN DESA"}
-                  </h3>
-                  <p className="text-[10pt] font-sans mt-0.5 font-mono">
-                    Nomor: {printConfig.nomorSurat}
-                  </p>
-                </div>
-
-                <div className="space-y-3.5 text-justify">
-                  <p>
-                    Yang bertanda tangan di bawah ini, Lurah Banjar Agung, Kec. Cipocok Jaya, Kota Serang, Banten, dengan ini menerangkan bahwa:
-                  </p>
-
-                  <table className="w-full my-3 font-sans text-xs ml-4">
-                    <tbody>
-                      <tr>
-                        <td className="w-44 py-1 text-gray-700">Nama Lengkap</td>
-                        <td className="w-4">:</td>
-                        <td className="font-bold uppercase text-black">{printRequest.nama}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-1 text-gray-700">NIK (No. KTP)</td>
-                        <td>:</td>
-                        <td className="font-mono font-semibold">{printRequest.nik}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-1 text-gray-700">Nomor Telepon / WA</td>
-                        <td>:</td>
-                        <td>{printRequest.phone || "-"}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-1 align-top text-gray-700">Maksud / Keperluan</td>
-                        <td className="align-top">:</td>
-                        <td className="font-semibold text-black">{printRequest.keperluan}</td>
-                      </tr>
-                      {printRequest.formData && Object.entries(printRequest.formData as Record<string, string>).map(([k, v]) => {
-                        const def = (letterTypes.find((lt) => lt.code === printRequest.type)?.customFields || []).find((f) => f.key === k);
-                        return (
-                          <tr key={k}>
-                            <td className="py-1 align-top text-gray-700">{def?.label || k}</td>
-                            <td className="align-top">:</td>
-                            <td className="font-semibold text-black">{String(v) || "-"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  {letterTypes.find((lt) => lt.code === printRequest.type)?.templateFileUrl && (
-                    <p className="text-[9pt] font-sans text-blue-800 bg-blue-50 border border-blue-200 rounded px-2 py-1">
-                      Surat ini memiliki template DOCX resmi — gunakan tombol “Download DOCX Presisi” agar hasil cetak 100% sama dengan template.
-                    </p>
-                  )}
-
-                  <p>
-                    {printRequest.templateNarrative ||
-                      letterTypes.find((lt) => lt.code === printRequest.type)?.templateNarrative ||
-                      "Menerangkan bahwa orang tersebut di atas adalah benar warga yang berdomisili sah di Kelurahan Banjar Agung, berkarakter baik, dan tidak sedang terlibat dalam permasalahan hukum maupun sengketa perdata apapun di lingkungan desa."}
-                  </p>
-
-                  <p>
-                    Demikian surat keterangan ini kami berikan dengan sebenarnya atas dasar keterangan pemohon dan data arsip yang ada, untuk dapat dipergunakan sebagaimana mestinya oleh pihak yang berkepentingan.
-                  </p>
-                </div>
-
-                <div className="mt-10 flex justify-end">
-                  <div className="text-center w-64">
-                    <p className="text-xs font-sans">Kelurahan Banjar Agung, {printConfig.tanggalSurat}</p>
-                    <p className="font-bold text-xs mt-1 uppercase">{printConfig.pejabatJabatan}</p>
-
-                    <div className="h-20 flex flex-col items-center justify-center my-2">
-                      <div className="w-16 h-16 border border-dashed border-gray-400 rounded flex flex-col items-center justify-center text-[8pt] text-gray-400 font-sans">
-                        <span>[ QR CODE ]</span>
-                        <span className="text-[6pt]">VALIDASI RESMI</span>
-                      </div>
-                    </div>
-
-                    <p className="font-bold underline uppercase text-xs">{printConfig.pejabatNama}</p>
-                    <p className="text-[9pt] font-sans text-gray-600 font-mono">NIP. {printConfig.pejabatNip}</p>
-                  </div>
-                </div>
+                <LetterPrintDocument request={printRequest} letterTypes={letterTypes} printConfig={printConfig} />
               </div>
             </div>
           </Card>
@@ -1214,83 +1162,7 @@ export default function LayananDashboardPage() {
           id="printable-letter-container"
           style={{ display: "none" }}
         >
-
-          <div className="text-center border-b-4 border-double border-black pb-3 mb-6">
-            <h4 className="font-bold text-sm tracking-wider uppercase">PEMERINTAH KOTA SERANG</h4>
-            <h4 className="font-bold text-sm tracking-wider uppercase">KECAMATAN CIPOCOK JAYA</h4>
-            <h2 className="font-black text-xl tracking-widest uppercase">KANTOR KELURAHAN BANJAR AGUNG</h2>
-            <p className="text-[9pt] font-sans mt-0.5 text-gray-700">
-              Jl. Syech Nawawi Albantani No. 16, Kota Serang, Banten 42122 | Telp/WA: +62 813-1505-3901
-            </p>
-          </div>
-
-          <div className="text-center mb-6">
-            <h3 className="font-bold text-base underline uppercase tracking-wide">
-              {printRequest.typeName || "SURAT KETERANGAN DESA"}
-            </h3>
-            <p className="text-[10pt] font-sans mt-0.5 font-mono">
-              Nomor: {printConfig.nomorSurat}
-            </p>
-          </div>
-
-          <div className="space-y-4 text-justify">
-            <p>
-              Yang bertanda tangan di bawah ini, Lurah Banjar Agung, Kec. Cipocok Jaya, Kota Serang, Banten, dengan ini menerangkan bahwa:
-            </p>
-
-            <table className="w-full my-3 font-sans text-xs ml-4">
-              <tbody>
-                <tr>
-                  <td className="w-44 py-1 text-gray-700">Nama Lengkap</td>
-                  <td className="w-4">:</td>
-                  <td className="font-bold uppercase text-black">{printRequest.nama}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 text-gray-700">NIK (No. KTP)</td>
-                  <td>:</td>
-                  <td className="font-mono font-semibold">{printRequest.nik}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 text-gray-700">Nomor Telepon / WA</td>
-                  <td>:</td>
-                  <td>{printRequest.phone || "-"}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 align-top text-gray-700">Maksud / Keperluan</td>
-                  <td className="align-top">:</td>
-                  <td className="font-semibold text-black">{printRequest.keperluan}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <p>
-              {printRequest.templateNarrative ||
-                letterTypes.find((lt) => lt.code === printRequest.type)?.templateNarrative ||
-                "Menerangkan bahwa orang tersebut di atas adalah benar warga yang berdomisili sah di Kelurahan Banjar Agung, berkarakter baik, dan tidak sedang terlibat dalam permasalahan hukum maupun sengketa perdata apapun di lingkungan desa."}
-            </p>
-
-            <p>
-              Demikian surat keterangan ini kami berikan dengan sebenarnya atas dasar keterangan pemohon dan data arsip yang ada, untuk dapat dipergunakan sebagaimana mestinya oleh pihak yang berkepentingan.
-            </p>
-          </div>
-
-          {/* TANDA TANGAN */}
-          <div className="mt-12 flex justify-end">
-            <div className="text-center w-64">
-              <p className="text-xs font-sans">Kelurahan Banjar Agung, {printConfig.tanggalSurat}</p>
-              <p className="font-bold text-xs mt-1 uppercase">{printConfig.pejabatJabatan}</p>
-
-              <div className="h-20 flex flex-col items-center justify-center my-2">
-                <div className="w-16 h-16 border border-dashed border-gray-400 rounded flex flex-col items-center justify-center text-[8pt] text-gray-400 font-sans">
-                  <span>[ QR CODE ]</span>
-                  <span className="text-[6pt]">VALIDASI RESMI</span>
-                </div>
-              </div>
-
-              <p className="font-bold underline uppercase text-xs">{printConfig.pejabatNama}</p>
-              <p className="text-[9pt] font-sans text-gray-600 font-mono">NIP. {printConfig.pejabatNip}</p>
-            </div>
-          </div>
+          <LetterPrintDocument request={printRequest} letterTypes={letterTypes} printConfig={printConfig} />
         </div>
       )}
     </div>

@@ -25,7 +25,6 @@
     "docxtemplater": "^3.71.0",
     "firebase": "^12.8.0",
     "lucide-react": "^0.563.0",
-    "mammoth": "^1.12.3",
     "next": "16.1.6",
     "pizzip": "^3.3.0",
     "react": "19.2.3",

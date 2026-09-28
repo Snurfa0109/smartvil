@@ -150,20 +150,32 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   emergencyDamkar: "0254-201113",
 };
 
+let cachedSettings: { data: SiteSettings; at: number } | null = null;
+const SETTINGS_TTL_MS = 60_000;
+
 /**
  * Fetch settings from Firestore `settings/profile` doc, merging with default settings
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
+  if (cachedSettings && Date.now() - cachedSettings.at < SETTINGS_TTL_MS) {
+    return cachedSettings.data;
+  }
   try {
     const ref = doc(db, "settings", "profile");
     const snap = await getDoc(ref);
     if (snap.exists()) {
-      return { ...DEFAULT_SITE_SETTINGS, ...(snap.data() as Partial<SiteSettings>) };
+      const merged = { ...DEFAULT_SITE_SETTINGS, ...(snap.data() as Partial<SiteSettings>) };
+      cachedSettings = { data: merged, at: Date.now() };
+      return merged;
     }
   } catch (error) {
     console.error("Error fetching site settings:", error);
   }
-  return DEFAULT_SITE_SETTINGS;
+  return cachedSettings?.data ?? DEFAULT_SITE_SETTINGS;
+}
+
+export function invalidateSiteSettings(): void {
+  cachedSettings = null;
 }
 
 /**

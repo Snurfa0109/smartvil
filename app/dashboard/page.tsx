@@ -47,43 +47,45 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const complaintsColl = collection(db, "complaints");
-        const pendingComplaintsQuery = query(complaintsColl, where("status", "==", "pending"));
-        const pendingComplaintsSnapshot = await getCountFromServer(pendingComplaintsQuery);
-
         const requestsColl = collection(db, "requests");
-        const pendingRequestsQuery = query(requestsColl, where("status", "==", "pending"));
-        const pendingRequestsSnapshot = await getCountFromServer(pendingRequestsQuery);
-
         const residentsColl = collection(db, "residents");
-        const residentsSnapshot = await getCountFromServer(residentsColl);
-
         const newsColl = collection(db, "news");
-        const newsSnapshot = await getCountFromServer(newsColl);
+
+        const requestCountOf = (status: string) =>
+          getCountFromServer(query(requestsColl, where("status", "==", status))).then((s) => s.data().count);
+
+        const [
+          pendingComplaints,
+          residentsTotal,
+          newsTotal,
+          reqPending,
+          reqProcessed,
+          reqReady,
+          reqCompleted,
+          recentComplaintsSnapshot,
+        ] = await Promise.all([
+          getCountFromServer(query(complaintsColl, where("status", "==", "pending"))).then((s) => s.data().count),
+          getCountFromServer(residentsColl).then((s) => s.data().count),
+          getCountFromServer(newsColl).then((s) => s.data().count),
+          requestCountOf("pending"),
+          requestCountOf("processed"),
+          requestCountOf("ready"),
+          requestCountOf("completed"),
+          getDocs(query(complaintsColl, orderBy("createdAt", "desc"), limit(4))),
+        ]);
 
         setStats({
-          residents: residentsSnapshot.data().count,
-          news: newsSnapshot.data().count,
-          complaints: pendingComplaintsSnapshot.data().count,
-          requests: pendingRequestsSnapshot.data().count,
+          residents: residentsTotal,
+          news: newsTotal,
+          complaints: pendingComplaints,
+          requests: reqPending,
         });
-
-        const allRequestsSnap = await getDocs(requestsColl);
-        const breakdown = { pending: 0, processed: 0, ready: 0, completed: 0 };
-        allRequestsSnap.docs.forEach((d) => {
-          const s = d.data().status;
-          if (s === "pending") breakdown.pending += 1;
-          else if (s === "processed") breakdown.processed += 1;
-          else if (s === "ready") breakdown.ready += 1;
-          else if (s === "completed") breakdown.completed += 1;
+        setRequestBreakdown({
+          pending: reqPending,
+          processed: reqProcessed,
+          ready: reqReady,
+          completed: reqCompleted,
         });
-        setRequestBreakdown(breakdown);
-
-        const recentComplaintsQuery = query(
-          complaintsColl,
-          orderBy("createdAt", "desc"),
-          limit(4)
-        );
-        const recentComplaintsSnapshot = await getDocs(recentComplaintsQuery);
         const complaintsData = recentComplaintsSnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
