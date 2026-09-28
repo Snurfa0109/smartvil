@@ -238,7 +238,6 @@ export default function DataPage() {
 
   return (
     <div className="space-y-0">
-      {/* Page Header */}
       <div className="bg-[#f0f4f9] border-b border-slate-200 py-10">
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex items-start gap-4">
@@ -262,7 +261,6 @@ export default function DataPage() {
       </div>
 
       <div className="container mx-auto px-6 md:px-12 py-10 space-y-12">
-        {/* INFOGRAFIS KEPENDUDUKAN */}
         <section>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-lg bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center">
@@ -274,7 +272,6 @@ export default function DataPage() {
             </div>
           </div>
 
-          {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
               { title: "Total Penduduk", value: stats.total.toLocaleString("id-ID"), sub: "Jiwa terdaftar", icon: Users, color: "text-[#1b365d]", bg: "bg-[#1b365d]/10" },
@@ -299,7 +296,6 @@ export default function DataPage() {
             ))}
           </div>
 
-          {/* Gender Proportion Bar */}
           <Card className="border border-slate-200 shadow-xs mb-6">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold text-slate-900">Komposisi Jenis Kelamin</CardTitle>
@@ -329,9 +325,7 @@ export default function DataPage() {
             </CardContent>
           </Card>
 
-          {/* Demographic Breakdown Grids */}
           <div className="grid md:grid-cols-2 gap-5">
-        {/* Usia */}
         <Card className="border border-slate-100 shadow-sm">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
@@ -366,7 +360,6 @@ export default function DataPage() {
           </CardContent>
         </Card>
 
-        {/* Pekerjaan */}
         <Card className="border border-slate-100 shadow-sm">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
@@ -399,7 +392,6 @@ export default function DataPage() {
           </CardContent>
         </Card>
 
-        {/* Pendidikan */}
         <Card className="border border-slate-100 shadow-sm">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
@@ -431,7 +423,6 @@ export default function DataPage() {
           </CardContent>
         </Card>
 
-        {/* Agama */}
         <Card className="border border-slate-100 shadow-sm">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
@@ -465,7 +456,6 @@ export default function DataPage() {
           </div>
         </section>
 
-        {/* TAUTAN LAYANAN EKSTERNAL */}
         <section>
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">

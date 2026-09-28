@@ -97,7 +97,6 @@ export default function ComplaintsPage() {
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const ticketCode = `PGD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
 
-      // Clean phone representation
       const rawPhone = formData.phone.trim();
 
       const payload = {
@@ -186,7 +185,6 @@ export default function ComplaintsPage() {
       const snapTicket = await getDocs(qByTicket);
       const results: any[] = snapTicket.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      // Query by phone variants
       for (const phoneVal of Array.from(new Set(phoneCandidates))) {
         const qByPhone = query(collection(db, "complaints"), where("phone", "==", phoneVal));
         const snapPhone = await getDocs(qByPhone);
@@ -197,7 +195,6 @@ export default function ComplaintsPage() {
         });
       }
 
-      // Sort newest first
       results.sort((a, b) => {
         const timeA = a.createdAt?.seconds || 0;
         const timeB = b.createdAt?.seconds || 0;
@@ -218,7 +215,6 @@ export default function ComplaintsPage() {
     await handleTrackWithPhone();
   };
 
-  // Status statistics for tracked phone
   const stats = trackedComplaints
     ? {
         total: trackedComplaints.length,
@@ -230,7 +226,6 @@ export default function ComplaintsPage() {
 
   return (
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
           Kanal Aspirasi & Pengaduan Resmi
@@ -242,7 +237,6 @@ export default function ComplaintsPage() {
           Sampaikan keluhan fasilitas lingkungan, pelayanan publik, atau aspirasi warga. Semua laporan diverifikasi secara transparan melalui nomor telepon Anda.
         </p>
 
-        {/* Navigation Tabs */}
         <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-2">
           <button
             type="button"
@@ -265,7 +259,6 @@ export default function ComplaintsPage() {
         </div>
       </div>
 
-      {/* Success Notification after submission */}
       {submittedInfo && (
         <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-950 space-y-4 shadow-xs">
           <div className="flex items-center gap-3">
@@ -313,7 +306,6 @@ export default function ComplaintsPage() {
 
       {activeTab === "form" ? (
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Side Info */}
           <div className="space-y-6">
             <Card className="border-slate-200/90 shadow-xs">
               <CardHeader className="pb-3 border-b border-slate-100">
@@ -367,7 +359,6 @@ export default function ComplaintsPage() {
             </Card>
           </div>
 
-          {/* Form Pengaduan */}
           <div className="md:col-span-2">
             <Card className="border-slate-200/90 shadow-xs">
               <CardHeader className="border-b border-slate-100 pb-4">
@@ -474,7 +465,6 @@ export default function ComplaintsPage() {
                     />
                   </div>
 
-                  {/* Foto Bukti */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-800 block">
                       Lampiran Foto Pendukung (Opsional)
@@ -560,7 +550,6 @@ export default function ComplaintsPage() {
                 </Button>
               </form>
 
-              {/* Laporan Terakhir Tersimpan di Perangkat Ini */}
               {recentPhones.length > 0 && (
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
@@ -589,7 +578,6 @@ export default function ComplaintsPage() {
             </CardContent>
           </Card>
 
-          {/* Results Section */}
           {trackedComplaints !== null && (
             <div className="space-y-4">
               {trackedComplaints.length === 0 ? (
@@ -604,7 +592,6 @@ export default function ComplaintsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Summary Card for Phone Number */}
                   <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
@@ -634,7 +621,6 @@ export default function ComplaintsPage() {
                     </div>
                   </div>
 
-                  {/* List of Complaints */}
                   <div className="space-y-4">
                     {trackedComplaints.map((item, idx) => (
                       <Card key={item.id} className="border-slate-200/90 shadow-xs overflow-hidden">
@@ -682,7 +668,6 @@ export default function ComplaintsPage() {
                             </div>
                           )}
 
-                          {/* Tanggapan Resmi Kelurahan */}
                           {item.adminResponse ? (
                             <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 space-y-1">
                               <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">

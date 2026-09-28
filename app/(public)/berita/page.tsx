@@ -156,7 +156,6 @@ export default function NewsPage() {
 
   return (
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      {/* Header Section */}
       <div className="max-w-3xl space-y-3">
         <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
           Warta & Publikasi Resmi
@@ -169,9 +168,7 @@ export default function NewsPage() {
         </p>
       </div>
 
-      {/* Search & Filter Bar */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-5 md:p-6 shadow-xs space-y-4">
-        {/* Search Input */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -192,7 +189,6 @@ export default function NewsPage() {
           )}
         </div>
 
-        {/* Filter Categories & Status */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
@@ -224,7 +220,6 @@ export default function NewsPage() {
             ))}
           </div>
 
-          {/* Active Filter Indicators & Reset */}
           {isFiltering && (
             <div className="flex items-center gap-2">
               {selectedArchive && (
@@ -249,7 +244,6 @@ export default function NewsPage() {
 
       <div ref={listTopRef} />
 
-      {/* Result Status Indicator */}
       {!loading && (
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
           <span>
@@ -269,7 +263,6 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Loading Skeleton */}
       {loading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -286,7 +279,6 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Empty State */}
       {!loading && filteredNews.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto space-y-4">
           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
@@ -310,7 +302,6 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Featured News Hero Card (Only on Page 1 when not filtering) */}
       {!loading && featuredItem && (
         <div className="space-y-4">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -365,7 +356,6 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Regular News Grid (9 Items per page) */}
       {!loading && paginatedItems.length > 0 && (
         <div className="space-y-6">
           {featuredItem && (
@@ -383,7 +373,6 @@ export default function NewsPage() {
             {paginatedItems.map((item) => (
               <Link key={item.id} href={`/berita/${item.id}`} className="group">
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden hover:border-[#1b365d] hover:shadow-md transition-all h-full flex flex-col">
-                  {/* Thumbnail Image */}
                   <div className="aspect-video bg-slate-100 overflow-hidden relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -396,7 +385,6 @@ export default function NewsPage() {
                     />
                   </div>
 
-                  {/* Body Content */}
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -436,7 +424,6 @@ export default function NewsPage() {
             ))}
           </div>
 
-          {/* Pagination Controls (Entries Pages) */}
           {totalPages > 1 && (
             <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs text-slate-600">
@@ -504,7 +491,6 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Archive Navigation */}
       {!loading && archives.length > 0 && (
         <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-6 space-y-3">
           <div className="flex items-center justify-between">

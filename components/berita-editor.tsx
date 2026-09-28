@@ -396,7 +396,6 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
               </div>
             </div>
 
-            {/* Foto Sampul Berita */}
             <div className="space-y-2 pt-3 border-t">
               <Label className="font-semibold text-slate-800">Foto Sampul (Cover Image)</Label>
               <div className="flex flex-col sm:flex-row gap-4 items-start">
