@@ -135,9 +135,7 @@ export default function Home() {
         if (activeItems.length > 0) {
           setAgendaItems(activeItems);
         }
-        // else keep default
       } catch {
-        // keep default agenda on error
       } finally {
         setAgendaLoading(false);
       }
@@ -202,11 +200,9 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-12 pb-16">
-      {/* Hero Section - Formal Government Portal */}
       <section className="relative py-12 md:py-16 bg-[#f0f4f9] border-b border-slate-200">
         <div className="container mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            {/* Left Content */}
             <div className="lg:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-semibold bg-white text-[#1b365d] border border-slate-200 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -234,7 +230,6 @@ export default function Home() {
                 </Link>
               </div>
 
-              {/* Trust Indicators */}
               <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center gap-5 text-xs text-slate-600 font-medium">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -251,7 +246,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right: Info Loket & Layanan Cepat */}
             <div className="lg:col-span-5">
               <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
@@ -294,7 +288,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Quick Info: Alamat & WhatsApp Resmi */}
                 <div className="pt-2 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-[#1b365d] shrink-0" />
@@ -323,7 +316,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4 Pilar Layanan Publik - Clean Formal Grid */}
       <section className="container mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {[
@@ -381,7 +373,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Alur Pengajuan Surat - Clean Administrative Steps */}
       <section className="bg-white border-y border-slate-200 py-14">
         <div className="container mx-auto px-6 md:px-12">
           <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
@@ -442,7 +433,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pusat Bantuan & Kontak Darurat Wilayah */}
       <section className="container mx-auto px-6 md:px-12">
         <div className="bg-[#1b365d] text-white rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
@@ -504,7 +494,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Warta & Pengumuman Resmi Kelurahan */}
       <section className="container mx-auto px-6 md:px-12">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -593,7 +582,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Agenda Pelayanan & Program Lingkungan Kelurahan */}
       <section className="container mx-auto px-6 md:px-12">
         <div className="border border-slate-200 rounded-2xl p-6 md:p-8 bg-slate-50 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-4">
@@ -648,7 +636,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Transparansi Data Penduduk Kelurahan */}
       <section className="bg-white py-14 border-t border-slate-200">
         <div className="container mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
@@ -695,7 +682,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Demografi & Komitmen Pelayanan Card */}
             <div className="lg:col-span-6">
               <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 space-y-4 shadow-2xs">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-3">

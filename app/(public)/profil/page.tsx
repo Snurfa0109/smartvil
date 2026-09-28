@@ -45,7 +45,6 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-12">
-      {/* Title Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
           <span>Kecamatan Cipocok Jaya • Kota Serang</span>
@@ -61,7 +60,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Info Identitas Resmi & Wilayah */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "Kode Kemendagri", val: "36.73.05.1004" },
@@ -76,10 +74,8 @@ export default function ProfilePage() {
         ))}
       </div>
 
-      {/* Sejarah & Selayang Pandang */}
       <section className="grid md:grid-cols-2 gap-8 items-stretch">
         <div className="bg-white border border-slate-200/90 rounded-2xl p-6 md:p-7 flex flex-col justify-between shadow-xs space-y-6">
-          {/* Top Header */}
           <div className="flex items-center justify-between gap-4 pb-5 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center shrink-0">
@@ -105,7 +101,6 @@ export default function ProfilePage() {
             </span>
           </div>
 
-          {/* Core Services */}
           <div className="space-y-4">
             <div>
               <h4 className="text-base font-bold text-slate-900">
@@ -147,7 +142,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5">
             <Link
               href="/layanan"

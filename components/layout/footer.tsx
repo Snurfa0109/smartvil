@@ -25,7 +25,6 @@ export function Footer() {
 
   return (
     <footer className="bg-[#0d1b2a] text-slate-300">
-      {/* CTA strip */}
       <div className="bg-[#162f56] border-b border-white/10 py-6 px-6 md:px-12">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
@@ -40,11 +39,9 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Main */}
       <div className="container mx-auto px-6 md:px-12 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
 
-          {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,7 +68,6 @@ export function Footer() {
                 Pelayanan mandiri online aktif 24 jam
               </div>
             </div>
-            {/* Social Media & Tautan Resmi (Brand Icon Logos) */}
             <div className="flex items-center gap-2.5 pt-2">
               {config.instagramUrl && (
                 <a
@@ -120,7 +116,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Tautan Cepat */}
           <div className="space-y-4">
             <h4 className="text-white font-semibold text-sm">Tautan Cepat</h4>
             <ul className="space-y-2.5">
@@ -135,7 +130,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Kontak */}
           <div className="space-y-4">
             <h4 className="text-white font-semibold text-sm">Kontak Kantor</h4>
             <ul className="space-y-3 text-sm text-slate-400">
@@ -158,7 +152,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Kontak Darurat */}
           <div className="space-y-4">
             <h4 className="text-white font-semibold text-sm">Kontak Darurat & Terkait</h4>
             <div className="space-y-2">
@@ -187,7 +180,6 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
           <p>© {new Date().getFullYear()} Pemerintah {config.villageName}, Kec. Cipocok Jaya, Kota Serang.</p>
           <p>Kode Kemendagri: 36.73.05.1004 | Kode Pos: 42122</p>

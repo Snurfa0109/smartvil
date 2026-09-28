@@ -127,7 +127,6 @@ export default function BeritaDetailPage() {
             </h1>
           </header>
 
-          {/* Cover Banner */}
           <div className="w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden shadow-xs border border-slate-200 bg-slate-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
