@@ -168,16 +168,11 @@ export default function Home() {
       try {
         const residentsRef = collection(db, "residents");
 
-        const totalSnap = await getCountFromServer(residentsRef);
-        const total = totalSnap.data().count;
-
-        const maleQuery = query(residentsRef, where("gender", "==", "Laki-laki"));
-        const maleSnap = await getCountFromServer(maleQuery);
-        const male = maleSnap.data().count;
-
-        const femaleQuery = query(residentsRef, where("gender", "==", "Perempuan"));
-        const femaleSnap = await getCountFromServer(femaleQuery);
-        const female = femaleSnap.data().count;
+        const [total, male, female] = await Promise.all([
+          getCountFromServer(residentsRef).then((s) => s.data().count),
+          getCountFromServer(query(residentsRef, where("gender", "==", "Laki-laki"))).then((s) => s.data().count),
+          getCountFromServer(query(residentsRef, where("gender", "==", "Perempuan"))).then((s) => s.data().count),
+        ]);
 
         const kkApprox = Math.max(1, Math.floor(total / 3));
 

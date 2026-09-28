@@ -1,3 +1,6 @@
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
 export interface LetterCustomFieldDef {
   key: string;
   label: string;
@@ -16,6 +19,7 @@ export interface LetterType {
   order?: number;
   templateFileUrl?: string;
   templateStoragePath?: string;
+  templateData?: string;
   templatePlaceholders?: string[];
   customFields?: LetterCustomFieldDef[];
 }
@@ -109,3 +113,20 @@ export const DEFAULT_LETTER_TYPES: LetterType[] = [
     order: 6,
   },
 ];
+
+let cachedTypes: { data: LetterType[]; at: number } | null = null;
+const TYPES_TTL_MS = 60_000;
+
+export async function getLetterTypes(): Promise<LetterType[]> {
+  if (cachedTypes && Date.now() - cachedTypes.at < TYPES_TTL_MS) {
+    return cachedTypes.data;
+  }
+  const snap = await getDocs(collection(db, "letter_types"));
+  const types = snap.docs.map((d) => ({ id: d.id, ...(d.data() as LetterType) }));
+  cachedTypes = { data: types, at: Date.now() };
+  return types;
+}
+
+export function invalidateLetterTypes(): void {
+  cachedTypes = null;
+}

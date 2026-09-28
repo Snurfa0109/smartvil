@@ -24,7 +24,7 @@ import {
 import { useState, useEffect } from "react";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { DEFAULT_LETTER_TYPES, LetterType } from "@/lib/letters";
+import { DEFAULT_LETTER_TYPES, LetterType, getLetterTypes } from "@/lib/letters";
 
 interface StoredTicket {
   ticketCode: string;
@@ -75,16 +75,10 @@ export default function ServicesPage() {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-        const snap = await getDocs(collection(db, "letter_types"));
-        if (!snap.empty) {
-          const fromDb: LetterType[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as any),
-          }));
-          const activeOnly = fromDb.filter((item) => item.active !== false);
-          if (activeOnly.length > 0) {
-            setLetterTypesList(activeOnly);
-          }
+        const fromDb = await getLetterTypes();
+        const activeOnly = fromDb.filter((item) => item.active !== false);
+        if (activeOnly.length > 0) {
+          setLetterTypesList(activeOnly);
         }
       } catch (err) {
         console.error("Error fetching letter types, using defaults:", err);
