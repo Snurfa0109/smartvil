@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Lock, Mail, Shield } from "lucide-react";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { writeAuditLog } from "@/lib/audit";
 
 export default function LoginPage() {
@@ -21,41 +19,48 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const user = userCredential.user;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw error;
+      const sbUser = data.user;
 
-      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", sbUser.id)
+        .maybeSingle();
+
       let role = "admin";
-      let displayName = user.displayName || "Admin";
+      let displayName = (sbUser.user_metadata?.display_name as string) || "Admin";
 
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.active === false) {
-          await signOut(auth);
-          setError("Akun ini telah dinonaktifkan. Hubungi Super Admin kelurahan.");
-          await writeAuditLog(
-            "AKSES_DITOLAK",
-            "auth",
-            `Login diblokir: Akun ${user.email} berstatus nonaktif`,
-            { uid: user.uid, email: user.email || email, displayName: data.displayName || "Admin", role: data.role || "user" }
-          );
-          setLoading(false);
-          return;
-        }
-
-        role = data.role || "admin";
-        displayName = data.displayName || displayName;
-
-        await updateDoc(doc(db, "users", user.uid), {
-          lastLogin: serverTimestamp(),
-        }).catch(() => {});
+      if (!profile || profile.active === false) {
+        await supabase.auth.signOut();
+        setError("Akun ini telah dinonaktifkan. Hubungi Super Admin kelurahan.");
+        await writeAuditLog(
+          "AKSES_DITOLAK",
+          "auth",
+          `Login diblokir: Akun ${sbUser.email} berstatus nonaktif`,
+          { uid: sbUser.id, email: sbUser.email || email, displayName: profile?.display_name || "Admin", role: profile?.role || "user" }
+        );
+        setLoading(false);
+        return;
       }
+
+      role = profile.role || "admin";
+      displayName = profile.display_name || displayName;
+
+      await supabase
+        .from("profiles")
+        .update({ last_login: new Date().toISOString() })
+        .eq("id", sbUser.id);
 
       await writeAuditLog(
         "LOGIN",
         "auth",
         `Login berhasil ke CMS Kelurahan (${role})`,
-        { uid: user.uid, email: user.email || email, displayName, role }
+        { uid: sbUser.id, email: sbUser.email || email, displayName, role }
       );
 
       router.push("/dashboard");

@@ -1,5 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 
 export interface LetterCustomFieldDef {
   key: string;
@@ -121,8 +120,26 @@ export async function getLetterTypes(): Promise<LetterType[]> {
   if (cachedTypes && Date.now() - cachedTypes.at < TYPES_TTL_MS) {
     return cachedTypes.data;
   }
-  const snap = await getDocs(collection(db, "letter_types"));
-  const types = snap.docs.map((d) => ({ id: d.id, ...(d.data() as LetterType) }));
+  const { data, error } = await supabase
+    .from("letter_types")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  const types: LetterType[] = (data || []).map((row) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    desc: row.description,
+    requirements: row.requirements || [],
+    templateNarrative: row.template_narrative || "",
+    active: row.active !== false,
+    order: row.sort_order || 0,
+    templateFileUrl: row.template_file_url || "",
+    templateStoragePath: "",
+    templateData: row.template_data || "",
+    templatePlaceholders: row.template_placeholders || [],
+    customFields: row.custom_fields || [],
+  }));
   cachedTypes = { data: types, at: Date.now() };
   return types;
 }

@@ -2,8 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -21,13 +20,19 @@ export default function BeritaDashboardPage() {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, "news"), orderBy("date", "desc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setNews(data);
+      const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false });
+      if (error) throw error;
+      setNews(
+        (data || []).map((row) => ({
+          id: row.id,
+          title: row.title,
+          category: row.category,
+          content: row.content,
+          date: row.date,
+          imageUrl: row.image_url,
+          createdAt: row.created_at,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching news:", error);
     } finally {
@@ -43,7 +48,8 @@ export default function BeritaDashboardPage() {
     if (confirm("Apakah anda yakin ingin menghapus berita ini?")) {
       try {
         const deletedItem = news.find((n) => n.id === id);
-        await deleteDoc(doc(db, "news", id));
+        const { error } = await supabase.from("news").delete().eq("id", id);
+        if (error) throw error;
         await writeAuditLog(
           "DELETE",
           "berita",

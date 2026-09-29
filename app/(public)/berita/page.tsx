@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Calendar, ChevronLeft, ChevronRight, Search, X, Tag, RotateCcw } from "lucide-react";
 import { stripHtml } from "@/lib/utils";
 
@@ -32,13 +31,17 @@ export default function NewsPage() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const q = query(collection(db, "news"), orderBy("date", "desc"));
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false });
+        if (error) throw error;
+        const mapped = (data || []).map((row) => ({
+          id: row.id,
+          title: row.title,
+          content: row.content,
+          date: row.date,
+          category: row.category,
+          imageUrl: row.image_url,
         })) as NewsItem[];
-        setNewsItems(data);
+        setNewsItems(mapped);
       } catch (error) {
         console.error("Error fetching news:", error);
       } finally {

@@ -3,8 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserCheck, Baby, Briefcase, GraduationCap, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, LayoutGrid, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 
 const EXTERNAL_LINKS = [
   {
@@ -152,8 +151,17 @@ export default function DataPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const snapshot = await getDocs(collection(db, "residents"));
-        const residents = snapshot.docs.map((d) => d.data() as any);
+        const { data, error } = await supabase.from("residents").select("*");
+        if (error) throw error;
+        const residents = (data || []).map((row: Record<string, any>) => ({
+          gender: row.gender,
+          birthDate: row.birth_date,
+          occupation: row.occupation,
+          agama: row.agama,
+          education: row.education,
+          status: row.status,
+          statusKeluarga: row.status_keluarga,
+        }));
 
         const total = residents.length;
         let male = 0;

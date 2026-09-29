@@ -1,5 +1,4 @@
-import { db, auth } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { supabase } from "@/lib/supabase";
 
 export type AuditAction = "LOGIN" | "LOGOUT" | "CREATE" | "UPDATE" | "DELETE" | "AKSES_DITOLAK";
 export type AuditModule =
@@ -25,7 +24,7 @@ export interface AuditEntry {
 }
 
 /**
- * Writes an audit log entry to Firestore `audit_logs` collection.
+ * Writes an audit log entry to Supabase `audit_logs`.
  */
 export async function writeAuditLog(
   action: AuditAction,
@@ -34,20 +33,27 @@ export async function writeAuditLog(
   overrideUser?: { uid: string; email: string; displayName: string; role: string }
 ): Promise<void> {
   try {
-    const user = overrideUser ?? {
-      uid: auth.currentUser?.uid ?? "unknown",
-      email: auth.currentUser?.email ?? "unknown",
-      displayName: auth.currentUser?.displayName ?? "Admin",
-      role: "unknown",
-    };
+    let user = overrideUser;
+    if (!user) {
+      const { data } = await supabase.auth.getUser();
+      const u = data.user;
+      user = {
+        uid: u?.id ?? "unknown",
+        email: u?.email ?? "unknown",
+        displayName: (u?.user_metadata?.display_name as string) ?? "Admin",
+        role: "unknown",
+      };
+    }
 
-    await addDoc(collection(db, "audit_logs"), {
-      ...user,
+    await supabase.from("audit_logs").insert({
+      uid: user.uid,
+      email: user.email,
+      display_name: user.displayName,
+      role: user.role,
       action,
       module,
       detail,
-      timestamp: serverTimestamp(),
-    } satisfies Omit<AuditEntry, "timestamp"> & { timestamp: any });
+    });
   } catch (err) {
     // Audit log should never crash the app
     console.warn("Audit log failed (non-critical):", err);

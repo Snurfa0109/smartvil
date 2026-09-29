@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { db, firebaseConfig } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { writeAuditLog } from "@/lib/audit";
-import {
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import {
   ShieldCheck,
   UserPlus,
@@ -86,27 +75,24 @@ export default function AdminsManagementPage() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "users"));
-      const list: AdminUser[] = [];
-      snap.forEach((d) => {
-        const data = d.data();
-        list.push({
-          id: d.id,
-          uid: data.uid || d.id,
-          displayName: data.displayName || "Admin",
-          email: data.email || "-",
-          role: data.role || "admin",
-          department: data.department || "Kelurahan",
-          active: data.active !== false,
-          createdAt: data.createdAt,
-          lastLogin: data.lastLogin,
-          permissions: Array.isArray(data.permissions)
-            ? data.permissions
-            : data.role === "superadmin"
-            ? []
-            : DEFAULT_ADMIN_PERMISSIONS,
-        });
-      });
+      const { data, error } = await supabase.from("profiles").select("*");
+      if (error) throw error;
+      const list: AdminUser[] = (data || []).map((row) => ({
+        id: row.id,
+        uid: row.id,
+        displayName: row.display_name || "Admin",
+        email: row.email || "-",
+        role: row.role || "admin",
+        department: row.department || "Kelurahan",
+        active: row.active !== false,
+        createdAt: row.created_at,
+        lastLogin: row.last_login,
+        permissions: Array.isArray(row.permissions)
+          ? row.permissions
+          : row.role === "superadmin"
+          ? []
+          : DEFAULT_ADMIN_PERMISSIONS,
+      }));
       list.sort((a, b) => {
         if (a.role === "superadmin" && b.role !== "superadmin") return -1;
         if (b.role === "superadmin" && a.role !== "superadmin") return 1;
@@ -170,34 +156,32 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      const secondaryAppName = `SecondaryApp_${Date.now()}`;
-      const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
-      const secondaryAuth = getAuth(secondaryApp);
-
-      const userCred = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        formData.email.trim(),
-        formData.password
-      );
-
-      await updateProfile(userCred.user, {
-        displayName: formData.displayName.trim(),
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) {
+        setErrorMsg("Sesi login tidak ditemukan. Silakan login kembali.");
+        return;
+      }
+      const res = await fetch("/api/admins", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+          displayName: formData.displayName.trim(),
+          role: formData.role,
+          department: formData.department,
+          permissions: formData.role === "superadmin" ? [] : formData.permissions,
+        }),
       });
-
-      const newAdminData = {
-        uid: userCred.user.uid,
-        displayName: formData.displayName.trim(),
-        email: formData.email.trim(),
-        role: formData.role,
-        department: formData.department,
-        permissions: formData.role === "superadmin" ? [] : formData.permissions,
-        active: true,
-        createdAt: serverTimestamp(),
-      };
-
-      await setDoc(doc(db, "users", userCred.user.uid), newAdminData);
-
-      await signOut(secondaryAuth);
+      const result = await res.json();
+      if (!res.ok) {
+        setErrorMsg(result.error || "Gagal membuat admin baru.");
+        return;
+      }
 
       await writeAuditLog(
         "CREATE",
@@ -210,11 +194,7 @@ export default function AdminsManagementPage() {
       await fetchAdmins();
     } catch (err: any) {
       console.error(err);
-      if (err.code === "auth/email-already-in-use") {
-        setErrorMsg("Email sudah terdaftar. Gunakan email lain.");
-      } else {
-        setErrorMsg(err.message || "Gagal membuat admin baru.");
-      }
+      setErrorMsg(err.message || "Gagal membuat admin baru.");
     } finally {
       setSubmitting(false);
     }
@@ -228,16 +208,17 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      const updatePayload = {
-        displayName: formData.displayName.trim(),
-        role: formData.role,
-        department: formData.department,
-        permissions: formData.role === "superadmin" ? [] : formData.permissions,
-        active: formData.active,
-        updatedAt: serverTimestamp(),
-      };
-
-      await updateDoc(doc(db, "users", editingAdmin.uid), updatePayload);
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          display_name: formData.displayName.trim(),
+          role: formData.role,
+          department: formData.department,
+          permissions: formData.role === "superadmin" ? [] : formData.permissions,
+          active: formData.active,
+        })
+        .eq("id", editingAdmin.uid);
+      if (error) throw error;
 
       await writeAuditLog(
         "UPDATE",
@@ -273,10 +254,11 @@ export default function AdminsManagementPage() {
     if (!confirm(confirmMsg)) return;
 
     try {
-      await updateDoc(doc(db, "users", admin.uid), {
-        active: nextState,
-        updatedAt: serverTimestamp(),
-      });
+      const { error } = await supabase
+        .from("profiles")
+        .update({ active: nextState })
+        .eq("id", admin.uid);
+      if (error) throw error;
 
       await writeAuditLog(
         "UPDATE",
@@ -302,7 +284,25 @@ export default function AdminsManagementPage() {
     }
 
     try {
-      await deleteDoc(doc(db, "users", admin.uid));
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) {
+        alert("Sesi login tidak ditemukan. Silakan login kembali.");
+        return;
+      }
+      const res = await fetch("/api/admins", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid: admin.uid }),
+      });
+      if (!res.ok) {
+        const result = await res.json();
+        alert(result.error || "Gagal menghapus admin.");
+        return;
+      }
 
       await writeAuditLog(
         "DELETE",

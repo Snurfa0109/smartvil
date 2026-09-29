@@ -3,8 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, FileText, Newspaper, UserCheck, MapPin, Phone, ArrowRight, Building2, HelpCircle } from "lucide-react";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { stripHtml } from "@/lib/utils";
 
 interface SearchResultItem {
@@ -135,16 +134,15 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     if (!isOpen || newsFetched) return;
     const fetchNewsForSearch = async () => {
       try {
-        const q = query(collection(db, "news"), orderBy("date", "desc"), limit(50));
-        const snap = await getDocs(q);
-        const mapped: SearchResultItem[] = snap.docs.map((doc) => {
-          const d = doc.data();
+        const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false }).limit(50);
+        if (error) throw error;
+        const mapped: SearchResultItem[] = (data || []).map((row) => {
           return {
-            id: `news-${doc.id}`,
-            title: d.title || "Berita",
+            id: `news-${row.id}`,
+            title: row.title || "Berita",
             category: "berita",
-            subtitle: `${d.category || "Berita"} • ${d.content ? stripHtml(d.content).substring(0, 90) + "..." : ""}`,
-            url: `/berita/${doc.id}`,
+            subtitle: `${row.category || "Berita"} • ${row.content ? stripHtml(row.content).substring(0, 90) + "..." : ""}`,
+            url: `/berita/${row.id}`,
           };
         });
         setNewsResults(mapped);

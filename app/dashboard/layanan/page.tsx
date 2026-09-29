@@ -2,19 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-  addDoc,
-  serverTimestamp,
-  setDoc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -39,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { LetterType, LetterCustomFieldDef, DEFAULT_LETTER_TYPES, getLetterTypes, invalidateLetterTypes } from "@/lib/letters";
+import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import {
   extractPlaceholdersFromDocx,
   smartTemplateFromStaticDocx,
@@ -52,8 +41,6 @@ import {
 } from "@/lib/letter-template";
 import LetterSimulationPreview from "@/components/letter-simulation-preview";
 import LetterPrintDocument from "@/components/letter-print-document";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
 
 export default function LayananDashboardPage() {
   const [activeTab, setActiveTab] = useState<"requests" | "letter_types">("requests");
@@ -90,21 +77,42 @@ export default function LayananDashboardPage() {
   const [printRequest, setPrintRequest] = useState<any | null>(null);
   const [printConfig, setPrintConfig] = useState({
     nomorSurat: "",
-    pejabatNama: "BUDI SANTOSO",
-    pejabatJabatan: "Lurah Banjar Agung",
-    pejabatNip: "19780512 200501 1 004",
+    pejabatNama: DEFAULT_SITE_SETTINGS.headName,
+    pejabatJabatan: DEFAULT_SITE_SETTINGS.headTitle,
+    pejabatNip: DEFAULT_SITE_SETTINGS.headNip,
     tanggalSurat: "",
+  });
+  const [signerDefaults, setSignerDefaults] = useState({
+    pejabatNama: DEFAULT_SITE_SETTINGS.headName,
+    pejabatJabatan: DEFAULT_SITE_SETTINGS.headTitle,
+    pejabatNip: DEFAULT_SITE_SETTINGS.headNip,
   });
 
   const fetchRequests = async () => {
     try {
-      const q = query(collection(db, "requests"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
-      setRequests(data);
+      const { data, error } = await supabase
+        .from("requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setRequests(
+        (data || []).map((row) => ({
+          id: row.id,
+          nama: row.nama,
+          nik: row.nik,
+          phone: row.phone,
+          keperluan: row.keperluan,
+          ticketCode: row.ticket_code,
+          type: row.type,
+          typeName: row.type_name,
+          templateNarrative: row.template_narrative,
+          requirements: [],
+          formData: row.form_data || {},
+          status: row.status,
+          adminNotes: row.admin_notes,
+          createdAt: row.created_at,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching requests:", error);
     } finally {
@@ -119,11 +127,19 @@ export default function LayananDashboardPage() {
       if (types.length === 0) {
         const initialList: LetterType[] = [];
         for (const item of DEFAULT_LETTER_TYPES) {
-          const docRef = await addDoc(collection(db, "letter_types"), {
-            ...item,
-            createdAt: serverTimestamp(),
+          const id = crypto.randomUUID();
+          const { error: seedError } = await supabase.from("letter_types").insert({
+            id,
+            code: item.code,
+            name: item.name,
+            description: item.desc,
+            requirements: item.requirements,
+            template_narrative: item.templateNarrative || "",
+            active: item.active,
+            sort_order: item.order || 0,
           });
-          initialList.push({ ...item, id: docRef.id });
+          if (seedError) throw seedError;
+          initialList.push({ ...item, id });
         }
         invalidateLetterTypes();
         setLetterTypes(initialList);
@@ -141,13 +157,17 @@ export default function LayananDashboardPage() {
   useEffect(() => {
     fetchRequests();
     fetchLetterTypes();
+    getSiteSettings()
+      .then((s) =>
+        setSignerDefaults({ pejabatNama: s.headName, pejabatJabatan: s.headTitle, pejabatNip: s.headNip })
+      )
+      .catch(() => undefined);
   }, []);
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
-      await updateDoc(doc(db, "requests", id), {
-        status: newStatus,
-      });
+      const { error } = await supabase.from("requests").update({ status: newStatus }).eq("id", id);
+      if (error) throw error;
       fetchRequests();
       if (selectedRequest && selectedRequest.id === id) {
         setSelectedRequest((prev: any) => ({ ...prev, status: newStatus }));
@@ -161,7 +181,8 @@ export default function LayananDashboardPage() {
   const handleDeleteRequest = async (id: string, name: string) => {
     if (confirm(`Hapus permohonan surat atas nama "${name}"?`)) {
       try {
-        await deleteDoc(doc(db, "requests", id));
+        const { error } = await supabase.from("requests").delete().eq("id", id);
+        if (error) throw error;
         if (selectedRequest?.id === id) setSelectedRequest(null);
         fetchRequests();
       } catch (err) {
@@ -307,20 +328,22 @@ export default function LayananDashboardPage() {
       setUploadingTemplate(true);
       try {
         const safeCode = (typeForm.code || `srt_${Date.now()}`).trim().toLowerCase().replace(/\s+/g, "_");
-        const storagePath = `letter_templates/${safeCode}_${Date.now()}.docx`;
-        const storageRef = ref(storage, storagePath);
-        // Batasi maksimal 20 detik: Storage yang tidak terjangkau membuat SDK
-        // retry sampai bermenit-menit. Lewat batas langsung pakai database.
+        const storagePath = `${safeCode}_${Date.now()}.docx`;
         const UPLOAD_TIMEOUT_MS = 20_000;
-        const url: string = await Promise.race([
-          uploadBytes(storageRef, uploadBlob).then(() => getDownloadURL(storageRef)),
+        const { error } = await Promise.race([
+          supabase.storage.from("templates").upload(storagePath, uploadBlob, {
+            contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            upsert: true,
+          }),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("Koneksi ke Storage terlalu lama (timeout 20 detik).")), UPLOAD_TIMEOUT_MS)
           ),
         ]);
+        if (error) throw error;
+        const { data } = supabase.storage.from("templates").getPublicUrl(storagePath);
         setTypeForm((prev) => ({
           ...prev,
-          templateFileUrl: url,
+          templateFileUrl: data.publicUrl,
           templateStoragePath: storagePath,
           templateData: "",
         }));
@@ -388,26 +411,27 @@ export default function LayananDashboardPage() {
       const payload = {
         code: typeForm.code.trim().toLowerCase().replace(/\s+/g, "_"),
         name: typeForm.name.trim(),
-        desc: typeForm.desc.trim(),
+        description: typeForm.desc.trim(),
         requirements: reqArray,
-        templateNarrative: typeForm.templateNarrative.trim(),
+        template_narrative: typeForm.templateNarrative.trim(),
         active: typeForm.active,
-        templateFileUrl: typeForm.templateFileUrl || "",
-        templateStoragePath: typeForm.templateStoragePath || "",
-        templateData: typeForm.templateData || "",
-        templatePlaceholders: typeForm.templatePlaceholders || [],
-        customFields: typeForm.customFields || [],
-        updatedAt: serverTimestamp(),
+        template_file_url: typeForm.templateFileUrl || "",
+        template_data: typeForm.templateData || "",
+        template_placeholders: typeForm.templatePlaceholders || [],
+        custom_fields: typeForm.customFields || [],
       };
 
       if (editingTypeId) {
-        await updateDoc(doc(db, "letter_types", editingTypeId), payload);
+        const { error } = await supabase.from("letter_types").update(payload).eq("id", editingTypeId);
+        if (error) throw error;
         alert("Jenis surat berhasil diperbarui!");
       } else {
-        await addDoc(collection(db, "letter_types"), {
+        const { error } = await supabase.from("letter_types").insert({
+          id: crypto.randomUUID(),
           ...payload,
-          createdAt: serverTimestamp(),
+          sort_order: letterTypes.length,
         });
+        if (error) throw error;
         alert("Jenis surat baru berhasil ditambahkan!");
       }
 
@@ -426,7 +450,8 @@ export default function LayananDashboardPage() {
   const handleDeleteType = async (id: string, name: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus jenis surat "${name}"?`)) {
       try {
-        await deleteDoc(doc(db, "letter_types", id));
+        const { error } = await supabase.from("letter_types").delete().eq("id", id);
+        if (error) throw error;
         invalidateLetterTypes();
         fetchLetterTypes();
       } catch (err) {
@@ -443,9 +468,9 @@ export default function LayananDashboardPage() {
 
     setPrintConfig({
       nomorSurat: `470 / ${randomNum} / PEM-SMV / ${currentMonthRoman} / ${new Date().getFullYear()}`,
-      pejabatNama: "BUDI SANTOSO",
-      pejabatJabatan: "Lurah Banjar Agung",
-      pejabatNip: "19780512 200501 1 004",
+      pejabatNama: signerDefaults.pejabatNama,
+      pejabatJabatan: signerDefaults.pejabatJabatan,
+      pejabatNip: signerDefaults.pejabatNip,
       tanggalSurat: new Date().toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
@@ -591,8 +616,8 @@ export default function LayananDashboardPage() {
                   <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground pt-2 border-t gap-2">
                     <span>
                       Diajukan:{" "}
-                      {item.createdAt?.seconds
-                        ? new Date(item.createdAt.seconds * 1000).toLocaleDateString("id-ID", {
+                      {item.createdAt
+                        ? new Date(typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",

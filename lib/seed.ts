@@ -1,9 +1,9 @@
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, writeBatch, doc } from "firebase/firestore";
+import { supabase } from "@/lib/supabase";
+
+const now = () => new Date().toISOString();
 
 export const seedDatabase = async () => {
   try {
-    const batch = writeBatch(db);
 
     const residents = [
       { nik: "3201010101010001", nama: "Budi Santoso", gender: "Laki-laki", address: "Jl. Mawar No. 1", occupation: "Petani", birthDate: "1980-01-01", status: "Tetap" },
@@ -18,10 +18,20 @@ export const seedDatabase = async () => {
       { nik: "3201011010100010", nama: "Joko Susilo", gender: "Laki-laki", address: "Jl. Mawar No. 15", occupation: "Supir", birthDate: "1983-10-10", status: "Tetap" },
     ];
 
-    residents.forEach((r) => {
-      const ref = doc(collection(db, "residents"));
-      batch.set(ref, { ...r, createdAt: serverTimestamp() });
-    });
+    const { error: resErr } = await supabase.from("residents").insert(
+      residents.map((r) => ({
+        id: crypto.randomUUID(),
+        nik: r.nik,
+        nama: r.nama,
+        gender: r.gender,
+        address: r.address,
+        occupation: r.occupation,
+        birth_date: r.birthDate,
+        status: r.status,
+        created_at: now(),
+      }))
+    );
+    if (resErr) throw resErr;
 
     const news = [
       {
@@ -116,10 +126,17 @@ export const seedDatabase = async () => {
       },
     ];
 
-    news.forEach((n) => {
-      const ref = doc(collection(db, "news"));
-      batch.set(ref, { ...n, createdAt: serverTimestamp() });
-    });
+    const { error: newsErr } = await supabase.from("news").insert(
+      news.map((n) => ({
+        id: crypto.randomUUID(),
+        title: n.title,
+        category: n.category,
+        content: n.content,
+        date: n.date,
+        created_at: now(),
+      }))
+    );
+    if (newsErr) throw newsErr;
 
     const complaints = [
       { nama: "Warga 1", email: "warga1@email.com", phone: "081234567890", category: "Infrastruktur", message: "Jalan berlubang di RT 05 mohon segera diperbaiki.", status: "pending" },
@@ -127,10 +144,21 @@ export const seedDatabase = async () => {
       { nama: "Warga 3", email: "warga3@email.com", phone: "081234567892", category: "Keamanan", message: "Pos kamling di RW 03 perlu perbaikan atap.", status: "processed" },
     ];
 
-    complaints.forEach((c) => {
-      const ref = doc(collection(db, "complaints"));
-      batch.set(ref, { ...c, createdAt: serverTimestamp() });
-    });
+    const { error: compErr } = await supabase.from("complaints").insert(
+      complaints.map((c) => ({
+        id: crypto.randomUUID(),
+        nama: c.nama,
+        email: c.email,
+        phone: c.phone,
+        category: c.category,
+        title: c.message,
+        message: c.message,
+        status: c.status,
+        admin_response: "",
+        created_at: now(),
+      }))
+    );
+    if (compErr) throw compErr;
 
     const requests = [
       { nama: "Budi Santoso", nik: "3201010101010001", type: "sktm", keperluan: "Beasiswa Anak", status: "pending", phone: "08111111111" },
@@ -138,12 +166,71 @@ export const seedDatabase = async () => {
       { nama: "Ahmad Rizki", nik: "3201010303030003", type: "usaha", keperluan: "Kredit KUR", status: "completed", phone: "08333333333" },
     ];
 
-    requests.forEach((r) => {
-      const ref = doc(collection(db, "requests"));
-      batch.set(ref, { ...r, createdAt: serverTimestamp() });
-    });
+    const { error: reqErr } = await supabase.from("requests").insert(
+      requests.map((r, i) => ({
+        id: crypto.randomUUID(),
+        ticket_code: `SRT-2026-DUMMY-${i + 1}`,
+        nama: r.nama,
+        nik: r.nik,
+        phone: r.phone,
+        type: r.type,
+        type_name: "",
+        keperluan: r.keperluan,
+        status: r.status,
+        form_data: {},
+        template_narrative: "",
+        admin_notes: "",
+        created_at: now(),
+      }))
+    );
+    if (reqErr) throw reqErr;
 
-    await batch.commit();
+    const agendas = [
+      {
+        title: 'Gerakan "Rabu Asri" Kelurahan',
+        category: "Program Lingkungan",
+        categoryColor: "blue",
+        schedule: "Setiap Rabu",
+        description:
+          "Kerja bakti kebersihan drainase, penghijauan lingkungan, dan penataan pemukiman bersama RT/RW se-Kelurahan Banjar Agung.",
+        timeLocation: "07:30 WIB - Selesai • Seluruh Lingkungan RW",
+      },
+      {
+        title: "Penyaluran Beras Bantuan Pangan Kemensos RI",
+        category: "Bantuan Sosial",
+        categoryColor: "emerald",
+        schedule: "Sesuai Jadwal",
+        description:
+          "Penyaluran Cadangan Beras Pangan Pemerintah (CPP) bagi Keluarga Penerima Manfaat (KPM) warga Kelurahan Banjar Agung.",
+        timeLocation: "Aula Kantor Kelurahan Banjar Agung",
+      },
+      {
+        title: "Posyandu Balita & Lansia Puskesmas Banjar Agung",
+        category: "Kesehatan Warga",
+        categoryColor: "amber",
+        schedule: "Jadwal Posyandu",
+        description:
+          "Pemeriksaan kesehatan tumbuh kembang balita, imunisasi dasar, penimbangan, dan pemeriksaan tekanan darah lansia.",
+        timeLocation: "08:30 - 11:30 WIB • Posyandu BAP & Lingkungan RW",
+      },
+    ];
+
+    const { error: agendaErr } = await supabase.from("agenda").insert(
+      agendas.map((a, i) => ({
+        id: crypto.randomUUID(),
+        title: a.title,
+        category: a.category,
+        category_color: a.categoryColor,
+        schedule: a.schedule,
+        description: a.description,
+        time_location: a.timeLocation,
+        active: true,
+        sort_order: i,
+        created_at: now(),
+      }))
+    );
+    if (agendaErr) throw agendaErr;
+
     console.log("Database seeded successfully!");
     return true;
   } catch (error) {

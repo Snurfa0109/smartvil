@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
+import { supabase } from "@/lib/supabase";
 import { AuditEntry, AuditAction, AuditModule } from "@/lib/audit";
 import {
   History,
@@ -35,16 +34,23 @@ export default function AuditLogsPage() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "audit_logs"),
-        orderBy("timestamp", "desc"),
-        limit(100)
-      );
-      const snap = await getDocs(q);
-      const list: (AuditEntry & { id: string })[] = [];
-      snap.forEach((d) => {
-        list.push({ id: d.id, ...(d.data() as AuditEntry) });
-      });
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .order("timestamp", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const list: (AuditEntry & { id: string })[] = (data || []).map((row) => ({
+        id: row.id,
+        uid: row.uid,
+        email: row.email,
+        displayName: row.display_name,
+        role: row.role,
+        action: row.action,
+        module: row.module,
+        detail: row.detail,
+        timestamp: row.timestamp,
+      }));
       setLogs(list);
     } catch (err) {
       console.error("Error fetching audit logs:", err);
@@ -59,8 +65,8 @@ export default function AuditLogsPage() {
 
   const formatTimestamp = (ts: any) => {
     if (!ts) return "-";
-    if (ts instanceof Timestamp) {
-      return ts.toDate().toLocaleString("id-ID", {
+    if (typeof ts === "string" || typeof ts === "number") {
+      return new Date(ts).toLocaleString("id-ID", {
         day: "numeric",
         month: "short",
         year: "numeric",

@@ -1,18 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  orderBy,
-  query,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,16 +64,23 @@ export default function AgendaDashboardPage() {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, "agenda"), orderBy("order", "asc"));
-      const snap = await getDocs(q);
-      setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgendaItem, "id">) })));
-    } catch {
-      try {
-        const snap = await getDocs(collection(db, "agenda"));
-        setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgendaItem, "id">) })));
-      } catch (err2) {
-        console.error("Error fetching agenda:", err2);
-      }
+      const { data, error } = await supabase.from("agenda").select("*").order("sort_order", { ascending: true });
+      if (error) throw error;
+      setItems(
+        (data || []).map((row) => ({
+          id: row.id,
+          title: row.title,
+          category: row.category,
+          categoryColor: row.category_color,
+          schedule: row.schedule,
+          description: row.description,
+          timeLocation: row.time_location,
+          active: row.active !== false,
+          order: row.sort_order ?? 0,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching agenda:", err);
     } finally {
       setLoading(false);
     }
@@ -128,10 +124,22 @@ export default function AgendaDashboardPage() {
     }
     setSaving(true);
     try {
+      const payload = {
+        title: form.title,
+        category: form.category,
+        category_color: form.categoryColor,
+        schedule: form.schedule,
+        description: form.description,
+        time_location: form.timeLocation,
+        active: form.active,
+        sort_order: form.order,
+      };
       if (editingId) {
-        await updateDoc(doc(db, "agenda", editingId), { ...form, updatedAt: serverTimestamp() });
+        const { error } = await supabase.from("agenda").update(payload).eq("id", editingId);
+        if (error) throw error;
       } else {
-        await addDoc(collection(db, "agenda"), { ...form, createdAt: serverTimestamp() });
+        const { error } = await supabase.from("agenda").insert({ id: crypto.randomUUID(), ...payload });
+        if (error) throw error;
       }
       await fetchItems();
       closeDialog();
@@ -146,7 +154,8 @@ export default function AgendaDashboardPage() {
   const handleDelete = async (item: AgendaItem) => {
     setDeleting(item.id);
     try {
-      await deleteDoc(doc(db, "agenda", item.id));
+      const { error } = await supabase.from("agenda").delete().eq("id", item.id);
+      if (error) throw error;
       await fetchItems();
       setConfirmDelete(null);
     } catch {
@@ -158,7 +167,8 @@ export default function AgendaDashboardPage() {
 
   const handleToggleActive = async (item: AgendaItem) => {
     try {
-      await updateDoc(doc(db, "agenda", item.id), { active: !item.active });
+      const { error } = await supabase.from("agenda").update({ active: !item.active }).eq("id", item.id);
+      if (error) throw error;
       setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, active: !it.active } : it)));
     } catch {
       alert("Gagal mengubah status.");
