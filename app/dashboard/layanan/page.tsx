@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Loader2,
   Upload,
+  Download,
   Clock,
   FileText,
   Printer,
@@ -443,7 +444,8 @@ export default function LayananDashboardPage() {
       fetchLetterTypes();
     } catch (err) {
       console.error("Error saving letter type:", err);
-      alert("Gagal menyimpan jenis surat.");
+      const detail = err instanceof Error ? err.message : "";
+      alert(`Gagal menyimpan jenis surat.${detail ? ` Detail: ${detail.slice(0, 200)}` : ""}`);
     }
   };
 
@@ -1120,30 +1122,42 @@ export default function LayananDashboardPage() {
       {printRequest && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <Card className="w-full max-w-4xl bg-white relative my-6 max-h-[95vh] flex flex-col">
-            <CardHeader className="border-b py-3 px-6 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Printer className="h-5 w-5 text-primary" /> Cetak Dokumen Surat Resmi
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Format dokumen standar administrasi desa untuk dicetak (A4) atau disimpan sebagai PDF.
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={handleDownloadFilledDocx} disabled={downloadingDocx}>
-                  {downloadingDocx ? "Membuat DOCX..." : "Download DOCX Presisi"}
-                </Button>
-                <Button size="sm" onClick={triggerBrowserPrint} className="bg-primary hover:bg-primary/90">
-                  <Printer className="mr-1.5 h-4 w-4" /> Cetak Sekarang (PDF / Printer)
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setPrintRequest(null)}>
-                  ?
-                </Button>
+            <CardHeader className="border-b py-4 px-6">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center shrink-0">
+                    <Printer className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <CardTitle className="text-base font-bold flex items-center gap-2 flex-wrap">
+                      Cetak Dokumen Surat Resmi
+                      {printRequest.ticketCode && (
+                        <span className="text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                          {printRequest.ticketCode}
+                        </span>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      {printRequest.typeName || "Surat Keterangan"} • A4 • cetak langsung atau simpan PDF
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button size="sm" variant="outline" onClick={handleDownloadFilledDocx} disabled={downloadingDocx} className="whitespace-nowrap">
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> {downloadingDocx ? "Membuat..." : "DOCX Presisi"}
+                  </Button>
+                  <Button size="sm" onClick={triggerBrowserPrint} className="bg-[#1b365d] hover:bg-[#152a48] whitespace-nowrap">
+                    <Printer className="mr-1.5 h-3.5 w-3.5" /> Cetak / PDF
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0" onClick={() => setPrintRequest(null)} title="Tutup">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
 
             <div className="p-6 overflow-y-auto space-y-6">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <Label htmlFor="no-surat" className="text-xs">Nomor Registrasi Surat</Label>
                   <Input
@@ -1163,7 +1177,16 @@ export default function LayananDashboardPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="pj-nip" className="text-xs">NIP / Jabatan</Label>
+                  <Label htmlFor="pj-jabatan" className="text-xs">Jabatan Pejabat</Label>
+                  <Input
+                    id="pj-jabatan"
+                    className="h-8 text-xs"
+                    value={printConfig.pejabatJabatan}
+                    onChange={(e) => setPrintConfig({ ...printConfig, pejabatJabatan: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pj-nip" className="text-xs">NIP Pejabat</Label>
                   <Input
                     id="pj-nip"
                     className="h-8 text-xs font-mono"
