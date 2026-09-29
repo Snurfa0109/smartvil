@@ -28,8 +28,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { writeAuditLog } from "@/lib/audit";
 import { useState } from "react";
@@ -248,23 +247,25 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       setLoading(false);
       return;
     }
-    getDoc(doc(db, "news", id))
-      .then((snap) => {
-        if (snap.exists()) {
-          const d = snap.data();
-          setTitle(d.title ?? "");
-          setCategory(d.category ?? "");
-          setDate(d.date ?? new Date().toISOString().split("T")[0]);
-          setImageUrl(d.imageUrl ?? "");
-          const content = d.content ?? "";
+    const loadBerita = async () => {
+      try {
+        const { data, error } = await supabase.from("news").select("*").eq("id", id).maybeSingle();
+        if (error) throw error;
+        if (data) {
+          setTitle(data.title ?? "");
+          setCategory(data.category ?? "");
+          setDate(data.date ?? new Date().toISOString().split("T")[0]);
+          setImageUrl(data.image_url ?? "");
+          const content = data.content ?? "";
           setLoadedContent(content || "<p></p>");
         }
         setLoading(false);
-      })
-      .catch(() => {
+      } catch {
         setLoading(false);
         alert("Gagal memuat data berita.");
-      });
+      }
+    };
+    loadBerita();
   }, [id]);
 
   useEffect(() => {
@@ -309,15 +310,16 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
         category,
         date,
         content,
-        imageUrl: imageUrl.trim() || "/images/default-news.jpg",
-        updatedAt: serverTimestamp(),
+        image_url: imageUrl.trim() || "/images/default-news.jpg",
       };
       if (id) {
-        await updateDoc(doc(db, "news", id), payload);
+        const { error } = await supabase.from("news").update(payload).eq("id", id);
+        if (error) throw error;
         await writeAuditLog("UPDATE", "berita", `Memperbarui berita: "${title}" (Kategori: ${category})`);
         alert("Berita berhasil diperbarui!");
       } else {
-        await addDoc(collection(db, "news"), { ...payload, createdAt: serverTimestamp() });
+        const { error } = await supabase.from("news").insert({ id: crypto.randomUUID(), ...payload });
+        if (error) throw error;
         await writeAuditLog("CREATE", "berita", `Menerbitkan berita baru: "${title}" (Kategori: ${category})`);
         alert("Berita berhasil ditambahkan!");
       }

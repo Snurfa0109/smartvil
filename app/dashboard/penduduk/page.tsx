@@ -2,8 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, User, ChevronLeft, ChevronRight, Pencil, Trash2, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -37,13 +36,24 @@ export default function PendudukDashboardPage() {
   const fetchResidents = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, "residents"), orderBy("nama", "asc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setResidents(data);
+      const { data, error } = await supabase.from("residents").select("*").order("nama", { ascending: true });
+      if (error) throw error;
+      setResidents(
+        (data || []).map((row) => ({
+          id: row.id,
+          nik: row.nik,
+          nama: row.nama,
+          gender: row.gender,
+          address: row.address,
+          occupation: row.occupation,
+          birthDate: row.birth_date,
+          status: row.status,
+          statusKeluarga: row.status_keluarga,
+          statusPenduduk: row.status_penduduk,
+          agama: row.agama,
+          education: row.education,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching residents:", error);
     } finally {
@@ -94,7 +104,8 @@ export default function PendudukDashboardPage() {
   const handleDelete = async (id: string, nama: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus data penduduk "${nama}"? Data yang dihapus tidak dapat dikembalikan.`)) {
       try {
-        await deleteDoc(doc(db, "residents", id));
+        const { error } = await supabase.from("residents").delete().eq("id", id);
+        if (error) throw error;
         alert("Data penduduk berhasil dihapus.");
         fetchResidents();
       } catch (error) {
@@ -140,19 +151,29 @@ export default function PendudukDashboardPage() {
     setLoading(true);
     try {
       const payload = {
-        ...formData,
+        nik: formData.nik,
+        nama: formData.nama,
+        gender: formData.gender,
+        address: formData.address,
+        occupation: formData.occupation,
+        birth_date: formData.birthDate || null,
+        status_keluarga: formData.statusKeluarga,
+        status_penduduk: formData.statusPenduduk,
+        agama: formData.agama,
+        education: formData.education,
         status: formData.statusKeluarga === "Kepala Keluarga" ? "Kepala Keluarga" : formData.statusPenduduk,
-        updatedAt: serverTimestamp()
       };
 
       if (isEditMode && selectedId) {
-        await updateDoc(doc(db, "residents", selectedId), payload);
+        const { error } = await supabase.from("residents").update(payload).eq("id", selectedId);
+        if (error) throw error;
         alert("Data penduduk berhasil diperbarui!");
       } else {
-        await addDoc(collection(db, "residents"), {
+        const { error } = await supabase.from("residents").insert({
+          id: crypto.randomUUID(),
           ...payload,
-          createdAt: serverTimestamp()
         });
+        if (error) throw error;
         alert("Data penduduk berhasil ditambahkan!");
       }
       setIsModalOpen(false);

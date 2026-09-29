@@ -30,11 +30,10 @@ import {
   GripVertical,
 } from "lucide-react";
 import { seedDatabase } from "@/lib/seed";
-import { db, auth, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { updateProfile, updatePassword } from "firebase/auth";
-import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings } from "@/lib/chatbot-config";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { uploadImageToStorage } from "@/lib/uploadImage";
+import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings, saveChatbotSettings } from "@/lib/chatbot-config";
 import {
   SiteSettings,
   DEFAULT_SITE_SETTINGS,
@@ -48,6 +47,7 @@ import {
 
 function SettingsContent() {
   const searchParams = useSearchParams();
+  const { user: authUser } = useAuth();
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -98,11 +98,8 @@ function SettingsContent() {
       }
 
       try {
-        const ref = doc(db, "settings", "chatbot");
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setChatbotForm((prev) => ({ ...prev, ...(snap.data() as Partial<ChatbotSettings>) }));
-        }
+        const config = await getChatbotSettings();
+        setChatbotForm((prev) => ({ ...prev, ...config }));
       } catch (err) {
         console.error("Error loading chatbot settings:", err);
       } finally {
@@ -121,8 +118,8 @@ function SettingsContent() {
 
     loadData();
 
-    if (auth.currentUser?.displayName) {
-      setAccountName(auth.currentUser.displayName);
+    if (authUser?.displayName) {
+      setAccountName(authUser.displayName);
     }
   }, []);
 
@@ -157,9 +154,7 @@ function SettingsContent() {
     const key = field as string;
     setUploadingPhoto(key);
     try {
-      const storageRef = ref(storage, `aparatur/${key}-${Date.now()}-${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadImageToStorage(file, "aparatur");
       setSiteForm((p) => ({ ...p, [field]: url }));
     } catch (err) {
       console.error("Photo upload error:", err);
@@ -172,14 +167,10 @@ function SettingsContent() {
   const handleSaveChatbot = async () => {
     try {
       setSavingChatbot(true);
-      await setDoc(
-        doc(db, "settings", "chatbot"),
-        {
-          ...chatbotForm,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+      await saveChatbotSettings({
+        ...chatbotForm,
+        updatedAt: new Date().toISOString(),
+      });
       alert("Pengaturan Chatbot AI berhasil disimpan!");
     } catch (error) {
       console.error("Error saving chatbot settings:", error);
@@ -192,7 +183,8 @@ function SettingsContent() {
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setAccountMsg(null);
-    const user = auth.currentUser;
+    const { data } = await supabase.auth.getUser();
+    const user = data.user;
     if (!user) {
       setAccountMsg({ type: "error", text: "Sesi login tidak ditemukan. Silakan login kembali." });
       return;
@@ -200,8 +192,17 @@ function SettingsContent() {
 
     setSavingAccount(true);
     try {
-      if (accountName.trim() && accountName !== user.displayName) {
-        await updateProfile(user, { displayName: accountName.trim() });
+      const currentName = (user.user_metadata?.display_name as string) ?? "";
+      if (accountName.trim() && accountName !== currentName) {
+        const { error: nameError } = await supabase.auth.updateUser({
+          data: { display_name: accountName.trim() },
+        });
+        if (nameError) throw nameError;
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ display_name: accountName.trim() })
+          .eq("id", user.id);
+        if (profileError) throw profileError;
       }
 
       if (newPassword) {
@@ -211,7 +212,8 @@ function SettingsContent() {
         if (newPassword !== confirmPassword) {
           throw new Error("Konfirmasi password tidak cocok.");
         }
-        await updatePassword(user, newPassword);
+        const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
+        if (pwError) throw pwError;
         setNewPassword("");
         setConfirmPassword("");
       }
@@ -413,6 +415,10 @@ function SettingsContent() {
                     <div className="space-y-1.5">
                       <Label htmlFor="head-title">Jabatan Resmi</Label>
                       <Input id="head-title" value={siteForm.headTitle} onChange={(e) => setSiteForm((p) => ({ ...p, headTitle: e.target.value }))} disabled={siteLoading} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="head-nip">NIP (untuk tanda tangan surat)</Label>
+                      <Input id="head-nip" value={siteForm.headNip} onChange={(e) => setSiteForm((p) => ({ ...p, headNip: e.target.value }))} disabled={siteLoading} placeholder="19780512 200501 1 004" />
                     </div>
                   </div>
                 </div>
@@ -1212,7 +1218,7 @@ function SettingsContent() {
                   <Input
                     type="email"
                     disabled
-                    value={auth.currentUser?.email || "admin@banjaragung.go.id"}
+                    value={authUser?.email || "admin@banjaragung.go.id"}
                     className="bg-slate-100 text-slate-500 font-mono text-xs"
                   />
                   <p className="text-[11px] text-slate-500">Email login terikat dengan lisensi akun desa.</p>

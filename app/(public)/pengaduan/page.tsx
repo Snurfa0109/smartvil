@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 
 const complaintCategories = [
@@ -100,22 +99,21 @@ export default function ComplaintsPage() {
       const rawPhone = formData.phone.trim();
 
       const payload = {
-        ticketCode,
+        id: crypto.randomUUID(),
+        ticket_code: ticketCode,
         nama: formData.nama.trim(),
         email: formData.email.trim(),
         phone: rawPhone,
         category: formData.category,
         title: formData.judul.trim(),
-        judul: formData.judul.trim(),
         message: formData.isi.trim(),
-        isi: formData.isi.trim(),
-        photoUrl,
+        photo_url: photoUrl,
         status: "pending",
-        adminResponse: "",
-        createdAt: serverTimestamp(),
+        admin_response: "",
       };
 
-      await addDoc(collection(db, "complaints"), payload);
+      const { error } = await supabase.from("complaints").insert(payload);
+      if (error) throw error;
 
       setSubmittedInfo({
         nama: formData.nama.trim(),
@@ -165,6 +163,22 @@ export default function ComplaintsPage() {
 
     setTrackingLoading(true);
     try {
+      const toItem = (row: Record<string, any>) => ({
+        id: row.id,
+        ticketCode: row.ticket_code,
+        nama: row.nama,
+        email: row.email,
+        phone: row.phone,
+        category: row.category,
+        title: row.title,
+        judul: row.title,
+        message: row.message,
+        isi: row.message,
+        photoUrl: row.photo_url,
+        status: row.status,
+        adminResponse: row.admin_response,
+        createdAt: row.created_at,
+      });
       const digitsOnly = rawSearch.replace(/\D/g, "");
 
       // Generate phone variations (08xxx, 628xxx, +628xxx)
@@ -181,23 +195,21 @@ export default function ComplaintsPage() {
       }
 
       // Also support legacy search by exact ticketCode if user happens to enter one
-      const qByTicket = query(collection(db, "complaints"), where("ticketCode", "==", rawSearch));
-      const snapTicket = await getDocs(qByTicket);
-      const results: any[] = snapTicket.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const { data: ticketRows } = await supabase.from("complaints").select("*").eq("ticket_code", rawSearch);
+      const results: any[] = (ticketRows || []).map(toItem);
 
       for (const phoneVal of Array.from(new Set(phoneCandidates))) {
-        const qByPhone = query(collection(db, "complaints"), where("phone", "==", phoneVal));
-        const snapPhone = await getDocs(qByPhone);
-        snapPhone.docs.forEach((d) => {
-          if (!results.some((r) => r.id === d.id)) {
-            results.push({ id: d.id, ...d.data() });
+        const { data: phoneRows } = await supabase.from("complaints").select("*").eq("phone", phoneVal);
+        (phoneRows || []).forEach((row) => {
+          if (!results.some((r) => r.id === row.id)) {
+            results.push(toItem(row));
           }
         });
       }
 
       results.sort((a, b) => {
-        const timeA = a.createdAt?.seconds || 0;
-        const timeB = b.createdAt?.seconds || 0;
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeB - timeA;
       });
 

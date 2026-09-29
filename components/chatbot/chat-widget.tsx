@@ -13,9 +13,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
-import { DEFAULT_CHATBOT_SETTINGS } from "@/lib/chatbot-config";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { DEFAULT_CHATBOT_SETTINGS, getChatbotSettings } from "@/lib/chatbot-config";
 
 interface ChatMessage {
   id: string;
@@ -56,18 +54,15 @@ export function ChatWidget() {
 
     const loadRemoteChatbotSettings = async () => {
       try {
-        const snap = await getDoc(doc(db, "settings", "chatbot"));
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.botName) setBotName(data.botName);
-          if (data.welcomeMessage) {
-            setWelcomeText(data.welcomeMessage);
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === "welcome-msg" ? { ...msg, text: data.welcomeMessage } : msg
-              )
-            );
-          }
+        const remote = await getChatbotSettings();
+        setBotName(remote.botName);
+        if (remote.welcomeMessage) {
+          setWelcomeText(remote.welcomeMessage);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === "welcome-msg" ? { ...msg, text: remote.welcomeMessage } : msg
+            )
+          );
         }
       } catch (err) {
         console.warn("Could not load dynamic chatbot settings:", err);

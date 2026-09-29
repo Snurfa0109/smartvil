@@ -4,8 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { stripHtml } from "@/lib/utils";
 
 interface SearchItem {
@@ -124,17 +123,16 @@ function SearchContent() {
   useEffect(() => {
     const fetchAllNews = async () => {
       try {
-        const q = query(collection(db, "news"), orderBy("date", "desc"));
-        const snap = await getDocs(q);
-        const mapped: SearchItem[] = snap.docs.map((doc) => {
-          const d = doc.data();
+        const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false });
+        if (error) throw error;
+        const mapped: SearchItem[] = (data || []).map((row) => {
           return {
-            id: `news-${doc.id}`,
-            title: d.title || "Berita Kelurahan",
+            id: `news-${row.id}`,
+            title: row.title || "Berita Kelurahan",
             category: "berita",
-            subtitle: d.content ? stripHtml(d.content).substring(0, 140) + "..." : "",
-            url: `/berita/${doc.id}`,
-            date: d.date,
+            subtitle: row.content ? stripHtml(row.content).substring(0, 140) + "..." : "",
+            url: `/berita/${row.id}`,
+            date: row.date,
           };
         });
         setNewsItems(mapped);

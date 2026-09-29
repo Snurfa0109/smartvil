@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings } from "@/lib/chatbot-config";
+import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@/lib/chatbot-config";
+import { getSiteSettings } from "@/lib/site-config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,10 +16,7 @@ export async function POST(req: NextRequest) {
 
     let settings: ChatbotSettings = { ...DEFAULT_CHATBOT_SETTINGS };
     try {
-      const chatbotSnap = await getDoc(doc(db, "settings", "chatbot"));
-      if (chatbotSnap.exists()) {
-        settings = { ...settings, ...(chatbotSnap.data() as Partial<ChatbotSettings>) };
-      }
+      settings = await getChatbotSettings();
     } catch (e) {
       console.warn("Could not fetch chatbot settings from DB, using defaults:", e);
     }
@@ -43,8 +39,7 @@ export async function POST(req: NextRequest) {
     let liveContext = "";
     if (settings.includeLiveContext) {
       try {
-        const profileSnap = await getDoc(doc(db, "settings", "profile"));
-        const profile = profileSnap.exists() ? profileSnap.data() : null;
+        const profile = await getSiteSettings();
 
         liveContext = `
 [INFORMASI RESMI KELURAHAN TERKINI]:

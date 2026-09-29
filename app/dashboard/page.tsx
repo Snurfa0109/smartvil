@@ -3,8 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileText, Users, MessageSquare, TrendingUp, Plus, ArrowUpRight, CheckCircle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, where, getCountFromServer, getDocs, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -46,13 +45,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const complaintsColl = collection(db, "complaints");
-        const requestsColl = collection(db, "requests");
-        const residentsColl = collection(db, "residents");
-        const newsColl = collection(db, "news");
-
-        const requestCountOf = (status: string) =>
-          getCountFromServer(query(requestsColl, where("status", "==", status))).then((s) => s.data().count);
+        const countWhere = (table: string, status: string) =>
+          supabase.from(table).select("*", { count: "exact", head: true }).eq("status", status)
+            .then(({ count }) => count ?? 0);
+        const countAll = (table: string) =>
+          supabase.from(table).select("*", { count: "exact", head: true }).then(({ count }) => count ?? 0);
 
         const [
           pendingComplaints,
@@ -62,16 +59,16 @@ export default function DashboardPage() {
           reqProcessed,
           reqReady,
           reqCompleted,
-          recentComplaintsSnapshot,
+          recentRes,
         ] = await Promise.all([
-          getCountFromServer(query(complaintsColl, where("status", "==", "pending"))).then((s) => s.data().count),
-          getCountFromServer(residentsColl).then((s) => s.data().count),
-          getCountFromServer(newsColl).then((s) => s.data().count),
-          requestCountOf("pending"),
-          requestCountOf("processed"),
-          requestCountOf("ready"),
-          requestCountOf("completed"),
-          getDocs(query(complaintsColl, orderBy("createdAt", "desc"), limit(4))),
+          countWhere("complaints", "pending"),
+          countAll("residents"),
+          countAll("news"),
+          countWhere("requests", "pending"),
+          countWhere("requests", "processed"),
+          countWhere("requests", "ready"),
+          countWhere("requests", "completed"),
+          supabase.from("complaints").select("*").order("created_at", { ascending: false }).limit(4),
         ]);
 
         setStats({
@@ -86,18 +83,16 @@ export default function DashboardPage() {
           ready: reqReady,
           completed: reqCompleted,
         });
-        const complaintsData = recentComplaintsSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: data.title || data.judul || data.category || "Pengaduan",
-            content: data.message || data.isi || "",
-            status: data.status,
-            createdAt: data.createdAt,
-            nama: data.nama || "Anonim",
-            category: data.category || "Umum",
-          };
-        }) as RecentComplaint[];
+
+        const complaintsData = ((recentRes.data || []) as Array<Record<string, unknown>>).map((row) => ({
+          id: String(row.id),
+          title: (row.title as string) || (row.category as string) || "Pengaduan",
+          content: (row.message as string) || "",
+          status: row.status as string,
+          createdAt: row.created_at,
+          nama: (row.nama as string) || "Anonim",
+          category: (row.category as string) || "Umum",
+        })) as RecentComplaint[];
 
         setRecentComplaints(complaintsData);
       } catch (error) {

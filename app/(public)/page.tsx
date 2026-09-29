@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getCountFromServer, getDocs, limit, orderBy, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -126,10 +125,24 @@ export default function Home() {
   useEffect(() => {
     const fetchAgenda = async () => {
       try {
-        const q = query(collection(db, "agenda"), orderBy("order", "asc"), limit(3));
-        const snap = await getDocs(q);
-        const activeItems = snap.docs
-          .map((d) => ({ id: d.id, ...(d.data() as Omit<AgendaItem, "id">) }))
+        const { data, error } = await supabase
+          .from("agenda")
+          .select("*")
+          .order("sort_order", { ascending: true })
+          .limit(10);
+        if (error) throw error;
+        const activeItems = (data || [])
+          .map((row) => ({
+            id: row.id,
+            title: row.title,
+            category: row.category,
+            categoryColor: row.category_color,
+            schedule: row.schedule,
+            description: row.description,
+            timeLocation: row.time_location,
+            active: row.active !== false,
+            order: row.sort_order ?? 0,
+          }))
           .filter((item) => item.active)
           .slice(0, 3);
         if (activeItems.length > 0) {
@@ -146,17 +159,21 @@ export default function Home() {
   useEffect(() => {
     const fetchLatestNews = async () => {
       try {
-        const q = query(
-          collection(db, "news"),
-          orderBy("date", "desc"),
-          limit(3)
-        );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<LandingNewsItem, "id">),
+        const { data, error } = await supabase
+          .from("news")
+          .select("*")
+          .order("date", { ascending: false })
+          .limit(3);
+        if (error) throw error;
+        const mapped = (data || []).map((row) => ({
+          id: row.id,
+          title: row.title,
+          content: row.content,
+          date: row.date,
+          category: row.category,
+          imageUrl: row.image_url,
         }));
-        setLatestNews(data);
+        setLatestNews(mapped);
       } catch (error) {
         console.error("Error fetching latest news for landing:", error);
       } finally {
@@ -166,13 +183,12 @@ export default function Home() {
 
     const fetchStats = async () => {
       try {
-        const residentsRef = collection(db, "residents");
+        const countAll = () =>
+          supabase.from("residents").select("*", { count: "exact", head: true }).then(({ count }) => count ?? 0);
+        const countGender = (gender: string) =>
+          supabase.from("residents").select("*", { count: "exact", head: true }).eq("gender", gender).then(({ count }) => count ?? 0);
 
-        const [total, male, female] = await Promise.all([
-          getCountFromServer(residentsRef).then((s) => s.data().count),
-          getCountFromServer(query(residentsRef, where("gender", "==", "Laki-laki"))).then((s) => s.data().count),
-          getCountFromServer(query(residentsRef, where("gender", "==", "Perempuan"))).then((s) => s.data().count),
-        ]);
+        const [total, male, female] = await Promise.all([countAll(), countGender("Laki-laki"), countGender("Perempuan")]);
 
         const kkApprox = Math.max(1, Math.floor(total / 3));
 

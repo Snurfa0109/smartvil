@@ -1,5 +1,4 @@
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export type SiteSettings = {
   // Identitas & Kontak Kelurahan
@@ -36,6 +35,7 @@ export type SiteSettings = {
   // Struktur Aparatur Kelurahan
   headName: string;
   headTitle: string;
+  headNip: string;
   headPhoto?: string;
   secretaryName: string;
   secretaryTitle: string;
@@ -115,6 +115,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   // Struktur Aparatur Kelurahan
   headName: "Ahmad Suhendar, S.Sos",
   headTitle: "Lurah Banjar Agung",
+  headNip: "19780512 200501 1 004",
   headPhoto: "",
   secretaryName: "Hj. Siti Rohmah, S.AP",
   secretaryTitle: "Sekretaris Kelurahan",
@@ -154,17 +155,16 @@ let cachedSettings: { data: SiteSettings; at: number } | null = null;
 const SETTINGS_TTL_MS = 60_000;
 
 /**
- * Fetch settings from Firestore `settings/profile` doc, merging with default settings
+ * Fetch settings from Supabase `settings` (key `profile`), merging with default settings
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   if (cachedSettings && Date.now() - cachedSettings.at < SETTINGS_TTL_MS) {
     return cachedSettings.data;
   }
   try {
-    const ref = doc(db, "settings", "profile");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const merged = { ...DEFAULT_SITE_SETTINGS, ...(snap.data() as Partial<SiteSettings>) };
+    const stored = await getSetting<Partial<SiteSettings>>("profile", {});
+    if (stored && Object.keys(stored).length > 0) {
+      const merged = { ...DEFAULT_SITE_SETTINGS, ...stored };
       cachedSettings = { data: merged, at: Date.now() };
       return merged;
     }
@@ -179,11 +179,11 @@ export function invalidateSiteSettings(): void {
 }
 
 /**
- * Save settings to Firestore `settings/profile`
+ * Save settings to Supabase `settings` (key `profile`)
  */
 export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
-  const ref = doc(db, "settings", "profile");
-  await setDoc(ref, settings, { merge: true });
+  const current = await getSetting<Partial<SiteSettings>>("profile", {});
+  await saveSetting("profile", { ...current, ...settings });
 }
 export const DEFAULT_BERITA_CATEGORIES = [
   "Pengumuman",
@@ -196,13 +196,10 @@ export const DEFAULT_BERITA_CATEGORIES = [
 
 export async function getBeritaCategories(): Promise<string[]> {
   try {
-    const ref = doc(db, "settings", "beritaCategories");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data();
-      if (Array.isArray(data?.categories) && data.categories.length > 0) {
-        return data.categories as string[];
-      }
+    const stored = await getSetting<{ categories?: unknown }>("berita_categories", {});
+    const categories = stored?.categories;
+    if (Array.isArray(categories) && categories.length > 0) {
+      return categories as string[];
     }
   } catch (error) {
     console.error("Error fetching berita categories:", error);
@@ -211,6 +208,5 @@ export async function getBeritaCategories(): Promise<string[]> {
 }
 
 export async function saveBeritaCategories(categories: string[]): Promise<void> {
-  const ref = doc(db, "settings", "beritaCategories");
-  await setDoc(ref, { categories }, { merge: false });
+  await saveSetting("berita_categories", { categories });
 }

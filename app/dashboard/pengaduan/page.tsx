@@ -2,8 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
-import { collection, query, orderBy, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,13 +21,26 @@ export default function PengaduanDashboardPage() {
 
   const fetchComplaints = async () => {
     try {
-      const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
-      setComplaints(data);
+      const { data, error } = await supabase
+        .from("complaints")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setComplaints(
+        (data || []).map((row) => ({
+          id: row.id,
+          title: row.title,
+          nama: row.nama,
+          email: row.email,
+          phone: row.phone,
+          category: row.category,
+          message: row.message,
+          photoUrl: row.photo_url,
+          status: row.status,
+          adminResponse: row.admin_response,
+          createdAt: row.created_at,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching complaints:", error);
     } finally {
@@ -73,9 +85,8 @@ export default function PengaduanDashboardPage() {
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
-      await updateDoc(doc(db, "complaints", id), {
-        status: newStatus,
-      });
+      const { error } = await supabase.from("complaints").update({ status: newStatus }).eq("id", id);
+      if (error) throw error;
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
         setSelectedComplaint((prev: any) => ({ ...prev, status: newStatus }));
@@ -90,10 +101,14 @@ export default function PengaduanDashboardPage() {
     if (!replyText.trim()) return;
     setSavingReply(true);
     try {
-      await updateDoc(doc(db, "complaints", id), {
-        adminResponse: replyText.trim(),
-        status: selectedComplaint?.status === "pending" ? "processed" : selectedComplaint?.status,
-      });
+      const { error } = await supabase
+        .from("complaints")
+        .update({
+          admin_response: replyText.trim(),
+          status: selectedComplaint?.status === "pending" ? "processed" : selectedComplaint?.status,
+        })
+        .eq("id", id);
+      if (error) throw error;
       alert("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
@@ -114,7 +129,8 @@ export default function PengaduanDashboardPage() {
   const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus pengaduan ini secara permanen?")) {
       try {
-        await deleteDoc(doc(db, "complaints", id));
+        const { error } = await supabase.from("complaints").delete().eq("id", id);
+        if (error) throw error;
         if (selectedComplaint?.id === id) setSelectedComplaint(null);
         fetchComplaints();
       } catch (error) {
@@ -290,7 +306,7 @@ export default function PengaduanDashboardPage() {
                       )}
                     </div>
                     <span>
-                      {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-"}
+                      {item.createdAt ? new Date(typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-"}
                     </span>
                   </div>
 
@@ -395,8 +411,8 @@ export default function PengaduanDashboardPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Tanggal Laporan</p>
                   <p className="font-semibold">
-                    {selectedComplaint.createdAt?.seconds
-                      ? new Date(selectedComplaint.createdAt.seconds * 1000).toLocaleString("id-ID")
+                    {selectedComplaint.createdAt
+                      ? new Date(typeof selectedComplaint.createdAt === "string" ? selectedComplaint.createdAt : selectedComplaint.createdAt.seconds * 1000).toLocaleString("id-ID")
                       : "-"}
                   </p>
                 </div>

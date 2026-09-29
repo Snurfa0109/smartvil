@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { Calendar, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -34,16 +33,20 @@ export default function BeritaDetailPage() {
 
     const fetchBerita = async () => {
       try {
-        const ref = doc(db, "news", id);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
+        const { data, error } = await supabase.from("news").select("*").eq("id", id).maybeSingle();
+        if (error) throw error;
+        if (!data) {
           setNotFound(true);
           setItem(null);
           return;
         }
         setItem({
-          id: snap.id,
-          ...(snap.data() as Omit<BeritaItem, "id">),
+          id: data.id,
+          title: data.title,
+          content: data.content,
+          date: data.date,
+          category: data.category,
+          imageUrl: data.image_url,
         });
       } catch (error) {
         console.error("Error fetching berita:", error);
