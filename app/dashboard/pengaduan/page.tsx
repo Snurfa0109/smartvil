@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiList, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,24 +21,21 @@ export default function PengaduanDashboardPage() {
 
   const fetchComplaints = async () => {
     try {
-      const { data, error } = await supabase
-        .from("complaints")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
+      const rows = await apiList("complaints", { orderBy: "created_at", order: "desc" });
       setComplaints(
-        (data || []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          nama: row.nama,
-          email: row.email,
-          phone: row.phone,
-          category: row.category,
-          message: row.message,
-          photoUrl: row.photo_url,
-          status: row.status,
-          adminResponse: row.admin_response,
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          nama: String(row.nama || ""),
+          email: String(row.email || ""),
+          phone: String(row.phone || ""),
+          category: String(row.category || ""),
+          message: String(row.message || ""),
+          photoUrl: String(row.photo_url || ""),
+          status: String(row.status || ""),
+          adminResponse: String(row.admin_response || ""),
           createdAt: row.created_at,
+          ticketCode: String(row.ticket_code || ""),
         }))
       );
     } catch (error) {
@@ -85,8 +82,7 @@ export default function PengaduanDashboardPage() {
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from("complaints").update({ status: newStatus }).eq("id", id);
-      if (error) throw error;
+      await apiUpdate("complaints", id, { status: newStatus });
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
         setSelectedComplaint((prev: any) => ({ ...prev, status: newStatus }));
@@ -101,14 +97,10 @@ export default function PengaduanDashboardPage() {
     if (!replyText.trim()) return;
     setSavingReply(true);
     try {
-      const { error } = await supabase
-        .from("complaints")
-        .update({
-          admin_response: replyText.trim(),
-          status: selectedComplaint?.status === "pending" ? "processed" : selectedComplaint?.status,
-        })
-        .eq("id", id);
-      if (error) throw error;
+      await apiUpdate("complaints", id, {
+        admin_response: replyText.trim(),
+        status: selectedComplaint?.status === "pending" ? "processed" : selectedComplaint?.status,
+      });
       alert("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
@@ -129,8 +121,7 @@ export default function PengaduanDashboardPage() {
   const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus pengaduan ini secara permanen?")) {
       try {
-        const { error } = await supabase.from("complaints").delete().eq("id", id);
-        if (error) throw error;
+        await apiDelete("complaints", id);
         if (selectedComplaint?.id === id) setSelectedComplaint(null);
         fetchComplaints();
       } catch (error) {

@@ -1,28 +1,16 @@
-import { supabase } from "@/lib/supabase";
+import { apiUpload } from "@/lib/api";
 
 const UPLOAD_TIMEOUT_MS = 20_000;
 
-function bucketFor(folder: string): string {
-  if (folder === "complaints") return "complaints";
-  if (folder === "aparatur") return "aparatur";
-  return "news-covers";
-}
-
 export async function uploadImageToStorage(file: File, folder: string = "news"): Promise<string> {
-  const name = `${Date.now()}_${file.name.replace(/\s/g, "_")}`;
-  const path = `${folder}/${name}`;
-  const bucket = bucketFor(folder);
+  const bucket = folder === "complaints" || folder === "aparatur" || folder === "templates" ? folder : "news-covers";
+  const upload = apiUpload(file, bucket);
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("timeout")), UPLOAD_TIMEOUT_MS)
+  );
   try {
-    const { error } = await Promise.race([
-      supabase.storage.from(bucket).upload(path, file, { contentType: file.type || undefined }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), UPLOAD_TIMEOUT_MS)
-      ),
-    ]);
-    if (error) throw error;
+    return await Promise.race([upload, timeout]);
   } catch {
-    throw new Error("Upload gambar gagal. Periksa koneksi atau konfigurasi Supabase Storage.");
+    throw new Error("Upload gambar gagal. Periksa koneksi atau coba file lain.");
   }
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
 }

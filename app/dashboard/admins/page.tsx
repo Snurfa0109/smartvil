@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { apiList, apiUpdate, apiDelete } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
 import {
   ShieldCheck,
@@ -75,16 +75,15 @@ export default function AdminsManagementPage() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("profiles").select("*");
-      if (error) throw error;
-      const list: AdminUser[] = (data || []).map((row) => ({
-        id: row.id,
-        uid: row.id,
-        displayName: row.display_name || "Admin",
-        email: row.email || "-",
-        role: row.role || "admin",
-        department: row.department || "Kelurahan",
-        active: row.active !== false,
+      const rows = await apiList("profiles");
+      const list: AdminUser[] = (rows || []).map((row) => ({
+        id: String(row.id),
+        uid: String(row.id),
+        displayName: String(row.display_name || "Admin"),
+        email: String(row.email || "-"),
+        role: (row.role as any) || "admin",
+        department: String(row.department || "Kelurahan"),
+        active: Number(row.active) !== 0,
         createdAt: row.created_at,
         lastLogin: row.last_login,
         permissions: Array.isArray(row.permissions)
@@ -208,17 +207,13 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          display_name: formData.displayName.trim(),
-          role: formData.role,
-          department: formData.department,
-          permissions: formData.role === "superadmin" ? [] : formData.permissions,
-          active: formData.active,
-        })
-        .eq("id", editingAdmin.uid);
-      if (error) throw error;
+      await apiUpdate("profiles", editingAdmin.uid, {
+        display_name: formData.displayName.trim(),
+        role: formData.role,
+        department: formData.department,
+        permissions: formData.role === "superadmin" ? [] : formData.permissions,
+        active: formData.active ? 1 : 0,
+      });
 
       await writeAuditLog(
         "UPDATE",
@@ -254,11 +249,7 @@ export default function AdminsManagementPage() {
     if (!confirm(confirmMsg)) return;
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ active: nextState })
-        .eq("id", admin.uid);
-      if (error) throw error;
+      await apiUpdate("profiles", admin.uid, { active: nextState ? 1 : 0 });
 
       await writeAuditLog(
         "UPDATE",

@@ -22,7 +22,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiInsert, apiFind } from "@/lib/api";
 import { DEFAULT_LETTER_TYPES, LetterType, getLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 
@@ -138,8 +138,7 @@ export default function ServicesPage() {
       const letterObj = activeLetterObj;
       const letterName = letterObj?.name || "Surat Keterangan";
 
-      const { error } = await supabase.from("requests").insert({
-        id: crypto.randomUUID(),
+      await apiInsert("requests", {
         nik: formData.nik,
         nama: formData.nama,
         phone: formData.phone,
@@ -152,7 +151,6 @@ export default function ServicesPage() {
         status: "pending",
         admin_notes: "",
       });
-      if (error) throw error;
 
       const submittedData = {
         ticketCode,
@@ -213,11 +211,11 @@ export default function ServicesPage() {
       const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
       const cleanedDigits = rawSearch.replace(/\D/g, "");
 
-      const { data: codeRows } = await supabase.from("requests").select("*").eq("ticket_code", rawSearch);
+      const codeRows = await apiFind("requests", { column: "ticket_code", value: rawSearch }).catch(() => []);
       (codeRows || []).forEach((row) => results.push(toItem(row)));
 
       if (isDigitsOnly && cleanedDigits.length >= 15) {
-        const { data: nikRows } = await supabase.from("requests").select("*").eq("nik", cleanedDigits);
+        const nikRows = await apiFind("requests", { column: "nik", value: cleanedDigits }).catch(() => []);
         (nikRows || []).forEach((row) => {
           if (!results.some((r) => r.id === row.id)) {
             results.push(toItem(row));
@@ -226,7 +224,6 @@ export default function ServicesPage() {
       }
 
       if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
-        // Coba variasi 08xx dan 628xx
         let phoneVariations = [cleanedDigits];
         if (cleanedDigits.startsWith("0")) {
           phoneVariations.push("62" + cleanedDigits.substring(1));
@@ -236,7 +233,7 @@ export default function ServicesPage() {
         }
 
         for (const phoneVal of phoneVariations) {
-          const { data: phoneRows } = await supabase.from("requests").select("*").eq("phone", phoneVal);
+          const phoneRows = await apiFind("requests", { column: "phone", value: phoneVal }).catch(() => []);
           (phoneRows || []).forEach((row) => {
             if (!results.some((r) => r.id === row.id)) {
               results.push(toItem(row));

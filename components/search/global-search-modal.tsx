@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, FileText, Newspaper, UserCheck, MapPin, Phone, ArrowRight, Building2, HelpCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { stripHtml } from "@/lib/utils";
+import { apiList } from "@/lib/api";
 
 interface SearchResultItem {
   id: string;
@@ -134,9 +134,8 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     if (!isOpen || newsFetched) return;
     const fetchNewsForSearch = async () => {
       try {
-        const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false }).limit(50);
-        if (error) throw error;
-        const mapped: SearchResultItem[] = (data || []).map((row) => {
+        const data = await apiList("news", { orderBy: "date", order: "desc", limit: 50 });
+        const mapped: SearchResultItem[] = (data || []).map((row: any) => {
           return {
             id: `news-${row.id}`,
             title: row.title || "Berita",

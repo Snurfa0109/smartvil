@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiList, apiCount } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -125,23 +125,18 @@ export default function Home() {
   useEffect(() => {
     const fetchAgenda = async () => {
       try {
-        const { data, error } = await supabase
-          .from("agenda")
-          .select("*")
-          .order("sort_order", { ascending: true })
-          .limit(10);
-        if (error) throw error;
-        const activeItems = (data || [])
+        const rows = await apiList("agenda", { orderBy: "sort_order", order: "asc", limit: 10 });
+        const activeItems = (rows || [])
           .map((row) => ({
-            id: row.id,
-            title: row.title,
-            category: row.category,
-            categoryColor: row.category_color,
-            schedule: row.schedule,
-            description: row.description,
-            timeLocation: row.time_location,
-            active: row.active !== false,
-            order: row.sort_order ?? 0,
+            id: String(row.id),
+            title: String(row.title || ""),
+            category: String(row.category || ""),
+            categoryColor: (row.category_color as any) || "blue",
+            schedule: String(row.schedule || ""),
+            description: String(row.description || ""),
+            timeLocation: String(row.time_location || ""),
+            active: Number(row.active) !== 0,
+            order: Number(row.sort_order ?? 0),
           }))
           .filter((item) => item.active)
           .slice(0, 3);
@@ -159,19 +154,14 @@ export default function Home() {
   useEffect(() => {
     const fetchLatestNews = async () => {
       try {
-        const { data, error } = await supabase
-          .from("news")
-          .select("*")
-          .order("date", { ascending: false })
-          .limit(3);
-        if (error) throw error;
-        const mapped = (data || []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          content: row.content,
-          date: row.date,
-          category: row.category,
-          imageUrl: row.image_url,
+        const rows = await apiList("news", { orderBy: "date", order: "desc", limit: 3 });
+        const mapped = (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          content: String(row.content || ""),
+          date: String(row.date || ""),
+          category: String(row.category || ""),
+          imageUrl: String(row.image_url || ""),
         }));
         setLatestNews(mapped);
       } catch (error) {
@@ -183,21 +173,11 @@ export default function Home() {
 
     const fetchStats = async () => {
       try {
-        const countAll = () =>
-          supabase.from("residents").select("*", { count: "exact", head: true }).then(({ count }) => count ?? 0);
-        const countGender = (gender: string) =>
-          supabase.from("residents").select("*", { count: "exact", head: true }).eq("gender", gender).then(({ count }) => count ?? 0);
-
-        const [total, male, female] = await Promise.all([countAll(), countGender("Laki-laki"), countGender("Perempuan")]);
-
+        const total = await apiCount("residents");
+        const male = await apiCount("residents", { column: "gender", value: "Laki-laki" });
+        const female = await apiCount("residents", { column: "gender", value: "Perempuan" });
         const kkApprox = Math.max(1, Math.floor(total / 3));
-
-        setStats({
-          total,
-          kk: kkApprox,
-          male,
-          female,
-        });
+        setStats({ total, kk: kkApprox, male, female });
       } catch (error) {
         console.error("Error fetching stats for landing:", error);
       } finally {

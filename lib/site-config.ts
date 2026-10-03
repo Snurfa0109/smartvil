@@ -155,7 +155,7 @@ let cachedSettings: { data: SiteSettings; at: number } | null = null;
 const SETTINGS_TTL_MS = 60_000;
 
 /**
- * Fetch settings from Supabase `settings` (key `profile`), merging with default settings
+ * Fetch settings from MySQL `settings` table (key `profile`), merging with default settings
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   if (cachedSettings && Date.now() - cachedSettings.at < SETTINGS_TTL_MS) {
@@ -179,7 +179,7 @@ export function invalidateSiteSettings(): void {
 }
 
 /**
- * Save settings to Supabase `settings` (key `profile`)
+ * Save settings to MySQL `settings` table (key `profile`)
  */
 export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
   const current = await getSetting<Partial<SiteSettings>>("profile", {});

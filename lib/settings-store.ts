@@ -1,22 +1,20 @@
-import { supabase } from "@/lib/supabase";
+import { apiGet, apiInsert, apiUpdate } from "@/lib/api";
 
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   try {
-    const { data, error } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", key)
-      .maybeSingle();
-    if (error || !data) return fallback;
-    return (data.value as T) ?? fallback;
+    const row = await apiGet("settings", key);
+    if (!row) return fallback;
+    return ((row.value as T) ?? fallback);
   } catch {
     return fallback;
   }
 }
 
 export async function saveSetting(key: string, value: unknown): Promise<void> {
-  const { error } = await supabase
-    .from("settings")
-    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
-  if (error) throw error;
+  const existing = await apiGet("settings", key).catch(() => null);
+  if (existing) {
+    await apiUpdate("settings", key, { value });
+  } else {
+    await apiInsert("settings", { key, value });
+  }
 }

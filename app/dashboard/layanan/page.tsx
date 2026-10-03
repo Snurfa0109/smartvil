@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiInsert, apiUpdate, apiDelete, apiList } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -91,26 +91,22 @@ export default function LayananDashboardPage() {
 
   const fetchRequests = async () => {
     try {
-      const { data, error } = await supabase
-        .from("requests")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
+      const rows = await apiList("requests", { orderBy: "created_at", order: "desc" });
       setRequests(
-        (data || []).map((row) => ({
-          id: row.id,
-          nama: row.nama,
-          nik: row.nik,
-          phone: row.phone,
-          keperluan: row.keperluan,
-          ticketCode: row.ticket_code,
-          type: row.type,
-          typeName: row.type_name,
-          templateNarrative: row.template_narrative,
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          nama: String(row.nama || ""),
+          nik: String(row.nik || ""),
+          phone: String(row.phone || ""),
+          keperluan: String(row.keperluan || ""),
+          ticketCode: String(row.ticket_code || ""),
+          type: String(row.type || ""),
+          typeName: String(row.type_name || ""),
+          templateNarrative: String(row.template_narrative || ""),
           requirements: [],
-          formData: row.form_data || {},
-          status: row.status,
-          adminNotes: row.admin_notes,
+          formData: typeof row.form_data === "string" ? JSON.parse(row.form_data || "{}") : row.form_data || {},
+          status: String(row.status || ""),
+          adminNotes: String(row.admin_notes || ""),
           createdAt: row.created_at,
         }))
       );
@@ -125,28 +121,7 @@ export default function LayananDashboardPage() {
     setLoadingTypes(true);
     try {
       const types = await getLetterTypes();
-      if (types.length === 0) {
-        const initialList: LetterType[] = [];
-        for (const item of DEFAULT_LETTER_TYPES) {
-          const id = crypto.randomUUID();
-          const { error: seedError } = await supabase.from("letter_types").insert({
-            id,
-            code: item.code,
-            name: item.name,
-            description: item.desc,
-            requirements: item.requirements,
-            template_narrative: item.templateNarrative || "",
-            active: item.active,
-            sort_order: item.order || 0,
-          });
-          if (seedError) throw seedError;
-          initialList.push({ ...item, id });
-        }
-        invalidateLetterTypes();
-        setLetterTypes(initialList);
-      } else {
-        setLetterTypes(types);
-      }
+      setLetterTypes(types.length > 0 ? types : DEFAULT_LETTER_TYPES);
     } catch (err) {
       console.error("Error fetching letter types:", err);
       setLetterTypes(DEFAULT_LETTER_TYPES);
@@ -167,8 +142,7 @@ export default function LayananDashboardPage() {
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from("requests").update({ status: newStatus }).eq("id", id);
-      if (error) throw error;
+      await apiUpdate("requests", id, { status: newStatus });
       fetchRequests();
       if (selectedRequest && selectedRequest.id === id) {
         setSelectedRequest((prev: any) => ({ ...prev, status: newStatus }));
@@ -182,8 +156,7 @@ export default function LayananDashboardPage() {
   const handleDeleteRequest = async (id: string, name: string) => {
     if (confirm(`Hapus permohonan surat atas nama "${name}"?`)) {
       try {
-        const { error } = await supabase.from("requests").delete().eq("id", id);
-        if (error) throw error;
+        await apiDelete("requests", id);
         if (selectedRequest?.id === id) setSelectedRequest(null);
         fetchRequests();
       } catch (err) {
@@ -415,7 +388,7 @@ export default function LayananDashboardPage() {
         description: typeForm.desc.trim(),
         requirements: reqArray,
         template_narrative: typeForm.templateNarrative.trim(),
-        active: typeForm.active,
+        active: typeForm.active ? 1 : 0,
         template_file_url: typeForm.templateFileUrl || "",
         template_data: typeForm.templateData || "",
         template_placeholders: typeForm.templatePlaceholders || [],
@@ -423,16 +396,10 @@ export default function LayananDashboardPage() {
       };
 
       if (editingTypeId) {
-        const { error } = await supabase.from("letter_types").update(payload).eq("id", editingTypeId);
-        if (error) throw error;
+        await apiUpdate("letter_types", editingTypeId, payload);
         alert("Jenis surat berhasil diperbarui!");
       } else {
-        const { error } = await supabase.from("letter_types").insert({
-          id: crypto.randomUUID(),
-          ...payload,
-          sort_order: letterTypes.length,
-        });
-        if (error) throw error;
+        await apiInsert("letter_types", { ...payload, sort_order: letterTypes.length });
         alert("Jenis surat baru berhasil ditambahkan!");
       }
 
@@ -452,8 +419,7 @@ export default function LayananDashboardPage() {
   const handleDeleteType = async (id: string, name: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus jenis surat "${name}"?`)) {
       try {
-        const { error } = await supabase.from("letter_types").delete().eq("id", id);
-        if (error) throw error;
+        await apiDelete("letter_types", id);
         invalidateLetterTypes();
         fetchLetterTypes();
       } catch (err) {

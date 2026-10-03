@@ -29,10 +29,9 @@ import {
   Trash2,
   GripVertical,
 } from "lucide-react";
-import { seedDatabase } from "@/lib/seed";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
+import { getToken } from "@/lib/api";
 import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings, saveChatbotSettings } from "@/lib/chatbot-config";
 import {
   SiteSettings,
@@ -183,26 +182,18 @@ function SettingsContent() {
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setAccountMsg(null);
-    const { data } = await supabase.auth.getUser();
-    const user = data.user;
-    if (!user) {
+    
+    if (!authUser) {
       setAccountMsg({ type: "error", text: "Sesi login tidak ditemukan. Silakan login kembali." });
       return;
     }
 
     setSavingAccount(true);
     try {
-      const currentName = (user.user_metadata?.display_name as string) ?? "";
-      if (accountName.trim() && accountName !== currentName) {
-        const { error: nameError } = await supabase.auth.updateUser({
-          data: { display_name: accountName.trim() },
-        });
-        if (nameError) throw nameError;
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ display_name: accountName.trim() })
-          .eq("id", user.id);
-        if (profileError) throw profileError;
+      const updates: Record<string, unknown> = {};
+      
+      if (accountName.trim() && accountName !== authUser.displayName) {
+        updates.display_name = accountName.trim();
       }
 
       if (newPassword) {
@@ -212,10 +203,25 @@ function SettingsContent() {
         if (newPassword !== confirmPassword) {
           throw new Error("Konfirmasi password tidak cocok.");
         }
-        const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
-        if (pwError) throw pwError;
-        setNewPassword("");
-        setConfirmPassword("");
+        updates.password = newPassword;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const res = await fetch(`/api/admins`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: authUser.uid, ...updates }),
+        });
+        
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Gagal memperbarui profil.");
+        }
+        
+        if (newPassword) {
+          setNewPassword("");
+          setConfirmPassword("");
+        }
       }
 
       setAccountMsg({ type: "success", text: "Informasi profil akun & kata sandi berhasil diperbarui!" });
@@ -230,12 +236,20 @@ function SettingsContent() {
   const handleSeed = async () => {
     if (confirm("Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.")) {
       setSeeding(true);
-      const success = await seedDatabase();
-      setSeeding(false);
-      if (success) {
-        alert("Database berhasil diisi dengan data dummy!");
-      } else {
-        alert("Gagal mengisi database.");
+      try {
+        const token = getToken();
+        const res = await fetch("/api/seed", { 
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal mengisi database.");
+        alert("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
+      } catch (err: any) {
+        console.error("Seed error:", err);
+        alert("Gagal mengisi database: " + (err.message || "Unknown error"));
+      } finally {
+        setSeeding(false);
       }
     }
   };

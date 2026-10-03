@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, User, ChevronLeft, ChevronRight, Pencil, Trash2, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -36,22 +36,21 @@ export default function PendudukDashboardPage() {
   const fetchResidents = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("residents").select("*").order("nama", { ascending: true });
-      if (error) throw error;
+      const rows = await apiList("residents", { orderBy: "nama", order: "asc" });
       setResidents(
-        (data || []).map((row) => ({
-          id: row.id,
-          nik: row.nik,
-          nama: row.nama,
-          gender: row.gender,
-          address: row.address,
-          occupation: row.occupation,
-          birthDate: row.birth_date,
-          status: row.status,
-          statusKeluarga: row.status_keluarga,
-          statusPenduduk: row.status_penduduk,
-          agama: row.agama,
-          education: row.education,
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          nik: String(row.nik || ""),
+          nama: String(row.nama || ""),
+          gender: String(row.gender || ""),
+          address: String(row.address || ""),
+          occupation: String(row.occupation || ""),
+          birthDate: String(row.birth_date || ""),
+          status: String(row.status || ""),
+          statusKeluarga: String(row.status_keluarga || ""),
+          statusPenduduk: String(row.status_penduduk || ""),
+          agama: String(row.agama || ""),
+          education: String(row.education || ""),
         }))
       );
     } catch (error) {
@@ -104,8 +103,7 @@ export default function PendudukDashboardPage() {
   const handleDelete = async (id: string, nama: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus data penduduk "${nama}"? Data yang dihapus tidak dapat dikembalikan.`)) {
       try {
-        const { error } = await supabase.from("residents").delete().eq("id", id);
-        if (error) throw error;
+        await apiDelete("residents", id);
         alert("Data penduduk berhasil dihapus.");
         fetchResidents();
       } catch (error) {
@@ -165,15 +163,10 @@ export default function PendudukDashboardPage() {
       };
 
       if (isEditMode && selectedId) {
-        const { error } = await supabase.from("residents").update(payload).eq("id", selectedId);
-        if (error) throw error;
+        await apiUpdate("residents", selectedId, payload);
         alert("Data penduduk berhasil diperbarui!");
       } else {
-        const { error } = await supabase.from("residents").insert({
-          id: crypto.randomUUID(),
-          ...payload,
-        });
-        if (error) throw error;
+        await apiInsert("residents", payload);
         alert("Data penduduk berhasil ditambahkan!");
       }
       setIsModalOpen(false);

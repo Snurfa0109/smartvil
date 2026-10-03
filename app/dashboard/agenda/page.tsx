@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,19 +64,18 @@ export default function AgendaDashboardPage() {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("agenda").select("*").order("sort_order", { ascending: true });
-      if (error) throw error;
+      const rows = await apiList("agenda", { orderBy: "sort_order", order: "asc" });
       setItems(
-        (data || []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          category: row.category,
-          categoryColor: row.category_color,
-          schedule: row.schedule,
-          description: row.description,
-          timeLocation: row.time_location,
-          active: row.active !== false,
-          order: row.sort_order ?? 0,
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          category: String(row.category || ""),
+          categoryColor: (row.category_color as any) || "blue",
+          schedule: String(row.schedule || ""),
+          description: String(row.description || ""),
+          timeLocation: String(row.time_location || ""),
+          active: Number(row.active) !== 0,
+          order: Number(row.sort_order ?? 0),
         }))
       );
     } catch (err) {
@@ -131,15 +130,13 @@ export default function AgendaDashboardPage() {
         schedule: form.schedule,
         description: form.description,
         time_location: form.timeLocation,
-        active: form.active,
+        active: form.active ? 1 : 0,
         sort_order: form.order,
       };
       if (editingId) {
-        const { error } = await supabase.from("agenda").update(payload).eq("id", editingId);
-        if (error) throw error;
+        await apiUpdate("agenda", editingId, payload);
       } else {
-        const { error } = await supabase.from("agenda").insert({ id: crypto.randomUUID(), ...payload });
-        if (error) throw error;
+        await apiInsert("agenda", payload);
       }
       await fetchItems();
       closeDialog();
@@ -154,8 +151,7 @@ export default function AgendaDashboardPage() {
   const handleDelete = async (item: AgendaItem) => {
     setDeleting(item.id);
     try {
-      const { error } = await supabase.from("agenda").delete().eq("id", item.id);
-      if (error) throw error;
+      await apiDelete("agenda", item.id);
       await fetchItems();
       setConfirmDelete(null);
     } catch {
@@ -167,8 +163,7 @@ export default function AgendaDashboardPage() {
 
   const handleToggleActive = async (item: AgendaItem) => {
     try {
-      const { error } = await supabase.from("agenda").update({ active: !item.active }).eq("id", item.id);
-      if (error) throw error;
+      await apiUpdate("agenda", item.id, { active: item.active ? 0 : 1 });
       setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, active: !it.active } : it)));
     } catch {
       alert("Gagal mengubah status.");
