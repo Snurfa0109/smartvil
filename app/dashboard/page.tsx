@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileText, Users, MessageSquare, TrendingUp, Plus, ArrowUpRight, CheckCircle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiCount, apiList } from "@/lib/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -45,12 +45,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const countWhere = (table: string, status: string) =>
-          supabase.from(table).select("*", { count: "exact", head: true }).eq("status", status)
-            .then(({ count }) => count ?? 0);
-        const countAll = (table: string) =>
-          supabase.from(table).select("*", { count: "exact", head: true }).then(({ count }) => count ?? 0);
-
         const [
           pendingComplaints,
           residentsTotal,
@@ -59,16 +53,16 @@ export default function DashboardPage() {
           reqProcessed,
           reqReady,
           reqCompleted,
-          recentRes,
+          recentRows,
         ] = await Promise.all([
-          countWhere("complaints", "pending"),
-          countAll("residents"),
-          countAll("news"),
-          countWhere("requests", "pending"),
-          countWhere("requests", "processed"),
-          countWhere("requests", "ready"),
-          countWhere("requests", "completed"),
-          supabase.from("complaints").select("*").order("created_at", { ascending: false }).limit(4),
+          apiCount("complaints", { column: "status", value: "pending" }),
+          apiCount("residents"),
+          apiCount("news"),
+          apiCount("requests", { column: "status", value: "pending" }),
+          apiCount("requests", { column: "status", value: "processed" }),
+          apiCount("requests", { column: "status", value: "ready" }),
+          apiCount("requests", { column: "status", value: "completed" }),
+          apiList("complaints", { orderBy: "created_at", order: "desc", limit: 4 }),
         ]);
 
         setStats({
@@ -84,7 +78,7 @@ export default function DashboardPage() {
           completed: reqCompleted,
         });
 
-        const complaintsData = ((recentRes.data || []) as Array<Record<string, unknown>>).map((row) => ({
+        const complaintsData = (recentRows as Array<Record<string, unknown>>).map((row) => ({
           id: String(row.id),
           title: (row.title as string) || (row.category as string) || "Pengaduan",
           content: (row.message as string) || "",

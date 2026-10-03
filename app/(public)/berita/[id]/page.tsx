@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { apiGet } from "@/lib/api";
 import { Calendar, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -33,20 +33,19 @@ export default function BeritaDetailPage() {
 
     const fetchBerita = async () => {
       try {
-        const { data, error } = await supabase.from("news").select("*").eq("id", id).maybeSingle();
-        if (error) throw error;
+        const data = await apiGet("news", id);
         if (!data) {
           setNotFound(true);
           setItem(null);
           return;
         }
         setItem({
-          id: data.id,
-          title: data.title,
-          content: data.content,
-          date: data.date,
-          category: data.category,
-          imageUrl: data.image_url,
+          id: String(data.id),
+          title: String(data.title || ""),
+          content: String(data.content || ""),
+          date: String(data.date || ""),
+          category: String(data.category || ""),
+          imageUrl: String(data.image_url || ""),
         });
       } catch (error) {
         console.error("Error fetching berita:", error);

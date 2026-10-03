@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserCheck, Baby, Briefcase, GraduationCap, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, LayoutGrid, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiCount, apiList } from "@/lib/api";
 
 const EXTERNAL_LINKS = [
   {
@@ -151,8 +151,7 @@ export default function DataPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data, error } = await supabase.from("residents").select("*");
-        if (error) throw error;
+        const data = await apiList("residents");
         const residents = (data || []).map((row: Record<string, any>) => ({
           gender: row.gender,
           birthDate: row.birth_date,

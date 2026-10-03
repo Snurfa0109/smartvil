@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiList } from "@/lib/api";
 import { AuditEntry, AuditAction, AuditModule } from "@/lib/audit";
 import {
   History,
@@ -34,21 +34,16 @@ export default function AuditLogsPage() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("audit_logs")
-        .select("*")
-        .order("timestamp", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      const list: (AuditEntry & { id: string })[] = (data || []).map((row) => ({
-        id: row.id,
-        uid: row.uid,
-        email: row.email,
-        displayName: row.display_name,
-        role: row.role,
-        action: row.action,
-        module: row.module,
-        detail: row.detail,
+      const rows = await apiList("audit_logs", { orderBy: "timestamp", order: "desc", limit: 100 });
+      const list: (AuditEntry & { id: string })[] = (rows || []).map((row) => ({
+        id: String(row.id),
+        uid: String(row.uid || ""),
+        email: String(row.email || ""),
+        displayName: String(row.display_name || ""),
+        role: String(row.role || ""),
+        action: (row.action as AuditAction) || "AKSES_DITOLAK",
+        module: (row.module as AuditModule) || "sistem",
+        detail: String(row.detail || ""),
         timestamp: row.timestamp,
       }));
       setLogs(list);

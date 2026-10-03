@@ -28,11 +28,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { writeAuditLog } from "@/lib/audit";
 import { useState } from "react";
 import { getBeritaCategories, DEFAULT_BERITA_CATEGORIES } from "@/lib/site-config";
+import { apiGet, apiUpdate, apiInsert } from "@/lib/api";
 
 // Categories loaded dynamically — see BeritaEditor component
 
@@ -249,8 +249,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
     }
     const loadBerita = async () => {
       try {
-        const { data, error } = await supabase.from("news").select("*").eq("id", id).maybeSingle();
-        if (error) throw error;
+        const data = await apiGet("news", id);
         if (data) {
           setTitle(data.title ?? "");
           setCategory(data.category ?? "");
@@ -313,13 +312,11 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
         image_url: imageUrl.trim() || "/images/default-news.jpg",
       };
       if (id) {
-        const { error } = await supabase.from("news").update(payload).eq("id", id);
-        if (error) throw error;
+        await apiUpdate("news", id, payload);
         await writeAuditLog("UPDATE", "berita", `Memperbarui berita: "${title}" (Kategori: ${category})`);
         alert("Berita berhasil diperbarui!");
       } else {
-        const { error } = await supabase.from("news").insert({ id: crypto.randomUUID(), ...payload });
-        if (error) throw error;
+        await apiInsert("news", { id: crypto.randomUUID(), ...payload });
         await writeAuditLog("CREATE", "berita", `Menerbitkan berita baru: "${title}" (Kategori: ${category})`);
         alert("Berita berhasil ditambahkan!");
       }

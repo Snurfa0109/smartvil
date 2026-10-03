@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { apiList } from "@/lib/api";
 import { stripHtml } from "@/lib/utils";
 
 interface SearchItem {
@@ -123,16 +123,15 @@ function SearchContent() {
   useEffect(() => {
     const fetchAllNews = async () => {
       try {
-        const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false });
-        if (error) throw error;
-        const mapped: SearchItem[] = (data || []).map((row) => {
+        const rows = await apiList("news", { orderBy: "date", order: "desc" });
+        const mapped: SearchItem[] = (rows || []).map((row) => {
           return {
             id: `news-${row.id}`,
-            title: row.title || "Berita Kelurahan",
-            category: "berita",
-            subtitle: row.content ? stripHtml(row.content).substring(0, 140) + "..." : "",
+            title: String(row.title || "Berita Kelurahan"),
+            category: "berita" as const,
+            subtitle: row.content ? stripHtml(String(row.content)).substring(0, 140) + "..." : "",
             url: `/berita/${row.id}`,
-            date: row.date,
+            date: String(row.date || ""),
           };
         });
         setNewsItems(mapped);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { apiList } from "@/lib/api";
 import { Calendar, ChevronLeft, ChevronRight, Search, X, Tag, RotateCcw } from "lucide-react";
 import { stripHtml } from "@/lib/utils";
 
@@ -31,15 +31,14 @@ export default function NewsPage() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false });
-        if (error) throw error;
-        const mapped = (data || []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          content: row.content,
-          date: row.date,
-          category: row.category,
-          imageUrl: row.image_url,
+        const rows = await apiList("news", { orderBy: "date", order: "desc" });
+        const mapped = (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          content: String(row.content || ""),
+          date: String(row.date || ""),
+          category: String(row.category || ""),
+          imageUrl: String(row.image_url || ""),
         })) as NewsItem[];
         setNewsItems(mapped);
       } catch (error) {

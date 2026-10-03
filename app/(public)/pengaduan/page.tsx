@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiInsert, apiFind } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 
 const complaintCategories = [
@@ -99,7 +99,6 @@ export default function ComplaintsPage() {
       const rawPhone = formData.phone.trim();
 
       const payload = {
-        id: crypto.randomUUID(),
         ticket_code: ticketCode,
         nama: formData.nama.trim(),
         email: formData.email.trim(),
@@ -112,8 +111,7 @@ export default function ComplaintsPage() {
         admin_response: "",
       };
 
-      const { error } = await supabase.from("complaints").insert(payload);
-      if (error) throw error;
+      await apiInsert("complaints", payload);
 
       setSubmittedInfo({
         nama: formData.nama.trim(),
@@ -195,14 +193,14 @@ export default function ComplaintsPage() {
       }
 
       // Also support legacy search by exact ticketCode if user happens to enter one
-      const { data: ticketRows } = await supabase.from("complaints").select("*").eq("ticket_code", rawSearch);
-      const results: any[] = (ticketRows || []).map(toItem);
+      let results: any[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
 
       for (const phoneVal of Array.from(new Set(phoneCandidates))) {
-        const { data: phoneRows } = await supabase.from("complaints").select("*").eq("phone", phoneVal);
+        const phoneRows = await apiFind("complaints", { column: "phone", value: phoneVal }).catch(() => []);
         (phoneRows || []).forEach((row) => {
-          if (!results.some((r) => r.id === row.id)) {
-            results.push(toItem(row));
+          const item = toItem(row);
+          if (!results.some((r) => r.id === item.id)) {
+            results.push(item);
           }
         });
       }

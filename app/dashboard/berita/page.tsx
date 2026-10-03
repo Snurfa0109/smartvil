@@ -2,12 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiList, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { writeAuditLog } from "@/lib/audit";
 
 export default function BeritaDashboardPage() {
   const [news, setNews] = useState<any[]>([]);
@@ -20,16 +19,15 @@ export default function BeritaDashboardPage() {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("news").select("*").order("date", { ascending: false });
-      if (error) throw error;
+      const rows = await apiList("news", { orderBy: "date", order: "desc" });
       setNews(
-        (data || []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          category: row.category,
-          content: row.content,
-          date: row.date,
-          imageUrl: row.image_url,
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          category: String(row.category || ""),
+          content: String(row.content || ""),
+          date: String(row.date || ""),
+          imageUrl: String(row.image_url || ""),
           createdAt: row.created_at,
         }))
       );
@@ -48,13 +46,8 @@ export default function BeritaDashboardPage() {
     if (confirm("Apakah anda yakin ingin menghapus berita ini?")) {
       try {
         const deletedItem = news.find((n) => n.id === id);
-        const { error } = await supabase.from("news").delete().eq("id", id);
-        if (error) throw error;
-        await writeAuditLog(
-          "DELETE",
-          "berita",
-          `Menghapus artikel berita: "${deletedItem?.title || id}"`
-        );
+        await apiDelete("news", id);
+        await writeAuditLog("DELETE", "berita", `Menghapus artikel berita: "${deletedItem?.title || id}"`);
         fetchNews();
       } catch (error) {
         console.error("Error deleting news:", error);
