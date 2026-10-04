@@ -178,7 +178,6 @@ function SearchContent() {
 
   return (
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-8">
-      {/* Header */}
       <div className="max-w-3xl space-y-3">
         <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
           Pusat Pencarian Terpadu
@@ -191,7 +190,6 @@ function SearchContent() {
         </p>
       </div>
 
-      {/* Search Input Box */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
         <form onSubmit={handleSearchSubmit} className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -219,7 +217,6 @@ function SearchContent() {
           </button>
         </form>
 
-        {/* Category Tabs */}
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
           {[
             { key: "semua", label: "Semua Kategori" },
@@ -243,7 +240,6 @@ function SearchContent() {
         </div>
       </div>
 
-      {/* Results Header Status */}
       <div className="flex items-center justify-between text-xs text-slate-500 px-1">
         <span>
           Ditemukan <strong className="text-slate-800">{filteredResults.length}</strong> hasil
@@ -253,7 +249,6 @@ function SearchContent() {
         </span>
       </div>
 
-      {/* Results List */}
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (

@@ -1,0 +1,39 @@
+.paper {
+  background: white;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm 25mm 25mm 25mm;
+  box-sizing: border-box;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: black;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.22);
+}
+
+.previewPane {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #1e2a38;
+  display: flex;
+  flex-direction: column;
+}
+
+.previewPaneHeader {
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #243347;
+  padding: 0.5rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.previewPaneBody {
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 2rem 3rem;
+}

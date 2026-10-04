@@ -120,7 +120,6 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
-      {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
@@ -128,13 +127,11 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1b365d] flex flex-col transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0 md:flex`}
       >
-        {/* Sidebar Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -156,7 +153,6 @@ export default function DashboardLayout({
           </button>
         </div>
 
-        {/* Nav Links */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           <div className="space-y-0.5">
             {baseNavItems.map((item) => {
@@ -226,7 +222,6 @@ export default function DashboardLayout({
           )}
         </nav>
 
-        {/* Sidebar Footer */}
         <div className="p-3 border-t border-white/10">
           <button
             onClick={handleLogout}
@@ -238,9 +233,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Top Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-3">
             <button
@@ -282,7 +275,6 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {isCurrentRouteForbidden ? (
             <div className="max-w-xl mx-auto my-12 bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-xs">

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useEffect, useState } from "react";
-import { apiInsert, apiUpdate, apiDelete, apiList } from "@/lib/api";
+import { apiInsert, apiUpdate, apiDelete, apiList, apiUpload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -42,6 +42,7 @@ import {
 } from "@/lib/letter-template";
 import LetterSimulationPreview from "@/components/letter-simulation-preview";
 import LetterPrintDocument from "@/components/letter-print-document";
+import LetterPrintEditor from "@/components/letter-print-editor";
 
 export default function LayananDashboardPage() {
   const [activeTab, setActiveTab] = useState<"requests" | "letter_types">("requests");
@@ -244,13 +245,11 @@ export default function LayananDashboardPage() {
         const res = await fetch(item.templateFileUrl);
         if (res.ok) setTemplateBuffer(await res.arrayBuffer());
       } catch {
-        // simulasi opsional
       }
     } else if (item.templateData) {
       try {
         setTemplateBuffer(await dataUrlToBuffer(item.templateData));
       } catch {
-        // simulasi opsional
       }
     }
   };
@@ -275,15 +274,19 @@ export default function LayananDashboardPage() {
 
       if (placeholders.length === 0) {
         const smart = await smartTemplateFromStaticDocx(file);
-        if (smart.placeholders.length === 0) {
-          setTemplateError("Tidak terdeteksi field. Pastikan template berisi baris 'Label : ' (contoh 'Nama Suami : ') atau placeholder {{nama}}.");
-          return;
+        if (smart.placeholders.length > 0) {
+          placeholders = smart.placeholders;
+          finalBuffer = smart.buffer;
+          uploadBlob = new Blob([smart.buffer], {
+            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          });
+        } else {
+          finalBuffer = await file.arrayBuffer();
+          uploadBlob = file;
+          setTemplateError(
+            "Field tidak terdeteksi otomatis. Template akan disimpan apa adanya. Tambahkan {{nama}}, {{nik}}, dll secara manual di file Word jika diperlukan."
+          );
         }
-        placeholders = smart.placeholders;
-        finalBuffer = smart.buffer;
-        uploadBlob = new Blob([smart.buffer], {
-          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        });
       } else {
         finalBuffer = await file.arrayBuffer();
         uploadBlob = file;
@@ -300,27 +303,20 @@ export default function LayananDashboardPage() {
       setScanningTemplate(false);
 
       setUploadingTemplate(true);
+      const safeCode = (typeForm.code || `srt_${Date.now()}`).trim().toLowerCase().replace(/\s+/g, "_");
+      const storagePath = `${safeCode}_${Date.now()}.docx`;
       try {
-        const safeCode = (typeForm.code || `srt_${Date.now()}`).trim().toLowerCase().replace(/\s+/g, "_");
-        const storagePath = `${safeCode}_${Date.now()}.docx`;
-        const UPLOAD_TIMEOUT_MS = 20_000;
-        const { error } = await Promise.race([
-          supabase.storage.from("templates").upload(storagePath, uploadBlob, {
-            contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            upsert: true,
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Koneksi ke Storage terlalu lama (timeout 20 detik).")), UPLOAD_TIMEOUT_MS)
-          ),
-        ]);
-        if (error) throw error;
-        const { data } = supabase.storage.from("templates").getPublicUrl(storagePath);
+        const uploadFile = uploadBlob instanceof File
+          ? uploadBlob
+          : new File([uploadBlob], storagePath, { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+        const uploadedUrl = await apiUpload(uploadFile, "templates");
         setTypeForm((prev) => ({
           ...prev,
-          templateFileUrl: data.publicUrl,
+          templateFileUrl: uploadedUrl,
           templateStoragePath: storagePath,
           templateData: "",
         }));
+        if (placeholders.length > 0) setTemplateError("");
       } catch (upErr) {
         console.warn("Upload Storage gagal, pakai penyimpanan database:", upErr);
         try {
@@ -331,7 +327,7 @@ export default function LayananDashboardPage() {
             templateStoragePath: "",
             templateData: dataUrl,
           }));
-          setTemplateError("");
+          if (placeholders.length > 0) setTemplateError("");
         } catch {
           const msg = upErr instanceof Error ? upErr.message : String(upErr);
           setTemplateError(
@@ -452,9 +448,10 @@ export default function LayananDashboardPage() {
     window.print();
   };
 
-  const handleDownloadFilledDocx = async () => {
-    if (!printRequest) return;
-    const letterType = letterTypes.find((lt) => lt.code === printRequest.type);
+  const handleDownloadFilledDocx = async (mergedRequest?: any) => {
+    const req = mergedRequest || printRequest;
+    if (!req) return;
+    const letterType = letterTypes.find((lt) => lt.code === req.type);
     const templateSource = letterType?.templateFileUrl || letterType?.templateData;
     if (!templateSource) {
       alert("Jenis surat ini belum memiliki template .docx. Upload template dulu di tab Kelola Jenis Surat.");
@@ -465,9 +462,9 @@ export default function LayananDashboardPage() {
       const res = await fetch(templateSource);
       if (!res.ok) throw new Error("Gagal mengunduh template");
       const buf = await res.arrayBuffer();
-      const data = buildTemplateData(printRequest, printConfig);
+      const data = buildTemplateData(req, printConfig);
       const blob = await generateFilledDocx(buf, data);
-      downloadBlob(blob, `${printRequest.typeName || "surat"}-${printRequest.ticketCode || printRequest.id}.docx`);
+      downloadBlob(blob, `${req.typeName || "surat"}-${req.ticketCode || req.id}.docx`);
     } catch (err) {
       console.error("Gagal generate DOCX:", err);
       alert("Gagal membuat file DOCX. Coba lagi.");
@@ -1086,98 +1083,16 @@ export default function LayananDashboardPage() {
       )}
 
       {printRequest && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <Card className="w-full max-w-4xl bg-white relative my-6 max-h-[95vh] flex flex-col">
-            <CardHeader className="border-b py-4 px-6">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center shrink-0">
-                    <Printer className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <CardTitle className="text-base font-bold flex items-center gap-2 flex-wrap">
-                      Cetak Dokumen Surat Resmi
-                      {printRequest.ticketCode && (
-                        <span className="text-[11px] font-mono font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                          {printRequest.ticketCode}
-                        </span>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-0.5">
-                      {printRequest.typeName || "Surat Keterangan"} • A4 • cetak langsung atau simpan PDF
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={handleDownloadFilledDocx} disabled={downloadingDocx} className="whitespace-nowrap">
-                    <Download className="mr-1.5 h-3.5 w-3.5" /> {downloadingDocx ? "Membuat..." : "DOCX Presisi"}
-                  </Button>
-                  <Button size="sm" onClick={triggerBrowserPrint} className="bg-[#1b365d] hover:bg-[#152a48] whitespace-nowrap">
-                    <Printer className="mr-1.5 h-3.5 w-3.5" /> Cetak / PDF
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 px-0 shrink-0" onClick={() => setPrintRequest(null)} title="Tutup">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-
-            <div className="p-6 overflow-y-auto space-y-6">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <Label htmlFor="no-surat" className="text-xs">Nomor Registrasi Surat</Label>
-                  <Input
-                    id="no-surat"
-                    className="h-8 text-xs font-mono"
-                    value={printConfig.nomorSurat}
-                    onChange={(e) => setPrintConfig({ ...printConfig, nomorSurat: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pj-nama" className="text-xs">Nama Pejabat Penandatangan</Label>
-                  <Input
-                    id="pj-nama"
-                    className="h-8 text-xs"
-                    value={printConfig.pejabatNama}
-                    onChange={(e) => setPrintConfig({ ...printConfig, pejabatNama: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pj-jabatan" className="text-xs">Jabatan Pejabat</Label>
-                  <Input
-                    id="pj-jabatan"
-                    className="h-8 text-xs"
-                    value={printConfig.pejabatJabatan}
-                    onChange={(e) => setPrintConfig({ ...printConfig, pejabatJabatan: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pj-nip" className="text-xs">NIP Pejabat</Label>
-                  <Input
-                    id="pj-nip"
-                    className="h-8 text-xs font-mono"
-                    value={printConfig.pejabatNip}
-                    onChange={(e) => setPrintConfig({ ...printConfig, pejabatNip: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="max-w-[760px] mx-auto bg-white p-12 shadow-2xl border border-gray-300 rounded-sm font-serif text-[11pt] leading-relaxed text-black">
-                <LetterPrintDocument request={printRequest} letterTypes={letterTypes} printConfig={printConfig} />
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Print-only copy, styled by globals.css @media print */}
-      {printRequest && (
-        <div
-          id="printable-letter-container"
-          style={{ display: "none" }}
-        >
-          <LetterPrintDocument request={printRequest} letterTypes={letterTypes} printConfig={printConfig} />
-        </div>
+        <LetterPrintEditor
+          request={printRequest}
+          letterTypes={letterTypes}
+          printConfig={printConfig}
+          onPrintConfigChange={setPrintConfig}
+          onClose={() => setPrintRequest(null)}
+          onPrint={triggerBrowserPrint}
+          onDownloadDocx={handleDownloadFilledDocx}
+          downloadingDocx={downloadingDocx}
+        />
       )}
     </div>
   );

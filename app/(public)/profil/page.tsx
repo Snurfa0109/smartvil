@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -47,7 +47,7 @@ export default function ProfilePage() {
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-12">
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
-          <span>Kecamatan Cipocok Jaya • Kota Serang</span>
+          <span>Kecamatan Cipocok Jaya â€¢ Kota Serang</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b365d]">
           {profile.title}
@@ -108,7 +108,7 @@ export default function ProfilePage() {
               </h4>
               <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Jam Kerja: Senin – Jumat, 08.00 – 15.30 WIB</span>
+                <span>Jam Kerja: Senin â€“ Jumat, 08.00 â€“ 15.30 WIB</span>
               </p>
             </div>
 
@@ -174,8 +174,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </section>
-
-      {/* Visi & Misi */}
       <section className="grid md:grid-cols-2 gap-8">
         <Card className="bg-gradient-to-br from-blue-50/40 to-white border border-[#1b365d]/15 shadow-xs">
           <CardHeader>
@@ -212,8 +210,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </section>
-
-      {/* Geografis & Batas Wilayah */}
       <section className="space-y-6">
         <div className="flex items-center gap-2 text-[#1b365d]">
           <MapPin className="h-6 w-6" />
@@ -271,8 +267,6 @@ export default function ProfilePage() {
           </Card>
         </div>
       </section>
-
-      {/* Fasilitas & Kawasan Pemukiman Utama */}
       <section className="space-y-6">
         <div className="flex items-center gap-2 text-[#1b365d]">
           <Home className="h-6 w-6" />
@@ -308,15 +302,12 @@ export default function ProfilePage() {
           </div>
         </div>
       </section>
-
-      {/* Struktur Pemerintahan Kelurahan */}
       <section className="space-y-6">
         <div className="flex items-center gap-2 text-[#1b365d]">
           <Users className="h-6 w-6" />
           <h2 className="text-2xl font-bold">Struktur Organisasi Kelurahan</h2>
         </div>
         <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[420px]">
-          {/* Lurah */}
           <div className="flex flex-col items-center">
             <div className="relative group">
               <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-[#1b365d] to-[#c9971c] p-1 shadow-md">
@@ -335,12 +326,9 @@ export default function ProfilePage() {
           </div>
 
           <div className="w-px h-8 bg-gray-300 my-3" />
-
-          {/* Staf / Aparatur Kelurahan */}
           <div className="w-full max-w-3xl border-t border-gray-300 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-6 bg-gray-300" />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 w-full">
-              {/* Seklur */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#1b365d] to-blue-400 p-1 mb-2">
                   <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xl font-bold text-[#1b365d]">
@@ -351,8 +339,6 @@ export default function ProfilePage() {
                 <p className="text-xs text-[#1b365d] font-medium">{profile.secretaryTitle}</p>
                 <span className="text-[10px] text-muted-foreground mt-1 bg-slate-100 px-2 py-0.5 rounded">Sekretariat Kelurahan</span>
               </div>
-
-              {/* Kasi Pemerintahan */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 p-1 mb-2">
                   <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xl font-bold text-emerald-700">
@@ -363,8 +349,6 @@ export default function ProfilePage() {
                 <p className="text-xs text-[#1b365d] font-medium">{profile.kasiPemerintahanTitle}</p>
                 <span className="text-[10px] text-muted-foreground mt-1 bg-slate-100 px-2 py-0.5 rounded">Wilayah & Ketertiban Umum</span>
               </div>
-
-              {/* Kasi Pelayanan */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#c9971c] to-amber-400 p-1 mb-2">
                   <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xl font-bold text-[#c9971c]">
@@ -379,8 +363,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </section>
-
-      {/* Lokasi Kantor */}
       <section className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-[#1b365d]/10 flex items-center justify-center">

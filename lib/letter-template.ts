@@ -531,10 +531,17 @@ export async function generateFilledDocx(
     paragraphLoop: true,
     linebreaks: true,
     nullGetter: () => "",
-    // Template kita memakai kurung kurawal ganda {{field}} (bukan default {field})
     delimiters: { start: "{{", end: "}}" },
+    errorLogging: false,
   });
-  doc.render(data);
+  try {
+    doc.render(data);
+  } catch (err: any) {
+    const details = err?.properties?.errors
+      ?.map((e: any) => e.message)
+      .join(", ");
+    throw new Error(details ? `Template error: ${details}` : "Gagal render template DOCX.");
+  }
   return doc.getZip().generate({
     type: "blob",
     mimeType:

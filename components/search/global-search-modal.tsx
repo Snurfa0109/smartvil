@@ -129,7 +129,6 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
   const [newsResults, setNewsResults] = useState<SearchResultItem[]>([]);
   const [newsFetched, setNewsFetched] = useState(false);
 
-  // Pre-fetch news list when modal opens
   useEffect(() => {
     if (!isOpen || newsFetched) return;
     const fetchNewsForSearch = async () => {
@@ -154,7 +153,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     fetchNewsForSearch();
   }, [isOpen, newsFetched]);
 
-  // Handle ESC key to close
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -171,7 +170,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) {
-      // If empty, show recommended quick access
+
       return STATIC_SERVICES.slice(0, 3).concat(STATIC_PAGES.slice(0, 3));
     }
     const q = searchTerm.toLowerCase();
@@ -211,7 +210,6 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in-0 zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Search Input Bar */}
         <form onSubmit={handleFormSubmit} className="relative flex items-center border-b border-slate-200 px-4 py-3.5 bg-slate-50/50">
           <Search className="w-5 h-5 text-slate-400 mr-3 shrink-0" />
           <input
@@ -242,7 +240,6 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
           </button>
         </form>
 
-        {/* Results List */}
         <div className="overflow-y-auto p-3 space-y-1">
           <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             {!searchTerm.trim() ? "Akses Cepat Populer" : `Hasil Pencarian (${filteredItems.length})`}
@@ -288,7 +285,6 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
           )}
         </div>
 
-        {/* Footer info */}
         <div className="border-t border-slate-200 px-4 py-2.5 bg-slate-50 text-[11px] text-slate-500 flex items-center justify-between">
           <span>Pencarian Global Terpadu Kelurahan Banjar Agung</span>
           {searchTerm.trim() && (

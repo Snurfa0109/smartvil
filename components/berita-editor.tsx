@@ -34,8 +34,6 @@ import { useState } from "react";
 import { getBeritaCategories, DEFAULT_BERITA_CATEGORIES } from "@/lib/site-config";
 import { apiGet, apiUpdate, apiInsert } from "@/lib/api";
 
-// Categories loaded dynamically — see BeritaEditor component
-
 type BeritaEditorProps = {
   id?: string | null;
 };

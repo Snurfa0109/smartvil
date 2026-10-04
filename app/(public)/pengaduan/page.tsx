@@ -120,7 +120,6 @@ export default function ComplaintsPage() {
         category: formData.category,
       });
 
-      // Save phone to localStorage for easy return
       try {
         const stored = localStorage.getItem("banjaragung_saved_phones");
         const prevList: StoredPhone[] = stored ? JSON.parse(stored) : [];

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
@@ -14,8 +14,6 @@ export default function PengaduanDashboardPage() {
   const [replyText, setReplyText] = useState("");
   const [savingReply, setSavingReply] = useState(false);
   const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
-
-  // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPhone, setFilterPhone] = useState<string | null>(null);
 
@@ -150,8 +148,8 @@ export default function PengaduanDashboardPage() {
       `*INFORMASI PENGADUAN - KELURAHAN BANJAR AGUNG*\n\n` +
       `Yth. Bpk/Ibu *${item.nama || "Pelapor"}*,\n\n` +
       `Kami menginformasikan bahwa pengaduan Anda:\n` +
-      `• *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
-      `• *Status:* ${statusText}.\n\n` +
+      `â€¢ *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
+      `â€¢ *Status:* ${statusText}.\n\n` +
       (item.adminResponse ? `*Tanggapan Resmi Kami:*\n${item.adminResponse}\n\n` : "") +
       `Jika ada pertanyaan, silakan balas pesan ini.\n\n` +
       `_Pemerintah Kelurahan Banjar Agung, Kec. Cipocok Jaya, Kota Serang_`
@@ -174,8 +172,6 @@ export default function PengaduanDashboardPage() {
           Total: {complaints.length} Laporan
         </div>
       </div>
-
-      {/* Filter and Search Bar */}
       <div className="bg-white border border-slate-200/90 rounded-xl p-4 space-y-3 shadow-xs">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
@@ -293,7 +289,7 @@ export default function PengaduanDashboardPage() {
                         </span>
                       )}
                       {item.adminResponse && (
-                        <span className="text-emerald-700 font-medium">✓ Sudah Ditanggapi</span>
+                        <span className="text-emerald-700 font-medium">âœ“ Sudah Ditanggapi</span>
                       )}
                     </div>
                     <span>
@@ -343,8 +339,6 @@ export default function PengaduanDashboardPage() {
           })
         )}
       </div>
-
-      {/* Detail & Reply Modal */}
       {selectedComplaint && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl bg-white relative my-8 max-h-[90vh] flex flex-col">
@@ -358,11 +352,10 @@ export default function PengaduanDashboardPage() {
                     </p>
                   )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedComplaint(null)}>✕</Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedComplaint(null)}>âœ•</Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-5 p-6 overflow-y-auto">
-              {/* Frequency Notice */}
               {selectedComplaint.phone && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 flex items-center justify-between gap-3">
                   <div>
@@ -458,8 +451,6 @@ export default function PengaduanDashboardPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Klik gambar untuk melihat ukuran penuh.</p>
                 </div>
               )}
-
-              {/* Tanggapan Form */}
               <div className="border-t pt-4 space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Tulis Tanggapan Resmi / Catatan Tindak Lanjut
@@ -507,8 +498,6 @@ export default function PengaduanDashboardPage() {
           </Card>
         </div>
       )}
-
-      {/* Full Image Modal */}
       {imageModalUrl && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -529,3 +518,4 @@ export default function PengaduanDashboardPage() {
     </div>
   );
 }
+

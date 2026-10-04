@@ -27,98 +27,176 @@ interface Props {
 
 export default function LetterPrintDocument({ request, letterTypes, printConfig }: Props) {
   const letterType = letterTypes.find((lt) => lt.code === request.type);
+
   return (
     <>
-      <div className="text-center border-b-4 border-double border-black pb-3 mb-6">
-        <h4 className="font-bold text-sm tracking-wider uppercase">PEMERINTAH KOTA SERANG</h4>
-        <h4 className="font-bold text-sm tracking-wider uppercase">KECAMATAN CIPOCOK JAYA</h4>
-        <h2 className="font-black text-xl tracking-widest uppercase">KANTOR KELURAHAN BANJAR AGUNG</h2>
-        <p className="text-[9pt] font-sans mt-0.5 text-gray-700">
-          Jl. Syech Nawawi Albantani No. 16, Kota Serang, Banten 42122 | Telp/WA: +62 813-1505-3901
-        </p>
+      {/* Kop Surat */}
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingBottom: "12px", borderBottom: "3px double black", marginBottom: "20px" }}>
+        {/* Logo placeholder — di surat fisik diisi logo daerah */}
+        <div style={{
+          width: "64px",
+          height: "64px",
+          borderRadius: "50%",
+          border: "2px solid #c9971c",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          fontSize: "8pt",
+          color: "#c9971c",
+          fontWeight: "bold",
+          textAlign: "center",
+          lineHeight: "1.2",
+          fontFamily: "Georgia, serif",
+        }}>
+          LOGO
+        </div>
+
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: "10pt", fontWeight: "700", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "Arial, sans-serif" }}>
+            PEMERINTAH KOTA SERANG
+          </div>
+          <div style={{ fontSize: "10pt", fontWeight: "700", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "Arial, sans-serif" }}>
+            KECAMATAN CIPOCOK JAYA
+          </div>
+          <div style={{ fontSize: "16pt", fontWeight: "900", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "Arial, sans-serif", marginTop: "2px" }}>
+            KELURAHAN BANJAR AGUNG
+          </div>
+          <div style={{ fontSize: "8.5pt", color: "#444", fontFamily: "Arial, sans-serif", marginTop: "3px" }}>
+            Jl. Syech Nawawi Albantani No. 16, Kota Serang, Banten 42122
+          </div>
+          <div style={{ fontSize: "8.5pt", color: "#444", fontFamily: "Arial, sans-serif" }}>
+            Telp/WA: +62 813-1505-3901 · Email: kel.banjaragung@serangkota.go.id
+          </div>
+        </div>
+
+        <div style={{
+          width: "64px",
+          height: "64px",
+          borderRadius: "50%",
+          border: "2px solid #1b365d",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          fontSize: "8pt",
+          color: "#1b365d",
+          fontWeight: "bold",
+          textAlign: "center",
+          lineHeight: "1.2",
+          fontFamily: "Georgia, serif",
+        }}>
+          LOGO
+        </div>
       </div>
 
-      <div className="text-center mb-6">
-        <h3 className="font-bold text-base underline uppercase tracking-wide">
-          {request.typeName || "SURAT KETERANGAN DESA"}
-        </h3>
-        <p className="text-[10pt] font-sans mt-0.5 font-mono">
-          Nomor: {printConfig.nomorSurat}
-        </p>
+      {/* Judul Surat */}
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <div style={{ fontSize: "13pt", fontWeight: "bold", textDecoration: "underline", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          {request.typeName || "SURAT KETERANGAN"}
+        </div>
+        <div style={{ fontSize: "10pt", fontFamily: "Arial, sans-serif", marginTop: "4px", letterSpacing: "0.02em" }}>
+          Nomor: {printConfig.nomorSurat || ".../ .../..."}
+        </div>
       </div>
 
-      <div className="space-y-3.5 text-justify">
-        <p>
-          Yang bertanda tangan di bawah ini, Lurah Banjar Agung, Kec. Cipocok Jaya, Kota Serang, Banten, dengan ini menerangkan bahwa:
+      {/* Isi Surat */}
+      <div style={{ textAlign: "justify", lineHeight: "1.8" }}>
+        <p style={{ marginBottom: "12px" }}>
+          Yang bertanda tangan di bawah ini, Lurah Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang, Provinsi Banten, dengan ini menerangkan bahwa:
         </p>
 
-        <table className="w-full my-3 font-sans text-xs ml-4">
+        {/* Tabel data pemohon */}
+        <table style={{ width: "100%", marginBottom: "12px", fontSize: "11pt", fontFamily: "Arial, sans-serif" }}>
           <tbody>
-            <tr>
-              <td className="w-44 py-1 text-gray-700">Nama Lengkap</td>
-              <td className="w-4">:</td>
-              <td className="font-bold uppercase text-black">{request.nama}</td>
-            </tr>
-            <tr>
-              <td className="py-1 text-gray-700">NIK (No. KTP)</td>
-              <td>:</td>
-              <td className="font-mono font-semibold">{request.nik}</td>
-            </tr>
-            <tr>
-              <td className="py-1 text-gray-700">Nomor Telepon / WA</td>
-              <td>:</td>
-              <td>{request.phone || "-"}</td>
-            </tr>
-            <tr>
-              <td className="py-1 align-top text-gray-700">Maksud / Keperluan</td>
-              <td className="align-top">:</td>
-              <td className="font-semibold text-black">{request.keperluan}</td>
-            </tr>
-            {request.formData && Object.entries(request.formData).map(([k, v]) => {
-              const def = (letterType?.customFields || []).find((f) => f.key === k);
-              return (
-                <tr key={k}>
-                  <td className="py-1 align-top text-gray-700">{def?.label || k}</td>
-                  <td className="align-top">:</td>
-                  <td className="font-semibold text-black">{String(v) || "-"}</td>
-                </tr>
-              );
-            })}
+            <DataRow label="Nama Lengkap" value={<strong style={{ textTransform: "uppercase" }}>{request.nama || "—"}</strong>} />
+            <DataRow label="NIK (No. KTP)" value={<span style={{ fontFamily: "monospace", letterSpacing: "0.05em" }}>{request.nik || "—"}</span>} />
+            <DataRow label="Nomor Telepon / WA" value={request.phone || "—"} />
+            <DataRow
+              label="Maksud / Keperluan"
+              value={<strong>{request.keperluan || "—"}</strong>}
+              alignTop
+            />
+            {request.formData &&
+              Object.entries(request.formData).map(([k, v]) => {
+                const def = (letterType?.customFields || []).find((f) => f.key === k);
+                return (
+                  <DataRow
+                    key={k}
+                    label={def?.label || k}
+                    value={<strong>{String(v) || "—"}</strong>}
+                    alignTop={String(v).length > 40}
+                  />
+                );
+              })}
           </tbody>
         </table>
+
         {letterType?.templateFileUrl && (
-          <p className="text-[9pt] font-sans text-blue-800 bg-blue-50 border border-blue-200 rounded px-2 py-1">
-            Surat ini memiliki template DOCX resmi — gunakan tombol “Download DOCX Presisi” agar hasil cetak 100% sama dengan template.
-          </p>
+          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "4px", padding: "6px 10px", marginBottom: "12px", fontSize: "9pt", fontFamily: "Arial, sans-serif", color: "#1e40af" }}>
+            Surat ini memiliki template DOCX resmi. Gunakan tombol "Unduh DOCX Presisi" untuk hasil cetak 100% sesuai template.
+          </div>
         )}
 
-        <p>
+        {/* Narasi */}
+        <p style={{ marginBottom: "12px", textIndent: "2em" }}>
           {request.templateNarrative ||
             letterType?.templateNarrative ||
-            "Menerangkan bahwa orang tersebut di atas adalah benar warga yang berdomisili sah di Kelurahan Banjar Agung, berkarakter baik, dan tidak sedang terlibat dalam permasalahan hukum maupun sengketa perdata apapun di lingkungan desa."}
+            "Menerangkan bahwa orang tersebut di atas adalah benar warga yang berdomisili sah di Kelurahan Banjar Agung, berkarakter baik, dan tidak sedang terlibat dalam permasalahan hukum maupun sengketa perdata apapun di lingkungan kelurahan."}
         </p>
 
-        <p>
+        <p style={{ textIndent: "2em" }}>
           Demikian surat keterangan ini kami berikan dengan sebenarnya atas dasar keterangan pemohon dan data arsip yang ada, untuk dapat dipergunakan sebagaimana mestinya oleh pihak yang berkepentingan.
         </p>
       </div>
 
-      <div className="mt-10 flex justify-end">
-        <div className="text-center w-64">
-          <p className="text-xs font-sans">Kelurahan Banjar Agung, {printConfig.tanggalSurat}</p>
-          <p className="font-bold text-xs mt-1 uppercase">{printConfig.pejabatJabatan}</p>
+      {/* Tanda Tangan */}
+      <div style={{ marginTop: "40px", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ textAlign: "center", width: "220px" }}>
+          <div style={{ fontSize: "11pt", fontFamily: "Arial, sans-serif" }}>
+            Banjar Agung, {printConfig.tanggalSurat || "..."}
+          </div>
+          <div style={{ fontSize: "11pt", fontWeight: "bold", textTransform: "uppercase", fontFamily: "Arial, sans-serif", marginTop: "2px" }}>
+            {printConfig.pejabatJabatan || "Lurah"}
+          </div>
 
-          <div className="h-20 flex flex-col items-center justify-center my-2">
-            <div className="w-16 h-16 border border-dashed border-gray-400 rounded flex flex-col items-center justify-center text-[8pt] text-gray-400 font-sans">
-              <span>[ QR CODE ]</span>
-              <span className="text-[6pt]">VALIDASI RESMI</span>
+          {/* QR / Stempel area */}
+          <div style={{ margin: "12px auto", width: "76px", height: "76px", border: "1.5px dashed #9ca3af", borderRadius: "4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "3px" }}>
+            <div style={{ fontSize: "7pt", color: "#9ca3af", fontFamily: "Arial, sans-serif", textAlign: "center", lineHeight: "1.4" }}>
+              <div>[ QR CODE ]</div>
+              <div style={{ fontSize: "6pt" }}>VALIDASI RESMI</div>
             </div>
           </div>
 
-          <p className="font-bold underline uppercase text-xs">{printConfig.pejabatNama}</p>
-          <p className="text-[9pt] font-sans text-gray-600 font-mono">NIP. {printConfig.pejabatNip}</p>
+          <div style={{ fontSize: "11pt", fontWeight: "bold", textDecoration: "underline", textTransform: "uppercase", fontFamily: "Arial, sans-serif" }}>
+            {printConfig.pejabatNama || "—"}
+          </div>
+          <div style={{ fontSize: "9.5pt", color: "#444", fontFamily: "monospace", marginTop: "2px" }}>
+            NIP. {printConfig.pejabatNip || "—"}
+          </div>
         </div>
       </div>
     </>
+  );
+}
+
+function DataRow({
+  label,
+  value,
+  alignTop = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  alignTop?: boolean;
+}) {
+  const vAlign = alignTop ? "top" : "middle";
+  return (
+    <tr>
+      <td style={{ width: "180px", paddingTop: "3px", paddingBottom: "3px", color: "#555", verticalAlign: vAlign }}>
+        {label}
+      </td>
+      <td style={{ width: "16px", paddingTop: "3px", paddingBottom: "3px", verticalAlign: vAlign }}>:</td>
+      <td style={{ paddingTop: "3px", paddingBottom: "3px", verticalAlign: vAlign }}>{value}</td>
+    </tr>
   );
 }
