@@ -12,8 +12,8 @@
   --color-muted: #f1f5f9;
   --color-muted-foreground: #64748b;
   --color-border: #e2e8f0;
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 :root {
@@ -78,8 +78,41 @@ body {
 .lt-card {
   animation: lt-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* Stat cards stagger entrance */
+@keyframes stat-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layanan-stat-card {
+  animation: stat-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Modal slide-in */
+@keyframes modal-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layanan-modal {
+  animation: modal-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Dashboard metric cards stagger */
+.dash-card {
+  animation: stat-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Sidebar scrollbar — invisible but functional */
+.sidebar-scroll {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari/Opera */
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lt-card { animation: none; }
+  .lt-card, .layanan-stat-card, .layanan-modal, .dash-card { animation: none; }
 }
 
 /* ── Print: cetak surat resmi ── */

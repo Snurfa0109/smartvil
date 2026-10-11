@@ -27,7 +27,16 @@ export interface LetterType {
 
 export const DEFAULT_LETTER_TYPES: LetterType[] = [];
 
+const ROW_STRIP_KEYS = new Set([
+  "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+  "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+]);
+
 export function rowToLetterType(row: Record<string, unknown>): LetterType {
+  const rawFields = (row.custom_fields as LetterCustomFieldDef[]) || [];
+  const cleanFields = rawFields.filter(
+    (f) => !ROW_STRIP_KEYS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
+  );
   return {
     id: String(row.id ?? ""),
     code: String(row.code ?? ""),
@@ -41,7 +50,7 @@ export function rowToLetterType(row: Record<string, unknown>): LetterType {
     templateStoragePath: "",
     templateData: String(row.template_data ?? ""),
     templatePlaceholders: (row.template_placeholders as string[]) || [],
-    customFields: (row.custom_fields as LetterCustomFieldDef[]) || [],
+    customFields: cleanFields,
   };
 }
 

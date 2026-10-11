@@ -125,8 +125,18 @@ export default function ServicesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLetter) return;
+    const WARGA_HIDDEN_KEYS = new Set([
+      "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+      "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+      "keperluan", "kebutuhan", "tujuan", "keterangan",
+      "dipergunakan_untuk", "digunakan_untuk",
+      "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+      "bermaksud_untuk", "dimaksudkan_untuk",
+      "surat_keterangan_ini_dipergunakan_untuk",
+      "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+    ]);
     const requiredMissing = (activeLetterObj?.customFields || []).filter(
-      (f) => f.required && !(customFormData[f.key] || "").trim()
+      (f) => !WARGA_HIDDEN_KEYS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_") && f.required && !(customFormData[f.key] || "").trim()
     );
     if (requiredMissing.length > 0) {
       warning(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
@@ -624,10 +634,24 @@ export default function ServicesPage() {
                       />
                     </div>
 
-                    {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (
+                    {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (() => {
+                      const WARGA_HIDDEN = new Set([
+                        "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+                        "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+                        "keperluan", "kebutuhan", "tujuan", "keterangan",
+                        "dipergunakan_untuk", "digunakan_untuk",
+                        "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+                        "bermaksud_untuk", "dimaksudkan_untuk",
+                        "surat_keterangan_ini_dipergunakan_untuk",
+                        "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+                      ]);
+                      const visibleFields = activeLetterObj.customFields.filter(
+                        (f) => !WARGA_HIDDEN.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
+                      );
+                      return visibleFields.length > 0 ? (
                       <div className="space-y-3 pt-2 border-t">
                         <p className="text-xs font-bold text-slate-800">Data tambahan sesuai template surat ini:</p>
-                        {activeLetterObj.customFields.map((f) => (
+                        {visibleFields.map((f) => (
                           <div key={f.key} className="space-y-1.5">
                             <label htmlFor={`custom-${f.key}`} className="text-xs font-semibold text-slate-700">
                               {f.label} {f.required && <span className="text-red-500">*</span>}
@@ -669,7 +693,7 @@ export default function ServicesPage() {
                           </div>
                         ))}
                       </div>
-                    )}
+                    ) : null; })()}
 
                     <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-lg text-xs text-slate-600 space-y-1">
                       <p className="font-semibold text-slate-800 flex items-center gap-1.5">

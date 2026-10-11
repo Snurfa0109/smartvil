@@ -15,18 +15,16 @@ type Props = {
 };
 
 /**
- * Preview simulasi surat terisi data contoh.
+ * Live preview template surat apa adanya (tanpa data contoh).
  * Render di dalam <iframe> terisolasi supaya CSS Tailwind/global
- * tidak ikut menimpa style bawaan docx-preview (itu penyebab
- * preview lama terlihat acak-acakan). Opsi render dibuat
- * semirip Word: header/footer ikut, lebar halaman asli,
- * ganti halaman per section.
+ * tidak ikut menimpa style bawaan docx-preview.
+ * "Unduh Contoh Terisi" generate file terpisah dengan data sample.
  */
 export default function LetterSimulationPreview({ templateBuffer, placeholders, customFields, fileName }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [status, setStatus] = useState<"idle" | "rendering" | "filled" | "raw" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "rendering" | "ready" | "error">("idle");
   const [errorDetail, setErrorDetail] = useState("");
-  const [filledBlob, setFilledBlob] = useState<Blob | null>(null);
+  const [downloadingFilled, setDownloadingFilled] = useState(false);
   const [zoom, setZoom] = useState<"fit" | 50 | 75 | 100>("fit");
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
@@ -53,6 +51,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
     return () => window.removeEventListener("resize", applyZoom);
   }, [applyZoom, zoom, status]);
 
+  // Render template apa adanya (tanpa data contoh) setiap kali buffer berubah
   useEffect(() => {
     if (!templateBuffer || placeholders.length === 0) {
       setStatus("idle");
@@ -62,26 +61,11 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
     const render = async () => {
       setStatus("rendering");
       setErrorDetail("");
-      setFilledBlob(null);
       bodyHostRef.current = null;
 
-      let blobToRender: Blob;
-      let usedFilled = true;
-      try {
-        blobToRender = await generateSampleFilledDocx(
-          templateBuffer.slice(0),
-          placeholders,
-          customFields
-        );
-        if (!cancelled) setFilledBlob(blobToRender);
-      } catch (fillErr) {
-        console.warn("Isi contoh gagal, tampilkan template mentah:", fillErr);
-        usedFilled = false;
-        blobToRender = new Blob([templateBuffer.slice(0)], {
-          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        });
-      }
-      if (cancelled) return;
+      const rawBlob = new Blob([templateBuffer.slice(0)], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
 
       try {
         const iframe = iframeRef.current;
@@ -104,7 +88,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
         doc.body.appendChild(styleHost);
         doc.body.appendChild(bodyHost);
         bodyHostRef.current = bodyHost;
-        await renderAsync(blobToRender, bodyHost, styleHost, {
+        await renderAsync(rawBlob, bodyHost, styleHost, {
           inWrapper: true,
           ignoreWidth: false,
           ignoreHeight: false,
@@ -116,13 +100,13 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
           experimental: true,
         } as unknown as Record<string, unknown>);
         if (!cancelled) {
-          setStatus(usedFilled ? "filled" : "raw");
+          setStatus("ready");
           requestAnimationFrame(() => {
             if (!cancelled) applyZoom();
           });
         }
       } catch (renderErr) {
-        console.error("Gagal render simulasi:", renderErr);
+        console.error("Gagal render preview:", renderErr);
         if (!cancelled) {
           setStatus("error");
           const msg = renderErr instanceof Error ? renderErr.message : String(renderErr);
@@ -147,8 +131,21 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
     );
   };
 
-  const downloadFilled = () => {
-    if (filledBlob) downloadBlob(filledBlob, (fileName || "surat").replace(/\.docx$/i, "") + "-contoh-terisi.docx");
+  const downloadFilled = async () => {
+    if (!templateBuffer) return;
+    setDownloadingFilled(true);
+    try {
+      const blob = await generateSampleFilledDocx(
+        templateBuffer.slice(0),
+        placeholders,
+        customFields
+      );
+      downloadBlob(blob, (fileName || "surat").replace(/\.docx$/i, "") + "-contoh-terisi.docx");
+    } catch (err) {
+      console.error("Gagal generate contoh terisi:", err);
+    } finally {
+      setDownloadingFilled(false);
+    }
   };
 
   if (!templateBuffer || placeholders.length === 0) {
@@ -160,7 +157,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
           </div>
           <div className="flex-1">
             <Label className="font-bold text-base text-slate-900 block">Live Preview</Label>
-            <p className="text-xs text-slate-600 mt-0.5">Preview surat dengan data contoh</p>
+            <p className="text-xs text-slate-600 mt-0.5">Preview template surat</p>
           </div>
         </div>
         <div className="border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center bg-slate-50">
@@ -185,8 +182,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
             <Label className="font-bold text-base text-slate-900 block">Live Preview</Label>
             <p className="text-xs text-slate-600 mt-0.5">
               {status === "rendering" && "Merender preview..."}
-              {status === "filled" && "Surat terisi data contoh"}
-              {status === "raw" && "Template dokumen"}
+              {status === "ready" && "Template apa adanya — tanpa data contoh"}
               {status === "error" && "Gagal render preview"}
               {status === "idle" && "Siap preview"}
             </p>
@@ -199,13 +195,10 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
               <span className="text-xs font-medium text-blue-900">Rendering...</span>
             </div>
           )}
-          {status === "filled" && (
-            <span className="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">Data Contoh</span>
+          {status === "ready" && (
+            <span className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">Template Asli</span>
           )}
-          {status === "raw" && (
-            <span className="text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">Template Mentah</span>
-          )}
-          {(status === "filled" || status === "raw") && (
+          {status === "ready" && (
             <div className="flex items-center rounded-lg border border-slate-200 overflow-hidden bg-white">
               {(["fit", 50, 75, 100] as const).map((z) => (
                 <button
@@ -260,15 +253,21 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
         <Button type="button" size="sm" variant="outline" className="h-9 text-xs font-medium border-slate-300 hover:bg-slate-50" onClick={downloadScanned}>
           <Download className="mr-2 h-4 w-4" /> Unduh Template Scan
         </Button>
-        {filledBlob && (
-          <Button type="button" size="sm" variant="outline" className="h-9 text-xs font-medium border-slate-300 hover:bg-slate-50" onClick={downloadFilled}>
-            <Download className="mr-2 h-4 w-4" /> Unduh Contoh Terisi
-          </Button>
-        )}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-9 text-xs font-medium border-slate-300 hover:bg-slate-50"
+          onClick={downloadFilled}
+          disabled={downloadingFilled}
+        >
+          {downloadingFilled ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          Unduh Contoh Terisi
+        </Button>
       </div>
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
         <p className="text-xs text-amber-900 leading-relaxed">
-          <strong className="font-semibold">Preview di atas adalah perkiraan browser.</strong> Posisi logo, tabel, dan spasi mungkin sedikit berbeda dari hasil sebenarnya. Klik &quot;Unduh Contoh Terisi&quot; untuk melihat hasil 100% akurat di Microsoft Word / WPS Office.
+          <strong className="font-semibold">Preview di atas menampilkan template apa adanya.</strong> Placeholder <code className="bg-amber-100 px-1 rounded">{"{{field}}"}</code> akan terisi otomatis saat warga mengajukan surat. Klik &quot;Unduh Contoh Terisi&quot; untuk melihat hasil dengan data contoh di Word.
         </p>
       </div>
     </div>

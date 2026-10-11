@@ -24,8 +24,124 @@ import {
 import type { LetterType } from "@/lib/letters";
 import type { LetterPrintConfig } from "@/components/letter-print-document";
 import LetterPrintDocument from "@/components/letter-print-document";
-import { buildTemplateData, generateFilledDocx, dataUrlToBuffer, extractNarrativesFromDocx } from "@/lib/letter-template";
+import { buildTemplateData, generateFilledDocx, dataUrlToBuffer, extractNarrativesFromDocx, replaceNarrativesInDocx, downloadBlob } from "@/lib/letter-template";
 import styles from "@/app/letter-print.module.css";
+
+/**
+ * Fix docx-preview rendered DOM so the header matches the original Word layout.
+ *
+ * The template header in Word:
+ *   - Logo: anchor image at left page edge
+ *   - Title lines: centered text with left-indent ~85pt to clear the logo
+ *   - Address/email: w:bidi paragraphs (docx-preview renders as direction:rtl)
+ *   - Horizontal line separator (SVG) in article
+ *
+ * docx-preview puts logo + title text inside ONE <p>:
+ *   <p style="margin-inline-start:85.5pt; text-align:center">
+ *     <span><div style="width:0;height:0;display:inline-block;position:relative">
+ *       <img .../>
+ *     </div></span>
+ *     <span>PEMERINTAH KOTA SERANG</span>
+ *     <span>KECAMATAN CIPOCOK JAYA</span>
+ *   </p>
+ *
+ * The 0×0 div is display:inline-block but contains a block-level scaled img,
+ * which forces a line break and pushes the title text below the logo.
+ * Fix: make the logo wrapper absolutely positioned and fully out of text flow.
+ */
+function fixDocxPreviewDom(root: HTMLElement) {
+  // 1. Fix logo inside header: move it OUT of the text paragraph entirely
+  const header = root.querySelector("header");
+  if (header) {
+    header.style.position = "relative";
+    header.style.overflow = "visible";
+    const mh = parseFloat(header.style.minHeight);
+    if (isNaN(mh) || mh < 0) {
+      header.style.minHeight = "80pt";
+    }
+
+    // Find the 0×0 logo wrapper div (nested inside a <p> > <span>)
+    const logoDiv = header.querySelector<HTMLElement>('div[style*="width: 0px"]');
+    if (logoDiv) {
+      const img = logoDiv.querySelector("img");
+      if (img) {
+        // Remove the old wrapper div and clean up ancestor spans
+        let ancestor: HTMLElement | null = logoDiv.parentElement;
+        logoDiv.remove();
+
+        while (ancestor && ancestor.tagName !== "P" && ancestor.tagName !== "HEADER") {
+          const next: HTMLElement | null = ancestor.parentElement;
+          if (!ancestor.textContent?.trim() && !ancestor.querySelector("img")) {
+            ancestor.remove();
+          }
+          ancestor = next;
+        }
+
+        const parentP = header.querySelector("p");
+        if (parentP) {
+          parentP.querySelectorAll<HTMLElement>("span[id]").forEach((sp) => {
+            if (!sp.textContent?.trim() && !sp.querySelector("img")) {
+              sp.remove();
+            }
+          });
+        }
+
+        // The source image is the full coat-of-arms with text below it.
+        // Word crops it via srcRect: l=18.113% t=3.962% r=14.528% b=29.246%
+        // This means: show only the center emblem, hide bottom text.
+        // Use clip-path inset to replicate the exact Word crop.
+        img.style.cssText = [
+          "display:block",
+          "width:95pt",
+          "height:auto",
+          "clip-path:inset(3.96% 14.53% 29.25% 18.11%)",
+        ].join(";");
+
+        const logoContainer = root.ownerDocument.createElement("div");
+        logoContainer.style.cssText = "position:absolute;left:-5pt;top:-2pt;width:95pt;height:75pt;overflow:hidden;z-index:10;";
+        logoContainer.appendChild(img);
+        header.insertBefore(logoContainer, header.firstChild);
+      }
+    }
+  }
+
+  // 2. Fix bidi paragraphs (direction:rtl → ltr)
+  root.querySelectorAll<HTMLElement>("p[style]").forEach((p) => {
+    if (p.style.direction !== "rtl") return;
+    p.style.direction = "ltr";
+    p.style.unicodeBidi = "normal";
+    p.style.removeProperty("margin-inline");
+    p.style.marginInlineStart = "85.5pt";
+    p.style.marginInlineEnd = "0pt";
+  });
+
+  // 3. Fix SVG separator line (in article, first child with class docx_header)
+  root.querySelectorAll<HTMLElement>("p.docx_header[style]").forEach((p) => {
+    if (p.style.marginInlineStart) {
+      p.style.marginInlineStart = "0pt";
+    }
+    const svg = p.querySelector("svg");
+    if (svg) {
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "14pt");
+      svg.style.position = "relative";
+      svg.style.left = "0";
+      svg.style.zIndex = "1";
+      const line = svg.querySelector("line");
+      if (line) {
+        line.setAttribute("x1", "0");
+        line.setAttribute("x2", "100%");
+        line.setAttribute("stroke", "black");
+        line.setAttribute("stroke-width", "1.5px");
+      }
+    }
+  });
+
+  // 4. Section positioning context
+  root.querySelectorAll<HTMLElement>("section.docx").forEach((sec) => {
+    sec.style.position = "relative";
+  });
+}
 
 interface LetterPrintEditorProps {
   request: Record<string, unknown>;
@@ -33,9 +149,6 @@ interface LetterPrintEditorProps {
   printConfig: LetterPrintConfig;
   onPrintConfigChange: (cfg: LetterPrintConfig) => void;
   onClose: () => void;
-  onPrint: () => void;
-  onDownloadDocx: (mergedRequest: Record<string, unknown>) => Promise<void>;
-  downloadingDocx: boolean;
 }
 
 interface EditableRequest {
@@ -53,8 +166,6 @@ export default function LetterPrintEditor({
   printConfig,
   onPrintConfigChange,
   onClose,
-  onDownloadDocx,
-  downloadingDocx,
 }: LetterPrintEditorProps) {
   const letterType = letterTypes.find((lt) => lt.code === (request as Record<string, string>)?.type);
 
@@ -103,9 +214,22 @@ export default function LetterPrintEditor({
     setEditable((p) => ({ ...p, formData: { ...p.formData, [key]: val } }));
 
   const hasDocxTemplate = !!(letterType?.templateFileUrl || letterType?.templateData);
-  const customFields = letterType?.customFields ?? [];
-  const [printing, setPrinting] = useState(false);
+  const PRINT_PANEL_HIDDEN = new Set([
+    "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+    "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+    "keperluan", "kebutuhan", "tujuan", "keterangan",
+    "dipergunakan_untuk", "digunakan_untuk",
+    "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+    "bermaksud_untuk", "dimaksudkan_untuk",
+    "surat_keterangan_ini_dipergunakan_untuk",
+    "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+  ]);
+  const customFields = (letterType?.customFields ?? []).filter(
+    (f) => !PRINT_PANEL_HIDDEN.has(f.key.toLowerCase())
+  );
   const [narratives, setNarratives] = useState<string[]>([]);
+  const [originalNarratives, setOriginalNarratives] = useState<string[]>([]);
+  const [editedNarratives, setEditedNarratives] = useState<string[]>([]);
 
   useEffect(() => {
     if (!hasDocxTemplate) return;
@@ -123,8 +247,12 @@ export default function LetterPrintEditor({
         }
         const paras = extractNarrativesFromDocx(buf);
         setNarratives(paras);
+        setOriginalNarratives(paras);
+        setEditedNarratives([...paras]);
       } catch {
         setNarratives([]);
+        setOriginalNarratives([]);
+        setEditedNarratives([]);
       }
     };
     loadNarratives();
@@ -146,9 +274,12 @@ export default function LetterPrintEditor({
   const generateBlob = useCallback(async (): Promise<Blob | null> => {
     const buf = await getTemplateBuffer();
     if (!buf) return null;
+    const patched = originalNarratives.length > 0
+      ? replaceNarrativesInDocx(buf, originalNarratives, editedNarratives)
+      : buf;
     const data = buildTemplateData(mergedRequest, printConfig);
-    return generateFilledDocx(buf, data);
-  }, [getTemplateBuffer, mergedRequest, printConfig]);
+    return generateFilledDocx(patched, data);
+  }, [getTemplateBuffer, mergedRequest, printConfig, originalNarratives, editedNarratives]);
 
   const renderDocxPreview = useCallback(async () => {
     if (!hasDocxTemplate) return;
@@ -184,6 +315,7 @@ export default function LetterPrintEditor({
         ignoreFonts: false,
         experimental: true,
       } as unknown as Record<string, unknown>);
+      fixDocxPreviewDom(bodyHost);
       const page = bodyHost.querySelector("section.docx") as HTMLElement | null;
       if (page) {
         const pageW = page.offsetWidth || 1;
@@ -207,80 +339,20 @@ export default function LetterPrintEditor({
     return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
   }, [mergedRequest, printConfig, hasDocxTemplate, renderDocxPreview]);
 
-  const printFromHtml = useCallback(() => {
-    const container = document.getElementById("printable-letter-container");
-    if (!container) { window.print(); return; }
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:0";
-    document.body.appendChild(iframe);
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) { document.body.removeChild(iframe); window.print(); return; }
-    iframeDoc.open();
-    iframeDoc.write(`<!DOCTYPE html><html><head><style>
-      @page { size: A4; margin: 0; }
-      body { margin: 0; padding: 20mm 25mm 25mm 25mm; box-sizing: border-box;
-        font-family: Georgia, 'Times New Roman', serif; font-size: 11pt;
-        line-height: 1.6; color: black; }
-      table { width: 100%; border-collapse: collapse; }
-    </style></head><body>${container.innerHTML}</body></html>`);
-    iframeDoc.close();
-    iframe.onload = () => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 1000);
-    };
-  }, []);
-
-  const printFromDocx = useCallback(async () => {
-    setPrinting(true);
+  const [internalDownloading, setInternalDownloading] = useState(false);
+  const handleInternalDownloadDocx = useCallback(async () => {
+    setInternalDownloading(true);
     try {
       const blob = await generateBlob();
-      if (!blob) { printFromHtml(); return; }
-      const iframe = document.createElement("iframe");
-      iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:0";
-      document.body.appendChild(iframe);
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) { document.body.removeChild(iframe); printFromHtml(); return; }
-      iframeDoc.open();
-      iframeDoc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
-        '@page{size:A4;margin:0;}body{margin:0;padding:0;}' +
-        'section.docx{box-shadow:none!important;margin:0!important;}' +
-        '</style></head><body></body></html>');
-      iframeDoc.close();
-      const styleHost = iframeDoc.createElement("div");
-      const bodyHost = iframeDoc.createElement("div");
-      iframeDoc.body.appendChild(styleHost);
-      iframeDoc.body.appendChild(bodyHost);
-      await renderAsync(blob, bodyHost, styleHost, {
-        inWrapper: false,
-        ignoreWidth: false,
-        ignoreHeight: false,
-        breakPages: true,
-        renderHeaders: true,
-        renderFooters: true,
-        useBase64URL: true,
-        ignoreFonts: false,
-        experimental: true,
-      } as unknown as Record<string, unknown>);
-      await new Promise((r) => setTimeout(r, 500));
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 2000);
+      if (!blob) return;
+      const name = `${(request as Record<string, string>)?.typeName || "surat"}-${(request as Record<string, string>)?.ticketCode || "doc"}.docx`;
+      downloadBlob(blob, name);
     } catch (err) {
-      console.error("Cetak DOCX gagal, fallback HTML:", err);
-      printFromHtml();
+      console.error("Download DOCX gagal:", err);
     } finally {
-      setPrinting(false);
+      setInternalDownloading(false);
     }
-  }, [generateBlob, printFromHtml]);
-
-  const handlePrint = useCallback(() => {
-    if (hasDocxTemplate) {
-      printFromDocx();
-    } else {
-      printFromHtml();
-    }
-  }, [hasDocxTemplate, printFromDocx, printFromHtml]);
+  }, [generateBlob, request]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -319,32 +391,18 @@ export default function LetterPrintEditor({
             {hasDocxTemplate && (
               <Button
                 size="sm"
-                variant="ghost"
-                onClick={() => onDownloadDocx(mergedRequest)}
-                disabled={downloadingDocx}
-                className="text-blue-200 hover:bg-white/10 hover:text-white border border-white/15 h-8 text-xs gap-1.5 px-3"
+                onClick={handleInternalDownloadDocx}
+                disabled={internalDownloading}
+                className="bg-white text-[#1b365d] hover:bg-blue-50 font-semibold h-8 text-xs gap-1.5 px-4 shadow-sm"
               >
-                {downloadingDocx ? (
+                {internalDownloading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Download className="h-3.5 w-3.5" />
                 )}
-                <span className="hidden sm:inline">{downloadingDocx ? "Membuat..." : "Unduh DOCX"}</span>
+                {internalDownloading ? "Membuat..." : "Unduh DOCX"}
               </Button>
             )}
-            <Button
-              size="sm"
-              onClick={handlePrint}
-              disabled={printing || downloadingDocx}
-              className="bg-white text-[#1b365d] hover:bg-blue-50 font-semibold h-8 text-xs gap-1.5 px-4 shadow-sm"
-            >
-              {printing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Printer className="h-3.5 w-3.5" />
-              )}
-              {printing ? "Menyiapkan..." : "Cetak / PDF"}
-            </Button>
             <div className="w-px h-5 bg-white/15 mx-0.5" />
             <Button
               size="sm"
@@ -463,10 +521,19 @@ export default function LetterPrintEditor({
                     open={openSections["narasi"]}
                     onToggle={() => toggleSection("narasi")}
                   >
-                    <p className="text-[10px] text-slate-500 mb-2">Paragraf narasi dari template. Teks ini sudah tercetak di surat, ditampilkan sebagai referensi.</p>
-                    {narratives.map((text, i) => (
-                      <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 leading-relaxed">
-                        {text}
+                    <p className="text-[10px] text-slate-500 mb-2">Paragraf narasi dari template. Anda bisa mengedit teks di bawah ini sebelum mencetak surat.</p>
+                    {editedNarratives.map((text, i) => (
+                      <div key={i} className="mb-2">
+                        <Label className="text-[10px] text-slate-400 mb-1">Paragraf {i + 1}</Label>
+                        <Textarea
+                          value={text}
+                          onChange={(e) => {
+                            const updated = [...editedNarratives];
+                            updated[i] = e.target.value;
+                            setEditedNarratives(updated);
+                          }}
+                          className="min-h-[72px] resize-none text-xs leading-relaxed"
+                        />
                       </div>
                     ))}
                   </Accordion>
@@ -493,6 +560,7 @@ export default function LetterPrintEditor({
                       placeholder="1 Oktober 2026"
                       className="h-9 text-sm"
                     />
+                    <p className="text-[10px] text-slate-400 mt-1">Otomatis mengisi &quot;Kota, [tanggal]&quot; di template</p>
                   </Field>
                 </Accordion>
 
@@ -535,31 +603,18 @@ export default function LetterPrintEditor({
 
             {/* Sticky action footer */}
             <div className="shrink-0 p-4 border-t border-slate-200 bg-white space-y-2">
-              <Button
-                onClick={handlePrint}
-                disabled={printing}
-                className="w-full bg-[#1b365d] hover:bg-[#152a48] h-10 gap-2 font-semibold"
-              >
-                {printing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Printer className="h-4 w-4" />
-                )}
-                {printing ? "Menyiapkan Cetak..." : "Cetak / Simpan PDF"}
-              </Button>
               {hasDocxTemplate && (
                 <Button
-                  variant="outline"
-                  onClick={() => onDownloadDocx(mergedRequest)}
-                  disabled={downloadingDocx}
-                  className="w-full h-9 gap-2 text-sm"
+                  onClick={handleInternalDownloadDocx}
+                  disabled={internalDownloading}
+                  className="w-full bg-[#1b365d] hover:bg-[#152a48] h-10 gap-2 font-semibold"
                 >
-                  {downloadingDocx ? (
+                  {internalDownloading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  Unduh DOCX Presisi
+                  {internalDownloading ? "Membuat DOCX..." : "Unduh DOCX"}
                 </Button>
               )}
             </div>
@@ -597,7 +652,7 @@ export default function LetterPrintEditor({
                       <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
                       <div>
                         <p className="text-sm font-semibold text-amber-200">Preview tidak dapat ditampilkan</p>
-                        <p className="text-xs text-amber-300 mt-1">Gunakan tombol &quot;Unduh DOCX Presisi&quot; untuk melihat hasil sebenarnya di Microsoft Word.</p>
+                        <p className="text-xs text-amber-300 mt-1">Preview ini perkiraan. Layout final (header, tabel, border) bisa berbeda. Gunakan &quot;Unduh DOCX&quot; lalu buka di Word untuk hasil 100% akurat.</p>
                       </div>
                     </div>
                   )}

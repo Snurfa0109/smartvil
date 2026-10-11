@@ -11,6 +11,12 @@ import {
   Calendar,
   Layers,
   ArrowRight,
+  Hourglass,
+  Settings,
+  PackageCheck,
+  CheckCircle,
+  Newspaper,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiCount, apiList } from "@/lib/api";
@@ -162,44 +168,64 @@ export default function DashboardPage() {
     label: string;
     sublabel: string;
     count: number;
-    badgeStyle: string;
+    icon: React.ReactNode;
+    gradient: string;
+    iconBg: string;
+    iconText: string;
+    numText: string;
     barColor: string;
     actionNote: string;
   }> = [
     {
       key: "pending",
-      label: "Menunggu Verifikasi",
+      label: "Menunggu",
       sublabel: "Permohonan baru masuk dari warga",
       count: requestBreakdown.pending,
-      badgeStyle: "bg-amber-100 text-amber-900 border-amber-200",
+      icon: <Hourglass className="h-5 w-5" />,
+      gradient: "from-amber-500 to-orange-500",
+      iconBg: "bg-amber-100",
+      iconText: "text-amber-600",
+      numText: "text-amber-700",
       barColor: "bg-amber-500",
       actionNote: "Perlu pemeriksaan kelengkapan berkas pemohon di loket",
     },
     {
       key: "processed",
-      label: "Sedang Diproses",
+      label: "Diproses",
       sublabel: "Penyusunan berkas & validasi data",
       count: requestBreakdown.processed,
-      badgeStyle: "bg-blue-100 text-blue-900 border-blue-200",
-      barColor: "bg-blue-600",
+      icon: <Settings className="h-5 w-5" />,
+      gradient: "from-sky-500 to-blue-600",
+      iconBg: "bg-sky-100",
+      iconText: "text-sky-600",
+      numText: "text-sky-700",
+      barColor: "bg-sky-500",
       actionNote: "Menunggu penomoran atau penandatanganan pejabat",
     },
     {
       key: "ready",
-      label: "Siap Diambil di Loket",
+      label: "Siap Diambil",
       sublabel: "Dokumen resmi sudah tercetak",
       count: requestBreakdown.ready,
-      badgeStyle: "bg-emerald-100 text-emerald-900 border-emerald-200",
-      barColor: "bg-emerald-600",
+      icon: <PackageCheck className="h-5 w-5" />,
+      gradient: "from-emerald-500 to-teal-600",
+      iconBg: "bg-emerald-100",
+      iconText: "text-emerald-600",
+      numText: "text-emerald-700",
+      barColor: "bg-emerald-500",
       actionNote: "Siap diserahkan kepada warga yang datang ke kantor",
     },
     {
       key: "completed",
-      label: "Selesai Diserahkan",
+      label: "Selesai",
       sublabel: "Arsip pelayanan terlaksana",
       count: requestBreakdown.completed,
-      badgeStyle: "bg-slate-100 text-slate-800 border-slate-200",
-      barColor: "bg-slate-600",
+      icon: <CheckCircle className="h-5 w-5" />,
+      gradient: "from-slate-500 to-slate-700",
+      iconBg: "bg-slate-100",
+      iconText: "text-slate-500",
+      numText: "text-slate-700",
+      barColor: "bg-slate-500",
       actionNote: "Pelayanan telah tuntas dan tersimpan di basis data",
     },
   ];
@@ -214,42 +240,46 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header Context & Action Center */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-32 bg-gradient-to-bl from-slate-100 to-transparent pointer-events-none rounded-tr-2xl" />
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-1">
+
+      {/* ── Hero Header ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1b365d] via-[#1f3f6e] to-[#264478] p-6 md:p-8 text-white shadow-lg">
+        <div className="absolute right-0 top-0 w-72 h-72 rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute left-1/3 bottom-0 w-48 h-48 rounded-full bg-white/[0.03] translate-y-1/2" />
+        <div className="absolute right-1/4 bottom-0 w-32 h-32 rounded-full bg-[#c9971c]/10 translate-y-1/3" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div>
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1b365d] bg-[#1b365d]/10 px-2.5 py-0.5 rounded-full">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/70 bg-white/10 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm">
                 <Calendar className="h-3 w-3" />
-                {dateLabel || "Pemerintah Kelurahan Banjar Agung"}
+                {dateLabel || "Kelurahan Banjar Agung"}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                Loket Pelayanan Aktif (08.00 - 15.30 WIB)
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-400/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Loket Aktif · 08.00–15.30
               </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Pusat Kontrol Pelayanan Kelurahan
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Pusat Kontrol Pelayanan
             </h1>
-            <p className="text-slate-500 text-sm mt-1 max-w-2xl leading-relaxed">
-              Pantau antrean dokumen warga, tindak lanjuti aspirasi pengaduan, dan kelola basis data administrasi kependudukan.
+            <p className="text-white/50 text-sm mt-2 max-w-xl leading-relaxed">
+              Pantau antrean dokumen, tindak lanjuti aspirasi warga, dan kelola basis data administrasi kependudukan.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Link href="/dashboard/layanan">
-              <Button size="sm" className="bg-[#1b365d] hover:bg-[#152a48] text-white h-9 px-4 text-xs font-semibold shadow-xs">
-                <Inbox className="mr-1.5 h-3.5 w-3.5" /> Buka Loket Permohonan
+              <Button size="sm" className="bg-white text-[#1b365d] hover:bg-white/90 h-9 px-4 text-xs font-bold shadow-md">
+                <Inbox className="mr-1.5 h-3.5 w-3.5" /> Buka Loket
               </Button>
             </Link>
             <Link href="/dashboard/berita/tambah">
-              <Button size="sm" variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 h-9 px-3 text-xs font-medium">
+              <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10 h-9 px-3 text-xs font-medium">
                 <Plus className="mr-1.5 h-3.5 w-3.5" /> Berita Baru
               </Button>
             </Link>
             <Link href="/dashboard/penduduk">
-              <Button size="sm" variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50 h-9 px-3 text-xs font-medium">
+              <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10 h-9 px-3 text-xs font-medium">
                 <Users className="mr-1.5 h-3.5 w-3.5" /> Data Penduduk
               </Button>
             </Link>
@@ -257,306 +287,384 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Actionable Metrics Grid */}
+      {/* ── Metric Cards ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Metric 1: Permohonan Surat */}
-        <Link
-          href="/dashboard/layanan"
-          className="group rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#1b365d]/50 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Antrean Surat</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-3xl font-extrabold text-[#1b365d] group-hover:scale-105 transition-transform">
-                  {stats.requests}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">berkas menunggu</span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center shrink-0 group-hover:bg-[#1b365d] group-hover:text-white transition-colors">
-              <Inbox className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>{requestBreakdown.processed} sedang berjalan</span>
-            <span className="font-semibold text-[#1b365d] group-hover:underline">Buka antrean</span>
-          </div>
-        </Link>
+        {([
+          {
+            href: "/dashboard/layanan",
+            label: "Antrean Surat",
+            value: stats.requests,
+            sub: `${requestBreakdown.processed} sedang berjalan`,
+            cta: "Buka antrean",
+            icon: <Inbox className="h-5 w-5" />,
+            gradient: "from-[#1b365d] to-[#264478]",
+            iconBg: "bg-[#1b365d]/10",
+            iconText: "text-[#1b365d]",
+            numText: "text-[#1b365d]",
+            hoverBorder: "hover:border-[#1b365d]/40",
+            ctaColor: "text-[#1b365d]",
+            accentBar: "bg-[#1b365d]",
+          },
+          {
+            href: "/dashboard/pengaduan",
+            label: "Pengaduan Baru",
+            value: stats.complaints,
+            sub: "Laporan terbuka warga",
+            cta: "Periksa",
+            icon: <AlertCircle className="h-5 w-5" />,
+            gradient: "from-amber-500 to-orange-500",
+            iconBg: "bg-amber-100",
+            iconText: "text-amber-600",
+            numText: "text-amber-700",
+            hoverBorder: "hover:border-amber-300",
+            ctaColor: "text-amber-700",
+            accentBar: "bg-amber-500",
+          },
+          {
+            href: "/dashboard/penduduk",
+            label: "Penduduk Terdata",
+            value: stats.residents,
+            sub: "Master data kependudukan",
+            cta: "Kelola",
+            icon: <Users className="h-5 w-5" />,
+            gradient: "from-emerald-500 to-teal-600",
+            iconBg: "bg-emerald-100",
+            iconText: "text-emerald-600",
+            numText: "text-emerald-700",
+            hoverBorder: "hover:border-emerald-300",
+            ctaColor: "text-emerald-700",
+            accentBar: "bg-emerald-500",
+          },
+          {
+            href: "/dashboard/berita",
+            label: "Publikasi Portal",
+            value: stats.news,
+            sub: "Warta & agenda kelurahan",
+            cta: "Lihat",
+            icon: <Newspaper className="h-5 w-5" />,
+            gradient: "from-violet-500 to-purple-600",
+            iconBg: "bg-violet-100",
+            iconText: "text-violet-600",
+            numText: "text-violet-700",
+            hoverBorder: "hover:border-violet-300",
+            ctaColor: "text-violet-700",
+            accentBar: "bg-violet-500",
+          },
+        ] as const).map((card, i) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            style={{ animationDelay: `${i * 70}ms` }}
+            className={`dash-card group relative overflow-hidden rounded-2xl border border-slate-200 bg-white ${card.hoverBorder} hover:shadow-lg transition-all duration-300 flex flex-col`}
+          >
+            {/* Top accent bar */}
+            <div className={`h-1 ${card.accentBar}`} />
 
-        {/* Metric 2: Pengaduan Warga */}
-        <Link
-          href="/dashboard/pengaduan"
-          className="group rounded-2xl border border-slate-200 bg-white p-5 hover:border-amber-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pengaduan Baru</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-3xl font-extrabold text-amber-700 group-hover:scale-105 transition-transform">
-                  {stats.complaints}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">laporan terbuka</span>
+            <div className="p-5 flex-1 flex flex-col">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{card.label}</p>
+                  {loading ? (
+                    <div className="h-9 w-16 bg-slate-100 rounded-lg mt-2 animate-pulse" />
+                  ) : (
+                    <p className={`text-3xl font-extrabold mt-1.5 tabular-nums tracking-tight ${card.numText}`}>
+                      {card.value.toLocaleString("id-ID")}
+                    </p>
+                  )}
+                </div>
+                <div className={`w-11 h-11 rounded-xl ${card.iconBg} ${card.iconText} flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110`}>
+                  {card.icon}
+                </div>
               </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/80 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-              <AlertCircle className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>Tindak lanjut aspirasi warga</span>
-            <span className="font-semibold text-amber-800 group-hover:underline">Periksa</span>
-          </div>
-        </Link>
 
-        {/* Metric 3: Data Penduduk */}
-        <Link
-          href="/dashboard/penduduk"
-          className="group rounded-2xl border border-slate-200 bg-white p-5 hover:border-slate-400 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Penduduk Terdata</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-3xl font-extrabold text-slate-900 group-hover:scale-105 transition-transform">
-                  {stats.residents.toLocaleString("id-ID")}
+              <div className="mt-auto pt-4 flex items-center justify-between text-[11px] border-t border-slate-100">
+                <span className="text-slate-400">{card.sub}</span>
+                <span className={`font-bold ${card.ctaColor} flex items-center gap-0.5 group-hover:gap-1.5 transition-all`}>
+                  {card.cta}
+                  <ArrowRight className="h-3 w-3" />
                 </span>
-                <span className="text-xs text-slate-500 font-medium">jiwa</span>
               </div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 group-hover:bg-slate-800 group-hover:text-white transition-colors">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>Master data kependudukan</span>
-            <span className="font-semibold text-slate-800 group-hover:underline">Kelola</span>
-          </div>
-        </Link>
-
-        {/* Metric 4: Berita Publikasi */}
-        <Link
-          href="/dashboard/berita"
-          className="group rounded-2xl border border-slate-200 bg-white p-5 hover:border-slate-400 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Publikasi Portal</p>
-              <div className="flex items-baseline gap-2 mt-2">
-                <span className="text-3xl font-extrabold text-slate-900 group-hover:scale-105 transition-transform">
-                  {stats.news}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">artikel aktif</span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 group-hover:bg-slate-800 group-hover:text-white transition-colors">
-              <FileText className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-            <span>Warta & agenda kelurahan</span>
-            <span className="font-semibold text-slate-800 group-hover:underline">Lihat</span>
-          </div>
-        </Link>
+          </Link>
+        ))}
       </div>
 
-      {/* Main Workspace: Interactive Pipeline & Activity Feed */}
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* Left Section: Interactive Pipeline (7 Cols) */}
-        <div className="lg:col-span-7 rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-            <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Layers className="h-4 w-4 text-[#1b365d]" />
-                Alur Progres Pelayanan Dokumen
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Total beban kerja berjalan: {totalReq} berkas permohonan warga
-              </p>
-            </div>
-            <Link
-              href="/dashboard/layanan"
-              className="text-xs font-semibold text-[#1b365d] hover:underline self-start sm:self-auto flex items-center gap-1"
-            >
-              Semua Permohonan
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+      {/* ── Pipeline + Activity ── */}
+      <div className="grid gap-5 lg:grid-cols-12 items-start">
 
-          {/* Interactive Stage Selector */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {pipelineStages.map((stage) => {
-              const isActive = selectedPipelineStage === stage.key;
-              const pct = Math.round((stage.count / totalReq) * 100);
-              return (
-                <button
-                  key={stage.key}
-                  type="button"
-                  onClick={() => setSelectedPipelineStage(stage.key)}
-                  className={`p-3 rounded-xl border text-left transition-all duration-150 ${
-                    isActive
-                      ? "border-[#1b365d] bg-slate-50/80 shadow-xs ring-1 ring-[#1b365d]/20"
-                      : "border-slate-200 hover:border-slate-300 bg-white"
-                  }`}
-                >
-                  <p className="text-[11px] font-semibold text-slate-500 truncate">{stage.label}</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{stage.count}</p>
-                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-2">
-                    <div className={`${stage.barColor} h-full`} style={{ width: `${Math.max(stage.count > 0 ? 8 : 0, pct)}%` }} />
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1 font-mono">{pct}% total</p>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Detailed Selected Stage Context Card */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${activeStageInfo.badgeStyle}`}>
-                  {activeStageInfo.label}
-                </span>
-                <span className="text-xs font-semibold text-slate-700">
-                  {activeStageInfo.count} Berkas Terdaftar
-                </span>
+        {/* Left: Pipeline */}
+        <div className="lg:col-span-7 rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+          {/* Pipeline header */}
+          <div className="px-6 pt-5 pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/20">
+                  <Layers className="h-[18px] w-[18px] text-white" />
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-bold text-slate-900">Alur Progres Pelayanan</h2>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Total <span className="tabular-nums font-bold text-slate-600">{totalReq}</span> berkas permohonan
+                  </p>
+                </div>
               </div>
-              <Link href="/dashboard/layanan">
-                <Button size="sm" variant="outline" className="h-7 text-xs bg-white border-slate-300 hover:bg-slate-100">
-                  Periksa di Loket
-                </Button>
+              <Link
+                href="/dashboard/layanan"
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1b365d] bg-[#1b365d]/[0.06] hover:bg-[#1b365d]/[0.12] px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Semua <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              {activeStageInfo.sublabel}. {activeStageInfo.actionNote}.
-            </p>
           </div>
 
-          {/* Quick Guidance Strip */}
-          <div className="border-t border-slate-100 pt-3 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 gap-2">
-            <span>Petugas wajib memverifikasi dokumen fisik saat warga datang ke kantor kelurahan.</span>
-            <Link href="/dashboard/layanan" className="font-semibold text-[#1b365d] hover:underline shrink-0">
-              Cetak Dokumen Resmi
-            </Link>
+          <div className="px-5 pb-5 space-y-4">
+            {/* Pipeline visual flow — horizontal stepper look */}
+            <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden border border-slate-200/80">
+              {pipelineStages.map((stage, idx) => {
+                const isActive = selectedPipelineStage === stage.key;
+                const pct = Math.round((stage.count / totalReq) * 100);
+                return (
+                  <button
+                    key={stage.key}
+                    type="button"
+                    onClick={() => setSelectedPipelineStage(stage.key)}
+                    className={`relative text-left transition-all duration-300 group/stage ${
+                      idx < pipelineStages.length - 1 ? "border-r border-slate-100" : ""
+                    } ${
+                      isActive
+                        ? `bg-gradient-to-b ${stage.gradient} text-white`
+                        : "bg-white hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="px-3.5 py-4">
+                      {/* Icon + percentage */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all duration-200 ${
+                          isActive ? "bg-white/20 text-white" : `${stage.iconBg} ${stage.iconText}`
+                        }`}>
+                          {stage.icon}
+                        </div>
+                        <span className={`text-[10px] font-mono font-bold tabular-nums ${isActive ? "text-white/50" : "text-slate-300"}`}>
+                          {pct}%
+                        </span>
+                      </div>
+
+                      {/* Count */}
+                      <p className={`text-2xl font-extrabold tabular-nums leading-none ${isActive ? "text-white" : stage.numText}`}>
+                        {stage.count}
+                      </p>
+                      <p className={`text-[10px] font-bold mt-1.5 uppercase tracking-wider ${isActive ? "text-white/60" : "text-slate-400"}`}>
+                        {stage.label}
+                      </p>
+
+                      {/* Progress bar */}
+                      <div className={`w-full h-[3px] rounded-full overflow-hidden mt-3 ${isActive ? "bg-white/15" : "bg-slate-100"}`}>
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${isActive ? "bg-white/50" : stage.barColor + "/60"}`}
+                          style={{ width: `${Math.max(stage.count > 0 ? 10 : 0, pct)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Active bottom glow */}
+                    {isActive && <div className="absolute bottom-0 inset-x-0 h-[2px] bg-white/30" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active stage detail card */}
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${
+              activeStageInfo.key === "pending" ? "bg-amber-50/60 border-amber-200/50" :
+              activeStageInfo.key === "processed" ? "bg-sky-50/60 border-sky-200/50" :
+              activeStageInfo.key === "ready" ? "bg-emerald-50/60 border-emerald-200/50" :
+              "bg-slate-50/80 border-slate-200/60"
+            }`}>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center ${activeStageInfo.iconBg} ${activeStageInfo.iconText}`}>
+                    {activeStageInfo.icon}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-slate-900">{activeStageInfo.label}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${activeStageInfo.iconBg} ${activeStageInfo.iconText}`}>
+                        {activeStageInfo.count} berkas
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {activeStageInfo.sublabel}
+                    </p>
+                  </div>
+                </div>
+                <Link href="/dashboard/layanan">
+                  <Button size="sm" className={`h-8 text-xs rounded-lg font-bold shadow-sm transition-all ${
+                    activeStageInfo.key === "pending" ? "bg-amber-500 hover:bg-amber-600 text-white" :
+                    activeStageInfo.key === "processed" ? "bg-sky-500 hover:bg-sky-600 text-white" :
+                    activeStageInfo.key === "ready" ? "bg-emerald-500 hover:bg-emerald-600 text-white" :
+                    "bg-[#1b365d] hover:bg-[#152a48] text-white"
+                  }`}>
+                    Periksa di Loket
+                    <ArrowRight className="ml-1.5 h-3 w-3" />
+                  </Button>
+                </Link>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-3 leading-relaxed pl-12">
+                {activeStageInfo.actionNote}.
+              </p>
+            </div>
+
+            {/* Flow indicator */}
+            <div className="flex items-center gap-2 px-1">
+              <div className="flex items-center gap-1">
+                {pipelineStages.map((stage, idx) => (
+                  <div key={stage.key} className="flex items-center gap-1">
+                    <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      selectedPipelineStage === stage.key ? stage.barColor + " scale-125" : "bg-slate-200"
+                    }`} />
+                    {idx < pipelineStages.length - 1 && (
+                      <div className="w-6 h-px bg-slate-200" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <span className="text-[10px] text-slate-300 ml-1 font-medium">Alur kerja pelayanan</span>
+            </div>
           </div>
         </div>
 
-        {/* Right Section: Unified Activity Stream (5 Cols) */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Aktivitas Pelayanan Terkini</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Permohonan surat & aspirasi masuk terbaru</p>
+        {/* Right: Activity Stream */}
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm flex flex-col">
+          {/* Activity header */}
+          <div className="px-6 pt-5 pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#c9971c] to-[#a67c15] flex items-center justify-center shadow-md shadow-[#c9971c]/20">
+                  <Activity className="h-[18px] w-[18px] text-white" />
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-bold text-slate-900">Aktivitas Terkini</h2>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Permohonan & aspirasi terbaru</p>
+                </div>
+              </div>
+
+              {/* Filter pills inline */}
+              <div className="flex rounded-lg bg-slate-100 p-0.5 text-[11px] font-medium">
+                {([
+                  { key: "all" as const, label: "Semua" },
+                  { key: "requests" as const, label: "Surat" },
+                  { key: "complaints" as const, label: "Aduan" },
+                ]).map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActivityTab(tab.key)}
+                    className={`px-2.5 py-1 rounded-md transition-all duration-200 ${
+                      activityTab === tab.key
+                        ? "bg-white text-[#1b365d] font-bold shadow-sm"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Interactive Filter Pills */}
-          <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-medium self-start">
-            <button
-              type="button"
-              onClick={() => setActivityTab("all")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activityTab === "all" ? "bg-white text-[#1b365d] font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Semua
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivityTab("requests")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activityTab === "requests" ? "bg-white text-[#1b365d] font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Surat
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivityTab("complaints")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                activityTab === "complaints" ? "bg-white text-[#1b365d] font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Pengaduan
-            </button>
-          </div>
-
-          {/* Stream List */}
-          <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
-            {loading ? (
-              <div className="text-center py-10 text-xs text-slate-400">
-                Memuat data aktivitas...
-              </div>
-            ) : filteredActivities.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center bg-slate-50/50">
-                <Inbox className="h-7 w-7 mx-auto text-slate-300 mb-2" />
-                <p className="text-xs font-semibold text-slate-700">Belum ada aktivitas tercatat</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Permohonan atau pengaduan baru warga akan tampil di sini.</p>
-              </div>
-            ) : (
-              filteredActivities.map((item) => {
-                const isReq = item.kind === "request";
-                return (
-                  <div
-                    key={`${item.kind}-${item.id}`}
-                    className="p-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50/80 transition-colors space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                            isReq ? "bg-[#1b365d]/10 text-[#1b365d]" : "bg-amber-100 text-amber-900"
-                          }`}
-                        >
-                          {isReq ? "Surat" : "Pengaduan"}
-                        </span>
-                        {item.category && (
-                          <span className="text-[10px] font-mono text-slate-500 truncate">
-                            {item.category}
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          item.status === "completed" || item.status === "resolved"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : item.status === "ready"
-                            ? "bg-blue-100 text-blue-800"
-                            : item.status === "processed"
-                            ? "bg-sky-100 text-sky-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        {item.status === "completed" || item.status === "resolved"
-                          ? "Selesai"
-                          : item.status === "ready"
-                          ? "Siap Diambil"
-                          : item.status === "processed"
-                          ? "Diproses"
-                          : "Menunggu"}
-                      </span>
-                    </div>
-
-                    <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-1">
-                      {item.title}
-                    </p>
-
-                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-1">
-                      {item.detail}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-500">
-                      <span>Pemohon / Pengirim: <strong className="text-slate-700">{item.nama}</strong></span>
-                      <Link
-                        href={isReq ? "/dashboard/layanan" : "/dashboard/pengaduan"}
-                        className="font-semibold text-[#1b365d] hover:underline"
-                      >
-                        Detail
-                      </Link>
-                    </div>
+          <div className="px-4 pb-4 flex flex-col flex-1">
+            {/* Activity list — hidden scrollbar */}
+            <div className="space-y-1.5 max-h-[420px] overflow-y-auto sidebar-scroll flex-1">
+              {loading ? (
+                <div className="text-center py-16">
+                  <div className="w-8 h-8 border-[3px] border-slate-200 border-t-[#c9971c] rounded-full animate-spin mx-auto" />
+                  <p className="text-xs text-slate-400 mt-3 font-medium">Memuat aktivitas...</p>
+                </div>
+              ) : filteredActivities.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center bg-slate-50/50">
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <Inbox className="h-5 w-5 text-slate-300" />
                   </div>
-                );
-              })
+                  <p className="text-xs font-bold text-slate-700">Belum ada aktivitas</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Permohonan atau pengaduan baru akan tampil di sini.</p>
+                </div>
+              ) : (
+                filteredActivities.map((item) => {
+                  const isReq = item.kind === "request";
+                  const statusMap: Record<string, { label: string; cls: string; dot: string }> = {
+                    completed: { label: "Selesai", cls: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+                    resolved: { label: "Selesai", cls: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+                    ready: { label: "Siap Ambil", cls: "bg-sky-50 text-sky-700", dot: "bg-sky-500" },
+                    processed: { label: "Diproses", cls: "bg-blue-50 text-blue-700", dot: "bg-blue-500" },
+                    pending: { label: "Menunggu", cls: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+                  };
+                  const st = statusMap[item.status] || statusMap.pending;
+
+                  const timeAgo = item.createdAt ? (() => {
+                    const diff = Date.now() - new Date(item.createdAt!).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 1) return "Baru saja";
+                    if (mins < 60) return `${mins} menit lalu`;
+                    const hours = Math.floor(mins / 60);
+                    if (hours < 24) return `${hours} jam lalu`;
+                    const days = Math.floor(hours / 24);
+                    return `${days} hari lalu`;
+                  })() : "";
+
+                  return (
+                    <Link
+                      key={`${item.kind}-${item.id}`}
+                      href={isReq ? "/dashboard/layanan" : "/dashboard/pengaduan"}
+                      className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                    >
+                      {/* Icon */}
+                      <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                        isReq
+                          ? "bg-gradient-to-br from-[#1b365d]/10 to-[#1b365d]/5 text-[#1b365d]"
+                          : "bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600"
+                      }`}>
+                        {isReq ? <FileText className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13px] font-semibold text-slate-800 truncate group-hover:text-[#1b365d] transition-colors">
+                            {item.title}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11px] text-slate-400 truncate">{item.nama}</span>
+                          {timeAgo && (
+                            <>
+                              <span className="text-slate-200 text-[8px]">●</span>
+                              <span className="text-[10px] text-slate-300 font-medium shrink-0">{timeAgo}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold shrink-0 ${st.cls}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                        {st.label}
+                      </span>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+
+            {/* View all link */}
+            {!loading && filteredActivities.length > 0 && (
+              <div className="pt-3 mt-2 border-t border-slate-100">
+                <Link
+                  href="/dashboard/layanan"
+                  className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#1b365d] bg-[#1b365d]/[0.04] hover:bg-[#1b365d]/[0.08] py-2 rounded-lg transition-colors"
+                >
+                  Lihat semua aktivitas <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
             )}
           </div>
         </div>

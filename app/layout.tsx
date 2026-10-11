@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Fira_Code } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/components/ui/toast";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
-const firaCode = Fira_Code({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -64,7 +66,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className={`${plusJakarta.variable} ${firaCode.variable} antialiased min-h-screen flex flex-col bg-background text-foreground`}
+        className={`${inter.variable} ${jetbrainsMono.variable} antialiased min-h-screen flex flex-col bg-background text-foreground`}
       >
         <AuthProvider>
           <ToastProvider>
