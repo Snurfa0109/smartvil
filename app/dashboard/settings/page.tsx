@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -43,10 +43,12 @@ import {
   saveBeritaCategories,
   DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
+import { useToast } from "@/components/ui/toast";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const { user: authUser } = useAuth();
+  const { success, error: showError, confirm: showConfirm } = useToast();
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -68,8 +70,6 @@ function SettingsContent() {
   const [accountMsg, setAccountMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [seeding, setSeeding] = useState(false);
-
-  // Kategori Berita State
   const [beritaCategories, setBeritaCategories] = useState<string[]>(DEFAULT_BERITA_CATEGORIES);
   const [newCategoryInput, setNewCategoryInput] = useState("");
   const [editingCategoryIdx, setEditingCategoryIdx] = useState<number | null>(null);
@@ -157,7 +157,7 @@ function SettingsContent() {
       setSiteForm((p) => ({ ...p, [field]: url }));
     } catch (err) {
       console.error("Photo upload error:", err);
-      alert("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
+      showError("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
     } finally {
       setUploadingPhoto(null);
     }
@@ -170,10 +170,10 @@ function SettingsContent() {
         ...chatbotForm,
         updatedAt: new Date().toISOString(),
       });
-      alert("Pengaturan Chatbot AI berhasil disimpan!");
+      success("Pengaturan Chatbot AI berhasil disimpan!");
     } catch (error) {
       console.error("Error saving chatbot settings:", error);
-      alert("Gagal menyimpan pengaturan chatbot.");
+      showError("Gagal menyimpan pengaturan chatbot.");
     } finally {
       setSavingChatbot(false);
     }
@@ -234,7 +234,13 @@ function SettingsContent() {
   };
 
   const handleSeed = async () => {
-    if (confirm("Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.")) {
+    const confirmed = await showConfirm({
+      title: "Isi Database Dummy?",
+      message: "Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.",
+      variant: "danger",
+      confirmLabel: "Ya, Isi Data",
+    });
+    if (confirmed) {
       setSeeding(true);
       try {
         const token = getToken();
@@ -244,10 +250,10 @@ function SettingsContent() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal mengisi database.");
-        alert("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
+        success("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
       } catch (err: any) {
         console.error("Seed error:", err);
-        alert("Gagal mengisi database: " + (err.message || "Unknown error"));
+        showError("Gagal mengisi database: " + (err.message || "Unknown error"));
       } finally {
         setSeeding(false);
       }
@@ -302,10 +308,7 @@ function SettingsContent() {
             <Database className="h-4 w-4" /> Sistem
           </TabsTrigger>
         </TabsList>
-
-        {/* TAB 1: PROFIL KELURAHAN */}
         <TabsContent value="profile" className="space-y-6">
-          {/* Header & Judul */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Judul Halaman Profil</CardTitle>
@@ -336,8 +339,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Sejarah, Visi & Misi */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Sejarah, Visi & Misi Kelurahan</CardTitle>
@@ -385,8 +386,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Struktur Organisasi & Aparatur */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Struktur Organisasi & Aparatur Kelurahan</CardTitle>
@@ -395,13 +394,11 @@ function SettingsContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Lurah */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="font-semibold text-sm text-[#1b365d] flex items-center gap-2">
                   <User className="h-4 w-4" /> Pimpinan / Kepala Kelurahan (Lurah)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                  {/* Foto */}
                   <div className="space-y-2">
                     <Label className="text-xs">Foto Resmi</Label>
                     <div className="flex flex-col items-center gap-2">
@@ -437,8 +434,6 @@ function SettingsContent() {
                   </div>
                 </div>
               </div>
-
-              {/* Seklur */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="font-semibold text-sm text-blue-700 flex items-center gap-2">
                   <User className="h-4 w-4" /> Sekretaris Kelurahan (Seklur)
@@ -475,10 +470,7 @@ function SettingsContent() {
                   </div>
                 </div>
               </div>
-
-              {/* Kasi Pemerintahan & Kasi Pelayanan */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Kasi Pemerintahan */}
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="font-semibold text-sm text-emerald-700 flex items-center gap-2">
                     <User className="h-4 w-4" /> Kasi Pemerintahan & Trantib
@@ -506,8 +498,6 @@ function SettingsContent() {
                     <Input id="kasi-pem-title" value={siteForm.kasiPemerintahanTitle} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPemerintahanTitle: e.target.value }))} disabled={siteLoading} />
                   </div>
                 </div>
-
-                {/* Kasi Pelayanan */}
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="font-semibold text-sm text-amber-700 flex items-center gap-2">
                     <User className="h-4 w-4" /> Kasi Pelayanan Umum
@@ -538,8 +528,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Fasilitas & Pemukiman Utama */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Fasilitas & Pemukiman Utama</CardTitle>
@@ -602,8 +590,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Geografis & Batas Wilayah */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Geografis & Batas Wilayah</CardTitle>
@@ -630,7 +616,7 @@ function SettingsContent() {
                     value={siteForm.geoCoord}
                     onChange={(e) => setSiteForm((p) => ({ ...p, geoCoord: e.target.value }))}
                     disabled={siteLoading}
-                    placeholder="Contoh: 6°7′25″S 106°11′54″E"
+                    placeholder="Contoh: 6Â°7â€²25â€³S 106Â°11â€²54â€³E"
                   />
                 </div>
               </div>
@@ -699,8 +685,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Identitas & Kode Wilayah */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -759,7 +743,7 @@ function SettingsContent() {
                   className="font-mono text-xs"
                 />
                 <p className="text-[11px] text-slate-500">
-                  Buka Google Maps → Bagikan → Sematkan Peta → Salin URL dari atribut <code>src</code> pada kode iframe.
+                  Buka Google Maps â†’ Bagikan â†’ Sematkan Peta â†’ Salin URL dari atribut <code>src</code> pada kode iframe.
                 </p>
               </div>
             </CardContent>
@@ -776,10 +760,7 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB 2: BERANDA & LOKET */}
         <TabsContent value="home" className="space-y-6">
-          {/* Hero Beranda */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Teks Hero Beranda Utama</CardTitle>
@@ -821,8 +802,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Status & Jam Operasional Loket */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Status & Jadwal Loket Pelayanan</CardTitle>
@@ -870,8 +849,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Kontak Darurat Wilayah Terpadu */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Kontak Darurat Wilayah Terpadu</CardTitle>
@@ -945,8 +922,6 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB 3: KONTAK & MEDSOS */}
         <TabsContent value="contact" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1040,8 +1015,6 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB 4: CHATBOT AI */}
         <TabsContent value="chatbot" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1200,8 +1173,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* TAB 5: AKUN ADMIN */}
         <TabsContent value="account" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1292,8 +1263,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* TAB 6: SISTEM */}
         <TabsContent value="system" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1318,8 +1287,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* TAB: KATEGORI BERITA */}
         <TabsContent value="categories" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1489,3 +1456,4 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
+

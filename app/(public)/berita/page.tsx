@@ -51,7 +51,6 @@ export default function NewsPage() {
     fetchNews();
   }, []);
 
-  // Reset to page 1 whenever filters change
   const handleCategoryChange = (category: string | null) => {
     setSelectedCategory(category);
     setCurrentPage(1);
@@ -138,7 +137,6 @@ export default function NewsPage() {
   const featuredItem = !isFiltering && currentPage === 1 && filteredNews.length > 0 ? filteredNews[0] : null;
   const listPool = !isFiltering ? filteredNews.slice(1) : filteredNews;
 
-  // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(listPool.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedItems = listPool.slice(startIndex, startIndex + ITEMS_PER_PAGE);

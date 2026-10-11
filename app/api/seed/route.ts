@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth-server";
 import { query } from "@/lib/db";
 import { countRecords } from "@/lib/records";
-import { DEFAULT_LETTER_TYPES } from "@/lib/letters";
 import { randomUUID } from "crypto";
 
 const now = () => new Date();
@@ -149,13 +148,7 @@ export async function POST(req: NextRequest) {
     try {
       logs.push(
         await seedIfEmpty("letter_types", async () => {
-          for (let i = 0; i < DEFAULT_LETTER_TYPES.length; i++) {
-            const lt = DEFAULT_LETTER_TYPES[i];
-            await query(
-              "INSERT INTO letter_types (id, code, name, description, requirements, template_narrative, active, sort_order, template_file_url, template_data, template_placeholders, custom_fields) VALUES (?, ?, ?, ?, ?, ?, 1, ?, '', ?, '[]', '[]')",
-              [randomUUID(), lt.code, lt.name, lt.desc, JSON.stringify(lt.requirements), lt.templateNarrative ?? "", i + 1, lt.templateNarrative ?? ""]
-            );
-          }
+          // Jenis surat ditambahkan oleh admin melalui dashboard, tidak di-seed
         })
       );
     } catch (e) {

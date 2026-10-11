@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@/lib/chatbot-config";
 import { getSiteSettings } from "@/lib/site-config";
+import { getLetterTypes } from "@/lib/letters";
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,12 +60,7 @@ export async function POST(req: NextRequest) {
 [LAYANAN MANDIRI / ADMINISTRASI SURAT]:
 Banjar Agung menyediakan pembuatan surat pengantar secara online di menu "Layanan Mandiri" (/layanan).
 Jenis-jenis surat yang dapat diajukan:
-1. Surat Keterangan Tidak Mampu (SKTM) - Untuk keperluan beasiswa anak, keringanan biaya berobat/kesehatan, dan bansos.
-2. Surat Keterangan Domisili - Bukti keterangan domisili atau tempat tinggal warga.
-3. Surat Keterangan Usaha - Persyaratan pengajuan kredit perbankan (KUR) atau legalitas usaha mikro.
-4. Surat Pengantar KTP / KK - Syarat penerbitan atau pembaruan KTP dan Kartu Keluarga ke Disdukcapil.
-5. Surat Keterangan Kelahiran - Syarat pembuatan akta kelahiran anak.
-6. Surat Keterangan Kematian - Syarat pembuatan akta kematian dan urusan waris.
+${await (async () => { try { const types = await getLetterTypes(); return types.filter(t => t.active !== false).map((t, i) => `${i + 1}. ${t.name} - ${t.desc}`).join("\n") || "Belum ada jenis surat terdaftar. Silakan hubungi petugas kelurahan."; } catch { return "Data jenis surat sedang dimuat dari database."; } })()}
 Alur pengajuan: Warga memilih jenis surat di halaman /layanan, mengisi NIK, Nama Lengkap, Keperluan, dan Nomor WhatsApp/Telepon, lalu klik Kirim Permohonan. Petugas desa akan memproses permohonan.
 
 [PENGADUAN WARGA]:

@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { useToast } from "@/components/ui/toast";
 
 export default function BeritaDashboardPage() {
+  const { error: showError, confirm: showConfirm } = useToast();
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +45,13 @@ export default function BeritaDashboardPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (confirm("Apakah anda yakin ingin menghapus berita ini?")) {
+    const confirmed = await showConfirm({
+      title: "Hapus Berita?",
+      message: "Apakah anda yakin ingin menghapus berita ini?",
+      variant: "danger",
+      confirmLabel: "Ya, Hapus",
+    });
+    if (confirmed) {
       try {
         const deletedItem = news.find((n) => n.id === id);
         await apiDelete("news", id);
@@ -51,7 +59,7 @@ export default function BeritaDashboardPage() {
         fetchNews();
       } catch (error) {
         console.error("Error deleting news:", error);
-        alert("Gagal menghapus berita.");
+        showError("Gagal menghapus berita.");
       }
     }
   };

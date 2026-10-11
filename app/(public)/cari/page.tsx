@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
 import { apiList } from "@/lib/api";
 import { stripHtml } from "@/lib/utils";
+import { getLetterTypes } from "@/lib/letters";
 
 interface SearchItem {
   id: string;
@@ -17,34 +18,6 @@ interface SearchItem {
 }
 
 const STATIC_SERVICES: SearchItem[] = [
-  {
-    id: "sku",
-    title: "Surat Keterangan Usaha (SKU)",
-    category: "layanan",
-    subtitle: "Layanan administrasi permohonan legalitas usaha bagi pelaku UMKM kelurahan.",
-    url: "/layanan",
-  },
-  {
-    id: "sktm",
-    title: "Surat Keterangan Tidak Mampu (SKTM)",
-    category: "layanan",
-    subtitle: "Permohonan keterangan bagi warga prasejahtera untuk beasiswa dan bantuan sosial.",
-    url: "/layanan",
-  },
-  {
-    id: "domisili",
-    title: "Surat Keterangan Domisili",
-    category: "layanan",
-    subtitle: "Keterangan bukti tempat tinggal resmi warga di wilayah Kelurahan Banjar Agung.",
-    url: "/layanan",
-  },
-  {
-    id: "pengantar-ktp",
-    title: "Surat Pengantar KTP / KK",
-    category: "layanan",
-    subtitle: "Pengantar permohonan penerbitan dan pembaruan KTP-el atau Kartu Keluarga.",
-    url: "/layanan",
-  },
   {
     id: "cek-surat",
     title: "Lacak Permohonan Surat Online",
@@ -114,11 +87,30 @@ function SearchContent() {
   const [inputVal, setInputVal] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState<string>("semua");
   const [newsItems, setNewsItems] = useState<SearchItem[]>([]);
+  const [letterServices, setLetterServices] = useState<SearchItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setInputVal(initialQuery);
   }, [initialQuery]);
+
+  useEffect(() => {
+    getLetterTypes()
+      .then((types) => {
+        setLetterServices(
+          types
+            .filter((t) => t.active !== false)
+            .map((t) => ({
+              id: `letter-${t.code}`,
+              title: t.name,
+              category: "layanan" as const,
+              subtitle: t.desc || "Layanan administrasi surat kelurahan.",
+              url: "/layanan",
+            }))
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchAllNews = async () => {
@@ -146,8 +138,8 @@ function SearchContent() {
   }, []);
 
   const allItems = useMemo(() => {
-    return [...STATIC_SERVICES, ...STATIC_PAGES, ...newsItems];
-  }, [newsItems]);
+    return [...STATIC_SERVICES, ...letterServices, ...STATIC_PAGES, ...newsItems];
+  }, [newsItems, letterServices]);
 
   const filteredResults = useMemo(() => {
     let list = allItems;
@@ -178,7 +170,6 @@ function SearchContent() {
 
   return (
     <div className="container mx-auto px-6 md:px-12 py-12 space-y-8">
-      {/* Header */}
       <div className="max-w-3xl space-y-3">
         <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
           Pusat Pencarian Terpadu
@@ -191,7 +182,6 @@ function SearchContent() {
         </p>
       </div>
 
-      {/* Search Input Box */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
         <form onSubmit={handleSearchSubmit} className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -219,7 +209,6 @@ function SearchContent() {
           </button>
         </form>
 
-        {/* Category Tabs */}
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
           {[
             { key: "semua", label: "Semua Kategori" },
@@ -243,7 +232,6 @@ function SearchContent() {
         </div>
       </div>
 
-      {/* Results Header Status */}
       <div className="flex items-center justify-between text-xs text-slate-500 px-1">
         <span>
           Ditemukan <strong className="text-slate-800">{filteredResults.length}</strong> hasil
@@ -253,7 +241,6 @@ function SearchContent() {
         </span>
       </div>
 
-      {/* Results List */}
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (

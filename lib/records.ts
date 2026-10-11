@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { randomUUID } from "crypto";
 
 export const TABLES = [
   "profiles",
@@ -88,12 +89,16 @@ export async function findOne(table: TableName, where: { column: string; value: 
 
 export async function insertRecord(table: TableName, row: Record<string, unknown>): Promise<Record<string, unknown>> {
   const allowed = TABLE_KEYS[table];
-  const keys = Object.keys(row).filter((k) => allowed.includes(k));
+  const payload: Record<string, unknown> = { ...row };
+  if (table !== "settings" && !payload.id && allowed.includes("id")) {
+    payload.id = randomUUID();
+  }
+  const keys = Object.keys(payload).filter((k) => allowed.includes(k));
   if (keys.length === 0) throw new Error("Tidak ada kolom valid untuk disimpan.");
   const cols = keys.map((k) => `\`${k}\``).join(", ");
   const placeholders = keys.map(() => "?").join(", ");
-  await query(`INSERT INTO \`${table}\` (${cols}) VALUES (${placeholders})`, keys.map((k) => toDbValue(row[k])));
-  return { ...row };
+  await query(`INSERT INTO \`${table}\` (${cols}) VALUES (${placeholders})`, keys.map((k) => toDbValue(payload[k])));
+  return { ...payload };
 }
 
 export async function updateRecord(
