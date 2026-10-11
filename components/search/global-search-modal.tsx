@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, FileText, Newspaper, UserCheck, MapPin, Phone, ArrowRight, Building2, HelpCircle } from "lucide-react";
 import { stripHtml } from "@/lib/utils";
 import { apiList } from "@/lib/api";
+import { getLetterTypes } from "@/lib/letters";
 
 interface SearchResultItem {
   id: string;
@@ -15,34 +16,6 @@ interface SearchResultItem {
 }
 
 const STATIC_SERVICES: SearchResultItem[] = [
-  {
-    id: "sku",
-    title: "Surat Keterangan Usaha (SKU)",
-    category: "layanan",
-    subtitle: "Layanan administrasi permohonan legalitas usaha bagi pelaku UMKM kelurahan.",
-    url: "/layanan",
-  },
-  {
-    id: "sktm",
-    title: "Surat Keterangan Tidak Mampu (SKTM)",
-    category: "layanan",
-    subtitle: "Permohonan keterangan bagi warga prasejahtera untuk beasiswa dan bantuan sosial.",
-    url: "/layanan",
-  },
-  {
-    id: "domisili",
-    title: "Surat Keterangan Domisili",
-    category: "layanan",
-    subtitle: "Keterangan bukti tempat tinggal resmi warga di wilayah Kelurahan Banjar Agung.",
-    url: "/layanan",
-  },
-  {
-    id: "pengantar-ktp",
-    title: "Surat Pengantar KTP / KK",
-    category: "layanan",
-    subtitle: "Pengantar permohonan penerbitan dan pembaruan KTP-el atau Kartu Keluarga.",
-    url: "/layanan",
-  },
   {
     id: "cek-surat",
     title: "Lacak Permohonan Surat Online",
@@ -128,6 +101,26 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [newsResults, setNewsResults] = useState<SearchResultItem[]>([]);
   const [newsFetched, setNewsFetched] = useState(false);
+  const [letterServices, setLetterServices] = useState<SearchResultItem[]>([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getLetterTypes()
+      .then((types) => {
+        setLetterServices(
+          types
+            .filter((t) => t.active !== false)
+            .map((t) => ({
+              id: `letter-${t.code}`,
+              title: t.name,
+              category: "layanan" as const,
+              subtitle: t.desc || "Layanan administrasi surat kelurahan.",
+              url: "/layanan",
+            }))
+        );
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || newsFetched) return;
@@ -165,8 +158,8 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
   }, [isOpen, onClose]);
 
   const allItems = useMemo(() => {
-    return [...STATIC_SERVICES, ...STATIC_PAGES, ...newsResults];
-  }, [newsResults]);
+    return [...STATIC_SERVICES, ...letterServices, ...STATIC_PAGES, ...newsResults];
+  }, [newsResults, letterServices]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) {

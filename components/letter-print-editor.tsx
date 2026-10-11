@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { renderAsync } from "docx-preview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,6 @@ import {
   X,
   Printer,
   Download,
-  FileText,
   User,
   Hash,
   Calendar,
@@ -19,20 +19,22 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import type { LetterType } from "@/lib/letters";
 import type { LetterPrintConfig } from "@/components/letter-print-document";
 import LetterPrintDocument from "@/components/letter-print-document";
+import { buildTemplateData, generateFilledDocx, dataUrlToBuffer, extractNarrativesFromDocx } from "@/lib/letter-template";
 import styles from "@/app/letter-print.module.css";
 
 interface LetterPrintEditorProps {
-  request: any;
+  request: Record<string, unknown>;
   letterTypes: LetterType[];
   printConfig: LetterPrintConfig;
   onPrintConfigChange: (cfg: LetterPrintConfig) => void;
   onClose: () => void;
   onPrint: () => void;
-  onDownloadDocx: (mergedRequest: any) => Promise<void>;
+  onDownloadDocx: (mergedRequest: Record<string, unknown>) => Promise<void>;
   downloadingDocx: boolean;
 }
 
@@ -51,31 +53,40 @@ export default function LetterPrintEditor({
   printConfig,
   onPrintConfigChange,
   onClose,
-  onPrint,
   onDownloadDocx,
   downloadingDocx,
-}: LetterPrintEditorProps) {  const letterType = letterTypes.find((lt) => lt.code === request?.type);
+}: LetterPrintEditorProps) {
+  const letterType = letterTypes.find((lt) => lt.code === (request as Record<string, string>)?.type);
 
-  const [editable, setEditable] = useState<EditableRequest>({
-    nama: request?.nama ?? "",
-    nik: request?.nik ?? "",
-    phone: request?.phone ?? "",
-    keperluan: request?.keperluan ?? "",
-    templateNarrative: request?.templateNarrative || letterType?.templateNarrative || "",
-    formData: Object.fromEntries(
-      Object.entries(request?.formData ?? {}).map(([k, v]) => [k, String(v ?? "")])
-    ),
+  const [editable, setEditable] = useState<EditableRequest>(() => {
+    const rawFormData = Object.fromEntries(
+      Object.entries((request?.formData as Record<string, unknown>) ?? {}).map(([k, v]) => [k, String(v ?? "")])
+    );
+    const cf = letterType?.customFields ?? [];
+    for (const f of cf) {
+      if (f.defaultValue && !rawFormData[f.key]) {
+        rawFormData[f.key] = f.defaultValue;
+      }
+    }
+    return {
+      nama: String(request?.nama ?? ""),
+      nik: String(request?.nik ?? ""),
+      phone: String(request?.phone ?? ""),
+      keperluan: String(request?.keperluan ?? ""),
+      templateNarrative: String(request?.templateNarrative || letterType?.templateNarrative || ""),
+      formData: rawFormData,
+    };
   });
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     pemohon: true,
-    narasi: false,
+    custom: true,
+    narasi: true,
     nomor: false,
     signer: false,
-    custom: true,
   });
 
-  const mergedRequest = {
+  const mergedRequest = useMemo(() => ({
     ...request,
     nama: editable.nama,
     nik: editable.nik,
@@ -83,7 +94,7 @@ export default function LetterPrintEditor({
     keperluan: editable.keperluan,
     templateNarrative: editable.templateNarrative,
     formData: editable.formData,
-  };
+  }), [request, editable]);
 
   const toggleSection = (key: string) =>
     setOpenSections((p) => ({ ...p, [key]: !p[key] }));
@@ -93,8 +104,110 @@ export default function LetterPrintEditor({
 
   const hasDocxTemplate = !!(letterType?.templateFileUrl || letterType?.templateData);
   const customFields = letterType?.customFields ?? [];
+  const [printing, setPrinting] = useState(false);
+  const [narratives, setNarratives] = useState<string[]>([]);
 
-  const handlePrint = () => {
+  useEffect(() => {
+    if (!hasDocxTemplate) return;
+    const loadNarratives = async () => {
+      try {
+        const src = letterType?.templateFileUrl || letterType?.templateData;
+        if (!src) return;
+        let buf: ArrayBuffer;
+        if (src.startsWith("data:")) {
+          buf = await dataUrlToBuffer(src);
+        } else {
+          const res = await fetch(src);
+          if (!res.ok) return;
+          buf = await res.arrayBuffer();
+        }
+        const paras = extractNarrativesFromDocx(buf);
+        setNarratives(paras);
+      } catch {
+        setNarratives([]);
+      }
+    };
+    loadNarratives();
+  }, [hasDocxTemplate, letterType]);
+
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [previewStatus, setPreviewStatus] = useState<"idle" | "rendering" | "done" | "error">("idle");
+  const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const getTemplateBuffer = useCallback(async (): Promise<ArrayBuffer | null> => {
+    const src = letterType?.templateFileUrl || letterType?.templateData;
+    if (!src) return null;
+    if (src.startsWith("data:")) return dataUrlToBuffer(src);
+    const res = await fetch(src);
+    if (!res.ok) return null;
+    return res.arrayBuffer();
+  }, [letterType]);
+
+  const generateBlob = useCallback(async (): Promise<Blob | null> => {
+    const buf = await getTemplateBuffer();
+    if (!buf) return null;
+    const data = buildTemplateData(mergedRequest, printConfig);
+    return generateFilledDocx(buf, data);
+  }, [getTemplateBuffer, mergedRequest, printConfig]);
+
+  const renderDocxPreview = useCallback(async () => {
+    if (!hasDocxTemplate) return;
+    setPreviewStatus("rendering");
+    try {
+      const blob = await generateBlob();
+      if (!blob) { setPreviewStatus("error"); return; }
+      const iframe = previewIframeRef.current;
+      if (!iframe) return;
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+      doc.open();
+      doc.write(
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+        'body{margin:0;background:#e8e8e8;}' +
+        '.docx-wrapper{background:transparent!important;padding:20px!important;}' +
+        '.docx-wrapper>section.docx{background:white!important;box-shadow:0 1px 8px rgba(0,0,0,0.18)!important;margin-bottom:20px!important;}' +
+        '</style></head><body></body></html>'
+      );
+      doc.close();
+      const styleHost = doc.createElement("div");
+      const bodyHost = doc.createElement("div");
+      doc.body.appendChild(styleHost);
+      doc.body.appendChild(bodyHost);
+      await renderAsync(blob, bodyHost, styleHost, {
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        breakPages: true,
+        renderHeaders: true,
+        renderFooters: true,
+        useBase64URL: true,
+        ignoreFonts: false,
+        experimental: true,
+      } as unknown as Record<string, unknown>);
+      const page = bodyHost.querySelector("section.docx") as HTMLElement | null;
+      if (page) {
+        const pageW = page.offsetWidth || 1;
+        const avail = iframe.clientWidth - 40;
+        const scale = Math.min(1, avail / pageW);
+        bodyHost.style.zoom = String(scale);
+      }
+      setPreviewStatus("done");
+    } catch (err) {
+      console.error("Preview DOCX gagal:", err);
+      setPreviewStatus("error");
+    }
+  }, [hasDocxTemplate, generateBlob]);
+
+  useEffect(() => {
+    if (!hasDocxTemplate) return;
+    if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
+    renderTimerRef.current = setTimeout(() => {
+      renderDocxPreview();
+    }, 600);
+    return () => { if (renderTimerRef.current) clearTimeout(renderTimerRef.current); };
+  }, [mergedRequest, printConfig, hasDocxTemplate, renderDocxPreview]);
+
+  const printFromHtml = useCallback(() => {
     const container = document.getElementById("printable-letter-container");
     if (!container) { window.print(); return; }
     const iframe = document.createElement("iframe");
@@ -116,7 +229,58 @@ export default function LetterPrintEditor({
       iframe.contentWindow?.print();
       setTimeout(() => document.body.removeChild(iframe), 1000);
     };
-  };
+  }, []);
+
+  const printFromDocx = useCallback(async () => {
+    setPrinting(true);
+    try {
+      const blob = await generateBlob();
+      if (!blob) { printFromHtml(); return; }
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:0";
+      document.body.appendChild(iframe);
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) { document.body.removeChild(iframe); printFromHtml(); return; }
+      iframeDoc.open();
+      iframeDoc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+        '@page{size:A4;margin:0;}body{margin:0;padding:0;}' +
+        'section.docx{box-shadow:none!important;margin:0!important;}' +
+        '</style></head><body></body></html>');
+      iframeDoc.close();
+      const styleHost = iframeDoc.createElement("div");
+      const bodyHost = iframeDoc.createElement("div");
+      iframeDoc.body.appendChild(styleHost);
+      iframeDoc.body.appendChild(bodyHost);
+      await renderAsync(blob, bodyHost, styleHost, {
+        inWrapper: false,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        breakPages: true,
+        renderHeaders: true,
+        renderFooters: true,
+        useBase64URL: true,
+        ignoreFonts: false,
+        experimental: true,
+      } as unknown as Record<string, unknown>);
+      await new Promise((r) => setTimeout(r, 500));
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    } catch (err) {
+      console.error("Cetak DOCX gagal, fallback HTML:", err);
+      printFromHtml();
+    } finally {
+      setPrinting(false);
+    }
+  }, [generateBlob, printFromHtml]);
+
+  const handlePrint = useCallback(() => {
+    if (hasDocxTemplate) {
+      printFromDocx();
+    } else {
+      printFromHtml();
+    }
+  }, [hasDocxTemplate, printFromDocx, printFromHtml]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -139,14 +303,14 @@ export default function LetterPrintEditor({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white leading-none">Cetak Surat Resmi</span>
-                {request?.ticketCode && (
+                {(request as Record<string, string>)?.ticketCode && (
                   <span className="text-[10px] font-mono bg-white/10 border border-white/20 text-blue-100 px-1.5 py-0.5 rounded">
-                    {request.ticketCode}
+                    {(request as Record<string, string>).ticketCode}
                   </span>
                 )}
               </div>
               <p className="text-[11px] text-blue-300 mt-0.5 truncate">
-                {request?.typeName || "Surat Keterangan"}
+                {(request as Record<string, string>)?.typeName || "Surat Keterangan"}
               </p>
             </div>
           </div>
@@ -171,10 +335,15 @@ export default function LetterPrintEditor({
             <Button
               size="sm"
               onClick={handlePrint}
+              disabled={printing || downloadingDocx}
               className="bg-white text-[#1b365d] hover:bg-blue-50 font-semibold h-8 text-xs gap-1.5 px-4 shadow-sm"
             >
-              <Printer className="h-3.5 w-3.5" />
-              Cetak / PDF
+              {printing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Printer className="h-3.5 w-3.5" />
+              )}
+              {printing ? "Menyiapkan..." : "Cetak / PDF"}
             </Button>
             <div className="w-px h-5 bg-white/15 mx-0.5" />
             <Button
@@ -196,10 +365,9 @@ export default function LetterPrintEditor({
           <div className="w-[360px] xl:w-[400px] shrink-0 flex flex-col overflow-hidden bg-[#f8fafc] border-r border-slate-200/60">
             <div className="overflow-y-auto flex-1">
 
-              {/* Panel label */}
               <div className="px-5 pt-4 pb-3">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
-                  Edit Dokumen
+                  Edit Data Surat
                 </p>
               </div>
 
@@ -249,14 +417,25 @@ export default function LetterPrintEditor({
 
                 {customFields.length > 0 && (
                   <Accordion
-                    title="Data Tambahan"
+                    title="Data Tambahan (Template)"
                     icon={Hash}
                     open={openSections["custom"]}
                     onToggle={() => toggleSection("custom")}
                   >
                     {customFields.map((f) => (
                       <Field key={f.key} label={f.label}>
-                        {f.type === "textarea" ? (
+                        {f.type === "select" && f.options && f.options.length > 0 ? (
+                          <select
+                            value={editable.formData[f.key] ?? ""}
+                            onChange={(e) => updateFormData(f.key, e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#1b365d]"
+                          >
+                            <option value="">Pilih {f.label.toLowerCase()}...</option>
+                            {f.options.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : f.type === "textarea" ? (
                           <Textarea
                             value={editable.formData[f.key] ?? ""}
                             onChange={(e) => updateFormData(f.key, e.target.value)}
@@ -277,22 +456,21 @@ export default function LetterPrintEditor({
                   </Accordion>
                 )}
 
-                <Accordion
-                  title="Narasi & Isi Surat"
-                  icon={PenLine}
-                  open={openSections["narasi"]}
-                  onToggle={() => toggleSection("narasi")}
-                >
-                  <Textarea
-                    value={editable.templateNarrative}
-                    onChange={(e) => setEditable((p) => ({ ...p, templateNarrative: e.target.value }))}
-                    placeholder="Menerangkan bahwa nama tersebut di atas adalah benar warga..."
-                    className="min-h-[130px] resize-y text-sm font-serif leading-relaxed"
-                  />
-                  <p className="text-[10px] text-slate-400 leading-relaxed">
-                    Paragraf penutup baku ("Demikian surat...") ditambahkan otomatis.
-                  </p>
-                </Accordion>
+                {narratives.length > 0 && (
+                  <Accordion
+                    title="Isi Paragraf Surat"
+                    icon={PenLine}
+                    open={openSections["narasi"]}
+                    onToggle={() => toggleSection("narasi")}
+                  >
+                    <p className="text-[10px] text-slate-500 mb-2">Paragraf narasi dari template. Teks ini sudah tercetak di surat, ditampilkan sebagai referensi.</p>
+                    {narratives.map((text, i) => (
+                      <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 leading-relaxed">
+                        {text}
+                      </div>
+                    ))}
+                  </Accordion>
+                )}
 
                 <Accordion
                   title="Nomor & Tanggal Surat"
@@ -359,10 +537,15 @@ export default function LetterPrintEditor({
             <div className="shrink-0 p-4 border-t border-slate-200 bg-white space-y-2">
               <Button
                 onClick={handlePrint}
+                disabled={printing}
                 className="w-full bg-[#1b365d] hover:bg-[#152a48] h-10 gap-2 font-semibold"
               >
-                <Printer className="h-4 w-4" />
-                Cetak / Simpan PDF
+                {printing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Printer className="h-4 w-4" />
+                )}
+                {printing ? "Menyiapkan Cetak..." : "Cetak / Simpan PDF"}
               </Button>
               {hasDocxTemplate && (
                 <Button
@@ -384,41 +567,71 @@ export default function LetterPrintEditor({
 
           {/* Right: Live Preview */}
           <div className={styles.previewPane}>
-            {/* Preview toolbar */}
             <div className={styles.previewPaneHeader}>
               <div className="flex items-center gap-2">
                 <Eye className="h-3.5 w-3.5 text-slate-400" />
                 <span className="text-xs font-semibold text-slate-300">Pratinjau Dokumen</span>
-                <span className="inline-flex items-center gap-1.5 text-[10px] bg-emerald-500/15 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  Realtime
-                </span>
+                {previewStatus === "rendering" && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] text-blue-400 font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25">
+                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    Merender...
+                  </span>
+                )}
+                {previewStatus === "done" && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] bg-emerald-500/15 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-500/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    Realtime
+                  </span>
+                )}
               </div>
-              <span className="text-[10px] text-slate-500">A4 · Georgia 11pt · Identik dengan hasil cetak</span>
+              <span className="text-[10px] text-slate-500">
+                {hasDocxTemplate ? "Preview dari template DOCX" : "Preview HTML (tanpa template)"}
+              </span>
             </div>
 
-            {/* Paper */}
             <div className={styles.previewPaneBody}>
-              <div className={styles.paper}>
-                <LetterPrintDocument
-                  request={mergedRequest}
-                  letterTypes={letterTypes}
-                  printConfig={printConfig}
-                />
-              </div>
+              {hasDocxTemplate ? (
+                <>
+                  {previewStatus === "error" && (
+                    <div className="bg-amber-900/50 border border-amber-700 rounded-xl p-4 mb-4 max-w-[600px] mx-auto flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-200">Preview tidak dapat ditampilkan</p>
+                        <p className="text-xs text-amber-300 mt-1">Gunakan tombol &quot;Unduh DOCX Presisi&quot; untuk melihat hasil sebenarnya di Microsoft Word.</p>
+                      </div>
+                    </div>
+                  )}
+                  <iframe
+                    ref={previewIframeRef}
+                    title="Preview surat DOCX"
+                    className="w-full flex-1 block rounded-lg"
+                    style={{ border: 0, background: "#e8e8e8", minHeight: 500 }}
+                  />
+                </>
+              ) : (
+                <div className={styles.paper}>
+                  <LetterPrintDocument
+                    request={mergedRequest}
+                    letterTypes={letterTypes}
+                    printConfig={printConfig}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
         </div>
       </div>
 
-      <div id="printable-letter-container" style={{ display: "none" }}>
-        <LetterPrintDocument
-          request={mergedRequest}
-          letterTypes={letterTypes}
-          printConfig={printConfig}
-        />
-      </div>
+      {!hasDocxTemplate && (
+        <div id="printable-letter-container" style={{ display: "none" }}>
+          <LetterPrintDocument
+            request={mergedRequest}
+            letterTypes={letterTypes}
+            printConfig={printConfig}
+          />
+        </div>
+      )}
     </>
   );
 

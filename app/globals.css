@@ -68,6 +68,20 @@ body {
 .berita-detail-content strong { font-weight: 600; }
 .berita-detail-content a      { color: var(--color-primary); text-decoration: underline; }
 
+/* ── Animasi tab Kelola Jenis Surat ── */
+/* Kartu masuk berurutan (stagger) sebagai isyarat "daftar dimuat",
+   bukan dekorasi loop. Sekali jalan, tidak mengulang. */
+@keyframes lt-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.lt-card {
+  animation: lt-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lt-card { animation: none; }
+}
+
 /* ── Print: cetak surat resmi ── */
 #printable-letter-container {
   display: none;

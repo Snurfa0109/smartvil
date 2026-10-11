@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 
@@ -23,6 +24,7 @@ interface StoredPhone {
 }
 
 export default function ComplaintsPage() {
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -77,7 +79,7 @@ export default function ComplaintsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nama.trim() || !formData.phone.trim()) {
-      alert("Nama lengkap dan nomor telepon wajib diisi.");
+      warning("Nama lengkap dan nomor telepon wajib diisi.");
       return;
     }
 
@@ -148,7 +150,7 @@ export default function ComplaintsPage() {
       removeFile();
     } catch (error) {
       console.error("Error submitting complaint:", error);
-      alert("Gagal mengirim laporan. Silakan periksa koneksi dan coba lagi.");
+      showError("Gagal mengirim laporan. Silakan periksa koneksi dan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -213,7 +215,7 @@ export default function ComplaintsPage() {
       setTrackedComplaints(results);
     } catch (err) {
       console.error("Error tracking complaint by phone:", err);
-      alert("Gagal memuat status pengaduan. Coba beberapa saat lagi.");
+      showError("Gagal memuat status pengaduan. Coba beberapa saat lagi.");
     } finally {
       setTrackingLoading(false);
     }

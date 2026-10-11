@@ -43,10 +43,12 @@ import {
   saveBeritaCategories,
   DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
+import { useToast } from "@/components/ui/toast";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const { user: authUser } = useAuth();
+  const { success, error: showError, confirm: showConfirm } = useToast();
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -155,7 +157,7 @@ function SettingsContent() {
       setSiteForm((p) => ({ ...p, [field]: url }));
     } catch (err) {
       console.error("Photo upload error:", err);
-      alert("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
+      showError("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
     } finally {
       setUploadingPhoto(null);
     }
@@ -168,10 +170,10 @@ function SettingsContent() {
         ...chatbotForm,
         updatedAt: new Date().toISOString(),
       });
-      alert("Pengaturan Chatbot AI berhasil disimpan!");
+      success("Pengaturan Chatbot AI berhasil disimpan!");
     } catch (error) {
       console.error("Error saving chatbot settings:", error);
-      alert("Gagal menyimpan pengaturan chatbot.");
+      showError("Gagal menyimpan pengaturan chatbot.");
     } finally {
       setSavingChatbot(false);
     }
@@ -232,7 +234,13 @@ function SettingsContent() {
   };
 
   const handleSeed = async () => {
-    if (confirm("Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.")) {
+    const confirmed = await showConfirm({
+      title: "Isi Database Dummy?",
+      message: "Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.",
+      variant: "danger",
+      confirmLabel: "Ya, Isi Data",
+    });
+    if (confirmed) {
       setSeeding(true);
       try {
         const token = getToken();
@@ -242,10 +250,10 @@ function SettingsContent() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal mengisi database.");
-        alert("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
+        success("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
       } catch (err: any) {
         console.error("Seed error:", err);
-        alert("Gagal mengisi database: " + (err.message || "Unknown error"));
+        showError("Gagal mengisi database: " + (err.message || "Unknown error"));
       } finally {
         setSeeding(false);
       }

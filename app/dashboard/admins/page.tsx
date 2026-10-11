@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiList, apiUpdate, apiDelete } from "@/lib/api";
+import { apiList, apiUpdate, apiDelete, getToken } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
 import {
   ShieldCheck,
@@ -26,6 +26,7 @@ import {
   MANAGEABLE_FEATURES,
   DEFAULT_ADMIN_PERMISSIONS,
 } from "@/lib/permissions";
+import { useToast } from "@/components/ui/toast";
 
 interface AdminUser {
   id: string;
@@ -50,6 +51,7 @@ const DEPARTMENTS = [
 
 export default function AdminsManagementPage() {
   const { user: currentUser, isSuperAdmin } = useAuth();
+  const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -155,8 +157,7 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session.session?.access_token;
+      const token = getToken();
       if (!token) {
         setErrorMsg("Sesi login tidak ditemukan. Silakan login kembali.");
         return;
@@ -237,7 +238,7 @@ export default function AdminsManagementPage() {
 
   const handleToggleStatus = async (admin: AdminUser) => {
     if (admin.uid === currentUser?.uid) {
-      alert("Anda tidak dapat menonaktifkan akun sendiri.");
+      warning("Anda tidak dapat menonaktifkan akun sendiri.");
       return;
     }
 
@@ -246,7 +247,13 @@ export default function AdminsManagementPage() {
       ? `Aktifkan kembali akses untuk ${admin.displayName}?`
       : `Nonaktifkan akun ${admin.displayName}? Pengguna ini tidak akan bisa login ke dashboard.`;
 
-    if (!confirm(confirmMsg)) return;
+    const confirmed = await showConfirm({
+      title: nextState ? "Aktifkan Akun?" : "Nonaktifkan Akun?",
+      message: confirmMsg,
+      variant: nextState ? "default" : "danger",
+      confirmLabel: nextState ? "Ya, Aktifkan" : "Ya, Nonaktifkan",
+    });
+    if (!confirmed) return;
 
     try {
       await apiUpdate("profiles", admin.uid, { active: nextState ? 1 : 0 });
@@ -260,25 +267,28 @@ export default function AdminsManagementPage() {
       await fetchAdmins();
     } catch (err) {
       console.error(err);
-      alert("Gagal mengubah status akun admin.");
+      showError("Gagal mengubah status akun admin.");
     }
   };
 
   const handleDeleteAdmin = async (admin: AdminUser) => {
     if (admin.uid === currentUser?.uid) {
-      alert("Anda tidak dapat menghapus akun sendiri!");
+      warning("Anda tidak dapat menghapus akun sendiri!");
       return;
     }
 
-    if (!confirm(`Hapus permanen hak akses admin ${admin.displayName} (${admin.email})?`)) {
-      return;
-    }
+    const confirmed = await showConfirm({
+      title: "Hapus Admin?",
+      message: `Hapus permanen hak akses admin ${admin.displayName} (${admin.email})?`,
+      variant: "danger",
+      confirmLabel: "Ya, Hapus",
+    });
+    if (!confirmed) return;
 
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session.session?.access_token;
+      const token = getToken();
       if (!token) {
-        alert("Sesi login tidak ditemukan. Silakan login kembali.");
+        showError("Sesi login tidak ditemukan. Silakan login kembali.");
         return;
       }
       const res = await fetch("/api/admins", {
@@ -291,7 +301,7 @@ export default function AdminsManagementPage() {
       });
       if (!res.ok) {
         const result = await res.json();
-        alert(result.error || "Gagal menghapus admin.");
+        showError(result.error || "Gagal menghapus admin.");
         return;
       }
 
@@ -304,7 +314,7 @@ export default function AdminsManagementPage() {
       await fetchAdmins();
     } catch (err) {
       console.error(err);
-      alert("Gagal menghapus admin.");
+      showError("Gagal menghapus admin.");
     }
   };
 

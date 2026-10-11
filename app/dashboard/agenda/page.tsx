@@ -19,6 +19,7 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 type AgendaItem = {
   id: string;
@@ -52,6 +53,7 @@ const EMPTY_FORM: Omit<AgendaItem, "id"> = {
 };
 
 export default function AgendaDashboardPage() {
+  const { warning, error: showError } = useToast();
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -118,7 +120,7 @@ export default function AgendaDashboardPage() {
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.category.trim()) {
-      alert("Judul dan Kategori wajib diisi.");
+      warning("Judul dan Kategori wajib diisi.");
       return;
     }
     setSaving(true);
@@ -142,7 +144,7 @@ export default function AgendaDashboardPage() {
       closeDialog();
     } catch (err) {
       console.error(err);
-      alert("Gagal menyimpan agenda.");
+      showError("Gagal menyimpan agenda.");
     } finally {
       setSaving(false);
     }
@@ -155,7 +157,7 @@ export default function AgendaDashboardPage() {
       await fetchItems();
       setConfirmDelete(null);
     } catch {
-      alert("Gagal menghapus agenda.");
+      showError("Gagal menghapus agenda.");
     } finally {
       setDeleting(null);
     }
@@ -166,7 +168,7 @@ export default function AgendaDashboardPage() {
       await apiUpdate("agenda", item.id, { active: item.active ? 0 : 1 });
       setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, active: !it.active } : it)));
     } catch {
-      alert("Gagal mengubah status.");
+      showError("Gagal mengubah status.");
     }
   };
 

@@ -6,6 +6,7 @@ import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useRef, useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,7 @@ type BeritaEditorProps = {
 };
 
 function Toolbar({ editor }: { editor: Editor | null }) {
+  const { success, error: showError, warning } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +51,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
       editor.chain().focus().setImage({ src: url }).run();
     } catch (err) {
       console.error("Upload gagal:", err);
-      alert("Gagal mengunggah gambar.");
+      showError("Gagal mengunggah gambar.");
     }
     e.target.value = "";
   };
@@ -154,6 +156,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
 }
 
 export default function BeritaEditor({ id = null }: BeritaEditorProps) {
+  const { success, error: showError, warning } = useToast();
   const router = useRouter();
   const editorRef = useRef<Editor | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -198,7 +201,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
           })
           .catch((err) => {
             console.error("Upload paste gagal:", err);
-            alert("Gagal mengunggah gambar yang di-paste.");
+            showError("Gagal mengunggah gambar yang di-paste.");
           });
         event.preventDefault();
         return true;
@@ -222,7 +225,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
           })
           .catch((err) => {
             console.error("Upload drop gagal:", err);
-            alert("Gagal mengunggah gambar.");
+            showError("Gagal mengunggah gambar.");
           });
         return true;
       },
@@ -259,7 +262,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
         setLoading(false);
       } catch {
         setLoading(false);
-        alert("Gagal memuat data berita.");
+        showError("Gagal memuat data berita.");
       }
     };
     loadBerita();
@@ -281,7 +284,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       setImageUrl(url);
     } catch (err) {
       console.error("Upload cover gagal:", err);
-      alert("Gagal mengunggah foto sampul.");
+      showError("Gagal mengunggah foto sampul.");
     } finally {
       setUploadingCover(false);
       e.target.value = "";
@@ -292,12 +295,12 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
     e.preventDefault();
     if (!editor) return;
     if (!category) {
-      alert("Pilih kategori berita.");
+      warning("Pilih kategori berita.");
       return;
     }
     const content = editor.getHTML();
     if (!content || content === "<p></p>") {
-      alert("Isi berita tidak boleh kosong.");
+      warning("Isi berita tidak boleh kosong.");
       return;
     }
     setSaving(true);
@@ -312,17 +315,17 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       if (id) {
         await apiUpdate("news", id, payload);
         await writeAuditLog("UPDATE", "berita", `Memperbarui berita: "${title}" (Kategori: ${category})`);
-        alert("Berita berhasil diperbarui!");
+        success("Berita berhasil diperbarui!");
       } else {
         await apiInsert("news", { id: crypto.randomUUID(), ...payload });
         await writeAuditLog("CREATE", "berita", `Menerbitkan berita baru: "${title}" (Kategori: ${category})`);
-        alert("Berita berhasil ditambahkan!");
+        success("Berita berhasil ditambahkan!");
       }
       router.push("/dashboard/berita");
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat menyimpan.");
+      showError("Terjadi kesalahan saat menyimpan.");
     } finally {
       setSaving(false);
     }

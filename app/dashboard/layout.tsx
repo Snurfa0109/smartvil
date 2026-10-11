@@ -39,7 +39,6 @@ export default function DashboardLayout({
       if (!user) {
         router.push("/login");
       } else if (role !== "superadmin" && role !== "admin" && role !== "operator") {
-        alert("Anda tidak memiliki hak akses administrator ke halaman ini.");
         router.push("/");
       }
     }

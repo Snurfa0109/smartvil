@@ -22,8 +22,9 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
-import { DEFAULT_LETTER_TYPES, LetterType, getLetterTypes } from "@/lib/letters";
+import { LetterType, getLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 
 interface StoredTicket {
@@ -35,8 +36,9 @@ interface StoredTicket {
 }
 
 export default function ServicesPage() {
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
-  const [letterTypesList, setLetterTypesList] = useState<LetterType[]>(DEFAULT_LETTER_TYPES);
+  const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -127,7 +129,7 @@ export default function ServicesPage() {
       (f) => f.required && !(customFormData[f.key] || "").trim()
     );
     if (requiredMissing.length > 0) {
-      alert(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
+      warning(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
       return;
     }
     setLoading(true);
@@ -180,7 +182,7 @@ export default function ServicesPage() {
       setSelectedLetter(null);
     } catch (error) {
       console.error("Error submitting request:", error);
-      alert("Gagal mengirim permohonan surat. Silakan coba lagi.");
+      showError("Gagal mengirim permohonan surat. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -245,7 +247,7 @@ export default function ServicesPage() {
       setTrackedRequests(results);
     } catch (err) {
       console.error("Error tracking request:", err);
-      alert("Gagal memuat status surat. Coba beberapa saat lagi.");
+      showError("Gagal memuat status surat. Coba beberapa saat lagi.");
     } finally {
       setTrackLoading(false);
     }
@@ -630,7 +632,20 @@ export default function ServicesPage() {
                             <label htmlFor={`custom-${f.key}`} className="text-xs font-semibold text-slate-700">
                               {f.label} {f.required && <span className="text-red-500">*</span>}
                             </label>
-                            {f.type === "textarea" ? (
+                            {f.type === "select" && f.options && f.options.length > 0 ? (
+                              <select
+                                id={`custom-${f.key}`}
+                                required={f.required}
+                                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
+                                value={customFormData[f.key] || ""}
+                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                              >
+                                <option value="">Pilih {f.label.toLowerCase()}...</option>
+                                {f.options.map((opt) => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            ) : f.type === "textarea" ? (
                               <textarea
                                 id={`custom-${f.key}`}
                                 required={f.required}

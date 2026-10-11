@@ -8,8 +8,10 @@ import { Plus, Search, User, ChevronLeft, ChevronRight, Pencil, Trash2, Download
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 
 export default function PendudukDashboardPage() {
+  const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [residents, setResidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,21 +103,27 @@ export default function PendudukDashboardPage() {
   };
 
   const handleDelete = async (id: string, nama: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus data penduduk "${nama}"? Data yang dihapus tidak dapat dikembalikan.`)) {
+    const confirmed = await showConfirm({
+      title: "Hapus Data Penduduk?",
+      message: `Apakah Anda yakin ingin menghapus data penduduk "${nama}"? Data yang dihapus tidak dapat dikembalikan.`,
+      variant: "danger",
+      confirmLabel: "Ya, Hapus",
+    });
+    if (confirmed) {
       try {
         await apiDelete("residents", id);
-        alert("Data penduduk berhasil dihapus.");
+        success("Data penduduk berhasil dihapus.");
         fetchResidents();
       } catch (error) {
         console.error("Error deleting resident:", error);
-        alert("Gagal menghapus data penduduk.");
+        showError("Gagal menghapus data penduduk.");
       }
     }
   };
 
   const handleExportCSV = () => {
     if (residents.length === 0) {
-      alert("Tidak ada data penduduk untuk diekspor.");
+      warning("Tidak ada data penduduk untuk diekspor.");
       return;
     }
 
@@ -164,16 +172,16 @@ export default function PendudukDashboardPage() {
 
       if (isEditMode && selectedId) {
         await apiUpdate("residents", selectedId, payload);
-        alert("Data penduduk berhasil diperbarui!");
+        success("Data penduduk berhasil diperbarui!");
       } else {
         await apiInsert("residents", payload);
-        alert("Data penduduk berhasil ditambahkan!");
+        success("Data penduduk berhasil ditambahkan!");
       }
       setIsModalOpen(false);
       fetchResidents();
     } catch (error) {
       console.error("Error saving resident:", error);
-      alert("Terjadi kesalahan saat menyimpan data.");
+      showError("Terjadi kesalahan saat menyimpan data.");
     } finally {
       setLoading(false);
     }

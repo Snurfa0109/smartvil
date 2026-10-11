@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
 import { apiList } from "@/lib/api";
 import { stripHtml } from "@/lib/utils";
+import { getLetterTypes } from "@/lib/letters";
 
 interface SearchItem {
   id: string;
@@ -17,34 +18,6 @@ interface SearchItem {
 }
 
 const STATIC_SERVICES: SearchItem[] = [
-  {
-    id: "sku",
-    title: "Surat Keterangan Usaha (SKU)",
-    category: "layanan",
-    subtitle: "Layanan administrasi permohonan legalitas usaha bagi pelaku UMKM kelurahan.",
-    url: "/layanan",
-  },
-  {
-    id: "sktm",
-    title: "Surat Keterangan Tidak Mampu (SKTM)",
-    category: "layanan",
-    subtitle: "Permohonan keterangan bagi warga prasejahtera untuk beasiswa dan bantuan sosial.",
-    url: "/layanan",
-  },
-  {
-    id: "domisili",
-    title: "Surat Keterangan Domisili",
-    category: "layanan",
-    subtitle: "Keterangan bukti tempat tinggal resmi warga di wilayah Kelurahan Banjar Agung.",
-    url: "/layanan",
-  },
-  {
-    id: "pengantar-ktp",
-    title: "Surat Pengantar KTP / KK",
-    category: "layanan",
-    subtitle: "Pengantar permohonan penerbitan dan pembaruan KTP-el atau Kartu Keluarga.",
-    url: "/layanan",
-  },
   {
     id: "cek-surat",
     title: "Lacak Permohonan Surat Online",
@@ -114,11 +87,30 @@ function SearchContent() {
   const [inputVal, setInputVal] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState<string>("semua");
   const [newsItems, setNewsItems] = useState<SearchItem[]>([]);
+  const [letterServices, setLetterServices] = useState<SearchItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setInputVal(initialQuery);
   }, [initialQuery]);
+
+  useEffect(() => {
+    getLetterTypes()
+      .then((types) => {
+        setLetterServices(
+          types
+            .filter((t) => t.active !== false)
+            .map((t) => ({
+              id: `letter-${t.code}`,
+              title: t.name,
+              category: "layanan" as const,
+              subtitle: t.desc || "Layanan administrasi surat kelurahan.",
+              url: "/layanan",
+            }))
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchAllNews = async () => {
@@ -146,8 +138,8 @@ function SearchContent() {
   }, []);
 
   const allItems = useMemo(() => {
-    return [...STATIC_SERVICES, ...STATIC_PAGES, ...newsItems];
-  }, [newsItems]);
+    return [...STATIC_SERVICES, ...letterServices, ...STATIC_PAGES, ...newsItems];
+  }, [newsItems, letterServices]);
 
   const filteredResults = useMemo(() => {
     let list = allItems;

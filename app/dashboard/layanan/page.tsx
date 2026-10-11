@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { apiInsert, apiUpdate, apiDelete, apiList, apiUpload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   Loader2,
   Upload,
-  Download,
   Clock,
   FileText,
   Printer,
@@ -20,17 +19,21 @@ import {
   Edit2,
   FolderCog,
   Layers,
-  Sparkles,
-  ExternalLink,
   PhoneCall,
+  Search,
+  ClipboardList,
+  ListChecks,
+  FileCheck2,
+  FileWarning,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LetterType, LetterCustomFieldDef, DEFAULT_LETTER_TYPES, getLetterTypes, invalidateLetterTypes } from "@/lib/letters";
+import { LetterType, LetterCustomFieldDef, getLetterTypes, invalidateLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import {
   extractPlaceholdersFromDocx,
+  stripPlaceholdersFromDocx,
   smartTemplateFromStaticDocx,
   placeholdersToCustomFields,
   buildTemplateData,
@@ -41,10 +44,11 @@ import {
   BUILTIN_FIELDS,
 } from "@/lib/letter-template";
 import LetterSimulationPreview from "@/components/letter-simulation-preview";
-import LetterPrintDocument from "@/components/letter-print-document";
 import LetterPrintEditor from "@/components/letter-print-editor";
+import { useToast } from "@/components/ui/toast";
 
 export default function LayananDashboardPage() {
+  const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [activeTab, setActiveTab] = useState<"requests" | "letter_types">("requests");
 
   const [requests, setRequests] = useState<any[]>([]);
@@ -53,6 +57,8 @@ export default function LayananDashboardPage() {
 
   const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
+  const [typeSearch, setTypeSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "active" | "inactive" | "template">("all");
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [typeForm, setTypeForm] = useState({
@@ -122,10 +128,10 @@ export default function LayananDashboardPage() {
     setLoadingTypes(true);
     try {
       const types = await getLetterTypes();
-      setLetterTypes(types.length > 0 ? types : DEFAULT_LETTER_TYPES);
+      setLetterTypes(types);
     } catch (err) {
       console.error("Error fetching letter types:", err);
-      setLetterTypes(DEFAULT_LETTER_TYPES);
+      setLetterTypes([]);
     } finally {
       setLoadingTypes(false);
     }
@@ -150,26 +156,26 @@ export default function LayananDashboardPage() {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Gagal memperbarui status.");
+      showError("Gagal memperbarui status.");
     }
   };
 
   const handleDeleteRequest = async (id: string, name: string) => {
-    if (confirm(`Hapus permohonan surat atas nama "${name}"?`)) {
+    if (await showConfirm({ title: "Hapus Permohonan", message: `Hapus permohonan surat atas nama "${name}"?`, variant: "danger", confirmLabel: "Hapus" })) {
       try {
         await apiDelete("requests", id);
         if (selectedRequest?.id === id) setSelectedRequest(null);
         fetchRequests();
       } catch (err) {
         console.error("Error deleting request:", err);
-        alert("Gagal menghapus permohonan.");
+        showError("Gagal menghapus permohonan.");
       }
     }
   };
 
   const handleSendWhatsApp = (item: any) => {
     if (!item.phone) {
-      alert("Warga tidak mencantumkan nomor telepon.");
+      warning("Warga tidak mencantumkan nomor telepon.");
       return;
     }
     let clean = item.phone.replace(/\D/g, "");
@@ -268,32 +274,33 @@ export default function LayananDashboardPage() {
     setTemplateError("");
     setTemplateFileName(file.name);
     try {
-      let placeholders = await extractPlaceholdersFromDocx(file);
+      const rawBuffer = await file.arrayBuffer();
+      const hasExisting = (await extractPlaceholdersFromDocx(rawBuffer)).length > 0;
+      const cleanBuffer = hasExisting ? stripPlaceholdersFromDocx(rawBuffer) : rawBuffer;
+
+      const smart = await smartTemplateFromStaticDocx(cleanBuffer);
+      let placeholders: string[];
       let finalBuffer: ArrayBuffer;
       let uploadBlob: Blob;
 
-      if (placeholders.length === 0) {
-        const smart = await smartTemplateFromStaticDocx(file);
-        if (smart.placeholders.length > 0) {
-          placeholders = smart.placeholders;
-          finalBuffer = smart.buffer;
-          uploadBlob = new Blob([smart.buffer], {
-            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          });
-        } else {
-          finalBuffer = await file.arrayBuffer();
-          uploadBlob = file;
-          setTemplateError(
-            "Field tidak terdeteksi otomatis. Template akan disimpan apa adanya. Tambahkan {{nama}}, {{nik}}, dll secara manual di file Word jika diperlukan."
-          );
-        }
+      if (smart.placeholders.length > 0) {
+        placeholders = smart.placeholders;
+        finalBuffer = smart.buffer;
+        uploadBlob = new Blob([smart.buffer], {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
       } else {
-        finalBuffer = await file.arrayBuffer();
-        uploadBlob = file;
+        placeholders = [];
+        finalBuffer = cleanBuffer;
+        uploadBlob = new Blob([cleanBuffer], {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+        setTemplateError(
+          "Tidak ditemukan field isian di template. Pastikan surat memiliki baris seperti \"Nama :\" atau \"Alamat :\" yang diakhiri titik dua, atau tambahkan field secara manual di bawah."
+        );
       }
 
-      // Langsung tampilkan hasil scan + simulasi, JANGAN tunggu upload.
-      const customFields = placeholdersToCustomFields(placeholders, typeForm.customFields);
+      const customFields = placeholdersToCustomFields(placeholders, typeForm.customFields, smart.injected);
       setTypeForm((prev) => ({
         ...prev,
         templatePlaceholders: placeholders,
@@ -364,6 +371,18 @@ export default function LayananDashboardPage() {
     }));
   };
 
+  const handleAddCustomField = () => {
+    const base = `field_${Date.now().toString().slice(-4)}`;
+    setTypeForm((prev) => ({
+      ...prev,
+      templatePlaceholders: [...prev.templatePlaceholders, base],
+      customFields: [
+        ...prev.customFields,
+        { key: base, label: "Field Baru", type: "text" as const, required: false },
+      ],
+    }));
+  };
+
   const handleSaveType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!typeForm.name.trim()) return;
@@ -393,10 +412,11 @@ export default function LayananDashboardPage() {
 
       if (editingTypeId) {
         await apiUpdate("letter_types", editingTypeId, payload);
-        alert("Jenis surat berhasil diperbarui!");
+        success("Jenis surat berhasil diperbarui!");
       } else {
-        await apiInsert("letter_types", { ...payload, sort_order: letterTypes.length });
-        alert("Jenis surat baru berhasil ditambahkan!");
+        const newId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `lt_${Date.now()}`;
+        await apiInsert("letter_types", { id: newId, ...payload, sort_order: letterTypes.length });
+        success("Jenis surat baru berhasil ditambahkan!");
       }
 
       setIsTypeModalOpen(false);
@@ -408,20 +428,38 @@ export default function LayananDashboardPage() {
     } catch (err) {
       console.error("Error saving letter type:", err);
       const detail = err instanceof Error ? err.message : "";
-      alert(`Gagal menyimpan jenis surat.${detail ? ` Detail: ${detail.slice(0, 200)}` : ""}`);
+      showError(`Gagal menyimpan jenis surat.${detail ? ` Detail: ${detail.slice(0, 200)}` : ""}`);
     }
   };
 
   const handleDeleteType = async (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus jenis surat "${name}"?`)) {
+    if (await showConfirm({ title: "Hapus Jenis Surat", message: `Apakah Anda yakin ingin menghapus jenis surat "${name}"?`, variant: "danger", confirmLabel: "Hapus" })) {
       try {
         await apiDelete("letter_types", id);
         invalidateLetterTypes();
         fetchLetterTypes();
       } catch (err) {
         console.error("Error deleting letter type:", err);
-        alert("Gagal menghapus jenis surat.");
+        showError("Gagal menghapus jenis surat.");
       }
+    }
+  };
+
+  const handleToggleTypeActive = async (item: LetterType) => {
+    if (!item.id) return;
+    const next = item.active === false;
+    setLetterTypes((prev) =>
+      prev.map((t) => (t.id === item.id ? { ...t, active: next } : t))
+    );
+    try {
+      await apiUpdate("letter_types", item.id, { active: next ? 1 : 0 });
+      invalidateLetterTypes();
+    } catch (err) {
+      console.error("Error toggling letter type status:", err);
+      setLetterTypes((prev) =>
+        prev.map((t) => (t.id === item.id ? { ...t, active: !next } : t))
+      );
+      showError("Gagal mengubah status jenis surat.");
     }
   };
 
@@ -454,7 +492,7 @@ export default function LayananDashboardPage() {
     const letterType = letterTypes.find((lt) => lt.code === req.type);
     const templateSource = letterType?.templateFileUrl || letterType?.templateData;
     if (!templateSource) {
-      alert("Jenis surat ini belum memiliki template .docx. Upload template dulu di tab Kelola Jenis Surat.");
+      warning("Jenis surat ini belum memiliki template .docx. Upload template dulu di tab Kelola Jenis Surat.");
       return;
     }
     setDownloadingDocx(true);
@@ -467,11 +505,32 @@ export default function LayananDashboardPage() {
       downloadBlob(blob, `${req.typeName || "surat"}-${req.ticketCode || req.id}.docx`);
     } catch (err) {
       console.error("Gagal generate DOCX:", err);
-      alert("Gagal membuat file DOCX. Coba lagi.");
+      showError("Gagal membuat file DOCX. Coba lagi.");
     } finally {
       setDownloadingDocx(false);
     }
   };
+
+  const hasTemplate = (t: LetterType) => !!(t.templateFileUrl || t.templateData);
+  const filteredTypes = letterTypes.filter((t) => {
+    const q = typeSearch.trim().toLowerCase();
+    const matchSearch =
+      !q ||
+      t.name.toLowerCase().includes(q) ||
+      t.code.toLowerCase().includes(q) ||
+      t.desc.toLowerCase().includes(q);
+    const matchFilter =
+      typeFilter === "all"
+        ? true
+        : typeFilter === "active"
+        ? t.active !== false
+        : typeFilter === "inactive"
+        ? t.active === false
+        : hasTemplate(t);
+    return matchSearch && matchFilter;
+  });
+  const activeCount = letterTypes.filter((t) => t.active !== false).length;
+  const templateCount = letterTypes.filter(hasTemplate).length;
 
   if (loading && loadingTypes) {
     return <div className="p-8 text-center text-muted-foreground">Memuat data layanan surat...</div>;
@@ -649,115 +708,214 @@ export default function LayananDashboardPage() {
         </div>
       ) : (
         /* Tab 2: Manage Letter Types */
-        <div className="space-y-4">
-          <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
-            <div>
-              <h3 className="font-bold text-base text-foreground">Daftar Jenis Surat Aktif</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Surat yang aktif di sini akan langsung tampil pada pilihan formulir permohonan warga di website publik.
-              </p>
-            </div>
-            <Button onClick={handleOpenAddType}>
-              <Plus className="mr-1.5 h-4 w-4" /> Tambah Jenis Surat
-            </Button>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {letterTypes.map((type) => (
-              <Card key={type.id || type.code} className="border-slate-200 shadow-xs flex flex-col justify-between">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                        CODE: {type.code}
-                      </span>
-                      <CardTitle className="text-base font-bold text-foreground mt-1">{type.name}</CardTitle>
-                    </div>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        type.active !== false ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {type.active !== false ? "? Aktif" : "? Nonaktif"}
+        <div className="space-y-5">
+          {/* Header: tujuan tab + aksi utama */}
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="absolute inset-y-0 left-0 w-1 bg-[#1b365d]" />
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 pl-6">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-[#1b365d] flex items-center justify-center shrink-0">
+                  <FolderCog className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Katalog Jenis Surat</h3>
+                  <p className="text-xs text-slate-500 mt-0.5 max-w-md">
+                    Jenis surat yang aktif di sini langsung muncul di formulir permohonan warga pada portal publik.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5">
+                    <span className="text-xs text-slate-500">
+                      <strong className="text-slate-800 font-semibold">{letterTypes.length}</strong> jenis surat
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      <strong className="text-emerald-700 font-semibold">{activeCount}</strong> aktif
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      <strong className="text-[#1b365d] font-semibold">{templateCount}</strong> ber-template DOCX
                     </span>
                   </div>
-                  <CardDescription className="text-xs leading-relaxed pt-1">{type.desc}</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs space-y-1 mb-3">
-                    <p className="font-semibold text-muted-foreground">Persyaratan Dokumen:</p>
-                    <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
-                      {type.requirements?.map((req, i) => (
-                        <li key={i}>{req}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t">
-                    <Button size="sm" variant="outline" onClick={() => handleOpenEditType(type)}>
-                      <Edit2 className="mr-1.5 h-3.5 w-3.5" /> Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => type.id && handleDeleteType(type.id, type.name)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              </div>
+              <Button onClick={handleOpenAddType} className="bg-[#1b365d] hover:bg-[#152a48] h-10 shrink-0">
+                <Plus className="mr-1.5 h-4 w-4" /> Tambah Jenis Surat
+              </Button>
+            </div>
           </div>
+
+          {/* Toolbar: cari + filter */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <Input
+                value={typeSearch}
+                onChange={(e) => setTypeSearch(e.target.value)}
+                placeholder="Cari nama, kode, atau keterangan surat..."
+                className="pl-9 h-10 border-slate-300"
+              />
+            </div>
+            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 self-start">
+              {([
+                ["all", "Semua"],
+                ["active", "Aktif"],
+                ["inactive", "Nonaktif"],
+                ["template", "Ber-template"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setTypeFilter(key)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    typeFilter === key
+                      ? "bg-white text-[#1b365d] shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Daftar kartu */}
+          {filteredTypes.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-12 text-center">
+              <Search className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+              <p className="text-sm font-medium text-slate-700">Tidak ada jenis surat yang cocok</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Ubah kata kunci pencarian atau pilih filter lain.
+              </p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredTypes.map((type, i) => (
+                <div
+                  key={type.id || type.code}
+                  style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
+                  className="lt-card group relative flex flex-col rounded-2xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#1b365d]/40 hover:shadow-[0_8px_28px_-14px_rgba(27,54,93,0.35)] focus-within:border-[#1b365d]/50"
+                >
+                  {/* Aksen atas: status aktif ditandai garis emas, nonaktif abu */}
+                  <div className={`h-1 rounded-t-2xl transition-colors ${type.active !== false ? "bg-[#c9971c]" : "bg-slate-200"}`} />
+
+                  <div className="flex flex-col flex-1 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <code className="text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
+                          {type.code}
+                        </code>
+                        <h4 className="font-bold text-sm text-slate-900 leading-snug mt-1.5 line-clamp-2">
+                          {type.name}
+                        </h4>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={type.active !== false}
+                        aria-label={`${type.active !== false ? "Nonaktifkan" : "Aktifkan"} ${type.name}`}
+                        onClick={() => handleToggleTypeActive(type)}
+                        className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b365d]/40 focus-visible:ring-offset-2 ${
+                          type.active !== false ? "bg-emerald-500" : "bg-slate-300"
+                        }`}
+                        title={type.active !== false ? "Aktif di formulir publik" : "Tidak tampil di formulir publik"}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                            type.active !== false ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-slate-500 leading-relaxed mt-2 line-clamp-2 min-h-[2rem]">
+                      {type.desc || "Belum ada keterangan."}
+                    </p>
+
+                    {/* Meta ringkas: persyaratan + field + template */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+                        <ClipboardList className="h-3.5 w-3.5 text-slate-400" />
+                        {type.requirements?.length || 0} syarat
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+                        <ListChecks className="h-3.5 w-3.5 text-slate-400" />
+                        {type.customFields?.length || 0} field
+                      </span>
+                      {hasTemplate(type) ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1b365d] bg-[#1b365d]/8 border border-[#1b365d]/20 rounded-md px-2 py-1">
+                          <FileCheck2 className="h-3.5 w-3.5" />
+                          DOCX
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                          <FileWarning className="h-3.5 w-3.5" />
+                          Tanpa template
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Aksi */}
+                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 h-9 border-slate-300 text-slate-700 hover:border-[#1b365d]/40 hover:text-[#1b365d] hover:bg-[#1b365d]/5"
+                        onClick={() => handleOpenEditType(type)}
+                      >
+                        <Edit2 className="mr-1.5 h-3.5 w-3.5" /> Edit & Preview
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-9 w-9 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => type.id && handleDeleteType(type.id, type.name)}
+                        title="Hapus jenis surat"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {isTypeModalOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setIsTypeModalOpen(false)}
         >
-          <Card className="w-full max-w-6xl bg-slate-50 relative max-h-[92vh] overflow-y-auto border-0 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#1b365d] to-[#274b7a] text-white px-6 py-4">
+          <Card className="w-full max-w-7xl bg-white relative max-h-[94vh] overflow-hidden border shadow-2xl rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-8 py-6 border-b border-white/10">
               <div className="flex justify-between items-start gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
-                    <FileText className="h-5 w-5" />
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shrink-0">
+                    <Layers className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold leading-tight">
+                    <h2 className="text-xl font-bold tracking-tight">
                       {editingTypeId ? "Edit Jenis Surat" : "Tambah Jenis Surat Baru"}
                     </h2>
-                    <p className="text-[11px] text-blue-100 mt-0.5">Upload template Word → auto-scan field → cek live preview → simpan</p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      {["Upload template", "Info surat", "Field & preview"].map((s, i) => {
-                        const done = i === 0 ? typeForm.templatePlaceholders.length > 0 : i === 1 ? !!typeForm.name.trim() : typeForm.templatePlaceholders.length > 0 && !!typeForm.name.trim();
-                        return (
-                          <span key={s} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${done ? "bg-emerald-400/90 border-emerald-300 text-emerald-950" : "bg-white/10 border-white/25 text-blue-100"}`}>
-                            {i + 1}. {s}{done ? " ✓" : ""}
-                          </span>
-                        );
-                      })}
-                    </div>
+                    <p className="text-sm text-slate-300 mt-1">Upload template Word asli, sistem otomatis deteksi field isian</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setIsTypeModalOpen(false)} className="text-white hover:bg-white/15 hover:text-white">
-                  <X className="h-4 w-4" />
+                <Button variant="ghost" size="sm" onClick={() => setIsTypeModalOpen(false)} className="text-white hover:bg-white/10 rounded-xl">
+                  <X className="h-5 w-5" />
                 </Button>
               </div>
             </div>
-            <CardContent className="pt-5 px-5 md:px-6 pb-0">
-              <form onSubmit={handleSaveType} className="space-y-4">
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 shadow-xs">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-[11px] font-bold flex items-center justify-center">1</span>
-                    <Label className="font-bold text-sm text-slate-900">Upload template DOCX</Label>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Wajib</span>
+            <div className="overflow-y-auto" style={{ maxHeight: 'calc(94vh - 100px)' }}>
+            <CardContent className="p-8">
+              <form onSubmit={handleSaveType} className="space-y-6">
+                <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center">1</div>
+                    <div className="flex-1">
+                      <Label className="font-bold text-base text-slate-900 block">Upload Template DOCX</Label>
+                      <p className="text-xs text-slate-600 mt-0.5">Upload file Word surat asli. Sistem otomatis mendeteksi field isian seperti &quot;Nama :&quot;, &quot;Alamat :&quot; dari template</p>
+                    </div>
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-200">Wajib</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed mb-3 ml-8">
-                    Seret file Word asli ke kotak di bawah (atau klik untuk memilih). Sistem otomatis memindai baris <code className="bg-slate-100 px-1 rounded border border-slate-200">Nama Suami :</code>, nomor <code className="bg-slate-100 px-1 rounded border">470/</code>, tanggal, dll menjadi field isian user. Hasil cetak mengikuti layout template 100% (kop + logo ikut).
-                  </p>
+                  
                   <div
                     onDragOver={(ev) => { ev.preventDefault(); setDragOver(true); }}
                     onDragLeave={() => setDragOver(false)}
@@ -768,211 +926,314 @@ export default function LayananDashboardPage() {
                       if (f) processTemplateFile(f);
                     }}
                     onClick={() => document.getElementById("letter-template-input")?.click()}
-                    className={`ml-0 md:ml-8 border-2 border-dashed rounded-xl px-4 py-6 text-center cursor-pointer transition-colors ${dragOver ? "border-[#1b365d] bg-blue-50" : "border-slate-300 bg-slate-50/60 hover:border-[#1b365d]/60 hover:bg-blue-50/50"}`}
+                    className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${dragOver ? "border-slate-900 bg-slate-50 scale-[1.02]" : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50/50"}`}
                   >
-                    <Upload className="h-8 w-8 mx-auto text-[#1b365d]/70" />
-                    <p className="text-xs font-semibold text-slate-800 mt-2">
-                      {templateFileName || "Seret & letakkan file .docx di sini, atau klik untuk memilih"}
+                    <div className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 transition-colors ${dragOver ? "bg-slate-900" : "bg-slate-100"}`}>
+                      <Upload className={`h-8 w-8 transition-colors ${dragOver ? "text-white" : "text-slate-600"}`} />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 mb-1">
+                      {templateFileName || "Seret file .docx ke sini atau klik untuk memilih"}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Format .docx Word, maksimal 5MB</p>
+                    <p className="text-xs text-slate-500">Format DOCX, maksimal 5MB</p>
                     <Input id="letter-template-input" type="file" accept=".docx" onChange={handleTemplateUpload} disabled={scanningTemplate || uploadingTemplate} className="hidden" />
                   </div>
-                  <div className="ml-0 md:ml-8 mt-2.5 space-y-2">
+                  
+                  <div className="mt-4 space-y-3">
                     {(scanningTemplate || uploadingTemplate) && (
-                      <p className="text-xs text-blue-700 flex items-center gap-1.5 font-medium">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        {scanningTemplate ? "Memindai template & mendeteksi field..." : "Mengunggah file template ke Storage..."}
-                      </p>
+                      <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <Loader2 className="h-5 w-5 animate-spin text-blue-600 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-blue-900">
+                            {scanningTemplate ? "Membaca template..." : "Mengunggah ke storage..."}
+                          </p>
+                          <p className="text-xs text-blue-700 mt-0.5">
+                            {scanningTemplate ? "Mencari placeholder {{...}} di dalam dokumen" : "Menyimpan file template"}
+                          </p>
+                        </div>
+                      </div>
                     )}
                     {templateError && (
-                      <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 leading-relaxed flex items-start gap-1.5">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> <span>{templateError}</span>
-                      </p>
+                      <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-red-900">Terjadi kesalahan</p>
+                          <p className="text-xs text-red-700 mt-1 leading-relaxed">{templateError}</p>
+                        </div>
+                      </div>
                     )}
                     {typeForm.templateFileUrl && !templateError && (
-                      <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-center gap-1.5 font-medium">
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        <span>Template terpasang • {typeForm.templatePlaceholders.length} field terdeteksi • <a href={typeForm.templateFileUrl} target="_blank" rel="noreferrer" className="underline">Lihat file</a></span>
-                      </p>
+                      <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-emerald-900">Template berhasil dipasang</p>
+                          <p className="text-xs text-emerald-700 mt-1">
+                            {typeForm.templatePlaceholders.length} field terdeteksi • <a href={typeForm.templateFileUrl} target="_blank" rel="noreferrer" className="underline font-medium">Lihat file asli</a>
+                          </p>
+                        </div>
+                      </div>
                     )}
                     {typeForm.templateData && !typeForm.templateFileUrl && !templateError && (
-                      <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center gap-1.5 font-medium">
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        <span>Template tersimpan di database ({typeForm.templatePlaceholders.length} field) — Storage tidak terjangkau, tapi cetak & unduh tetap berfungsi penuh.</span>
-                      </p>
+                      <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-blue-900">Template tersimpan (database)</p>
+                          <p className="text-xs text-blue-700 mt-1">{typeForm.templatePlaceholders.length} field terdeteksi • Cetak & unduh tetap berfungsi penuh</p>
+                        </div>
+                      </div>
                     )}
                     {typeForm.templatePlaceholders.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {[...typeForm.templatePlaceholders].sort().map((p) => (
-                          <span key={p} className={`text-[11px] font-mono px-2 py-0.5 rounded-md border ${BUILTIN_FIELDS.has(p.toLowerCase()) ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
-                            {"{{"}{p}{"}}"}
-                          </span>
-                        ))}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <p className="text-xs font-semibold text-slate-700 mb-2">Field Terdeteksi:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {[...typeForm.templatePlaceholders].sort().map((p) => (
+                            <span key={p} className={`text-xs font-mono px-2.5 py-1 rounded-lg border font-medium ${BUILTIN_FIELDS.has(p.toLowerCase()) ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
+                              {"{{"}{p}{"}}"}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                  <div className="space-y-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-[11px] font-bold flex items-center justify-center">2</span>
-                        <p className="font-bold text-sm text-slate-900">Informasi surat</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center">2</div>
+                        <div className="flex-1">
+                          <Label className="font-bold text-base text-slate-900 block">Informasi Surat</Label>
+                          <p className="text-xs text-slate-600 mt-0.5">Nama dan deskripsi jenis surat</p>
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="type-name">Nama Surat Lengkap</Label>
-                  <Input
-                    id="type-name"
-                    required
-                    placeholder="Contoh: Surat Keterangan Suami Istri"
-                    value={typeForm.name}
-                    onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })}
-                  />
-                </div>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="type-name" className="text-sm font-medium text-slate-700">Nama Surat Lengkap</Label>
+                          <Input
+                            id="type-name"
+                            required
+                            placeholder="Contoh: Surat Keterangan Suami Istri"
+                            value={typeForm.name}
+                            onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })}
+                            className="h-11 border-slate-300 focus:border-slate-900 focus:ring-slate-900"
+                          />
+                        </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="type-code">Kode Singkat (Huruf Kecil / Tanpa Spasi)</Label>
-                  <Input
-                    id="type-code"
-                    required
-                    placeholder="Contoh: suami_istri"
-                    value={typeForm.code}
-                    onChange={(e) => setTypeForm({ ...typeForm, code: e.target.value })}
-                  />
-                </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="type-code" className="text-sm font-medium text-slate-700">Kode Singkat (huruf kecil, tanpa spasi)</Label>
+                          <Input
+                            id="type-code"
+                            required
+                            placeholder="Contoh: suami_istri"
+                            value={typeForm.code}
+                            onChange={(e) => setTypeForm({ ...typeForm, code: e.target.value })}
+                            className="h-11 font-mono border-slate-300 focus:border-slate-900 focus:ring-slate-900"
+                          />
+                        </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="type-desc">Deskripsi & Peruntukan Surat</Label>
-                  <Input
-                    id="type-desc"
-                    required
-                    placeholder="Contoh: Untuk persyaratan nikah di KUA..."
-                    value={typeForm.desc}
-                    onChange={(e) => setTypeForm({ ...typeForm, desc: e.target.value })}
-                  />
-                </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-[11px] font-bold flex items-center justify-center">3</span>
-                        <p className="font-bold text-sm text-slate-900">Persyaratan & narasi cadangan</p>
-                      </div>
-                      <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="type-reqs">Persyaratan Dokumen (Satu per baris)</Label>
-                  <Textarea
-                    id="type-reqs"
-                    rows={4}
-                    placeholder="Fotokopi KTP Pemohon&#10;Fotokopi Kartu Keluarga (KK)&#10;Surat Pengantar RT/RW"
-                    value={typeForm.requirements}
-                    onChange={(e) => setTypeForm({ ...typeForm, requirements: e.target.value })}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Daftar berkas ini tampil sebagai panduan bagi warga saat mengajukan surat.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="type-narrative">Template Narasi Keterangan Resmi</Label>
-                  <Textarea
-                    id="type-narrative"
-                    rows={3}
-                    placeholder="Dipakai bila surat tidak punya template DOCX..."
-                    value={typeForm.templateNarrative}
-                    onChange={(e) => setTypeForm({ ...typeForm, templateNarrative: e.target.value })}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Cadangan bila surat belum punya template DOCX.
-                  </p>
-                </div>
-
-                <label htmlFor="type-active" className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 cursor-pointer text-sm font-medium">
-                  <input
-                    id="type-active"
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-primary"
-                    checked={typeForm.active}
-                    onChange={(e) => setTypeForm({ ...typeForm, active: e.target.checked })}
-                  />
-                  Aktifkan di formulir publik
-                </label>
+                        <div className="space-y-2">
+                          <Label htmlFor="type-desc" className="text-sm font-medium text-slate-700">Deskripsi & Peruntukan</Label>
+                          <Input
+                            id="type-desc"
+                            required
+                            placeholder="Contoh: Untuk persyaratan nikah di KUA..."
+                            value={typeForm.desc}
+                            onChange={(e) => setTypeForm({ ...typeForm, desc: e.target.value })}
+                            className="h-11 border-slate-300 focus:border-slate-900 focus:ring-slate-900"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-[11px] font-bold flex items-center justify-center">4</span>
-                        <p className="font-bold text-sm text-slate-900">Field form user (hasil scan)</p>
+                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center">3</div>
+                        <div className="flex-1">
+                          <Label className="font-bold text-base text-slate-900 block">Persyaratan Dokumen</Label>
+                          <p className="text-xs text-slate-600 mt-0.5">Dokumen yang perlu disiapkan warga</p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-500 mb-3">Otomatis dari template. Ubah label/tipe, tandai wajib, atau hapus yang tidak perlu ditanyakan.</p>
-                  {typeForm.templatePlaceholders.length > 0 ? (
-                    <div className="space-y-2">
-                      {typeForm.customFields.length === 0 && (
-                        <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-3">
-                          Semua field terdeteksi sebagai data bawaan (nama/NIK/WA/nomor/tanggal) — user otomatis mengisinya, tidak ada field tambahan.
-                        </p>
-                      )}
-                      {typeForm.customFields.map((f, idx) => (
-                            <div key={f.key} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
-                              <div className="flex items-center justify-between gap-2">
-                                <code className="text-[11px] font-mono bg-white border border-slate-200 rounded px-1.5 py-1 break-all">{"{{"}{f.key}{"}}"}</code>
-                                <button type="button" onClick={() => handleRemoveCustomField(idx)} className="w-7 h-7 shrink-0 rounded-lg text-red-500 hover:bg-red-50 flex items-center justify-center" title="Hapus field dari form user">
-                                  <Trash2 className="h-3.5 w-3.5" />
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="type-reqs" className="text-sm font-medium text-slate-700">Daftar Persyaratan (satu per baris)</Label>
+                          <Textarea
+                            id="type-reqs"
+                            rows={5}
+                            placeholder="Fotokopi KTP Pemohon&#10;Fotokopi Kartu Keluarga (KK)&#10;Surat Pengantar RT/RW"
+                            value={typeForm.requirements}
+                            onChange={(e) => setTypeForm({ ...typeForm, requirements: e.target.value })}
+                            className="border-slate-300 focus:border-slate-900 focus:ring-slate-900 resize-none"
+                          />
+                          <p className="text-xs text-slate-500">
+                            Panduan dokumen yang ditampilkan ke warga saat mengajukan surat
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="type-narrative" className="text-sm font-medium text-slate-700">Template Narasi (cadangan)</Label>
+                          <Textarea
+                            id="type-narrative"
+                            rows={3}
+                            placeholder="Menerangkan bahwa yang bersangkutan..."
+                            value={typeForm.templateNarrative}
+                            onChange={(e) => setTypeForm({ ...typeForm, templateNarrative: e.target.value })}
+                            className="border-slate-300 focus:border-slate-900 focus:ring-slate-900 resize-none"
+                          />
+                          <p className="text-xs text-slate-500">
+                            Dipakai jika template DOCX belum tersedia
+                          </p>
+                        </div>
+
+                        <label htmlFor="type-active" className="flex items-center gap-3 bg-white border-2 border-slate-200 rounded-xl px-4 py-3 cursor-pointer text-sm font-medium hover:border-slate-300 transition-colors">
+                          <input
+                            id="type-active"
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                            checked={typeForm.active}
+                            onChange={(e) => setTypeForm({ ...typeForm, active: e.target.checked })}
+                          />
+                          <div className="flex-1">
+                            <span className="text-slate-900 font-semibold">Aktifkan di formulir publik</span>
+                            <p className="text-xs text-slate-500 mt-0.5">Surat akan tampil di pilihan warga</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center">4</div>
+                        <div className="flex-1">
+                          <Label className="font-bold text-base text-slate-900 block">Field Isian Warga</Label>
+                          <p className="text-xs text-slate-600 mt-0.5">Otomatis terdeteksi dari baris &quot;Label :&quot; di template Word</p>
+                        </div>
+                      </div>
+                      {typeForm.templatePlaceholders.length > 0 ? (
+                        <div className="space-y-3">
+                          {typeForm.customFields.length === 0 && (
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                              <p className="text-xs text-blue-900 font-medium">Semua field terdeteksi sebagai data bawaan</p>
+                              <p className="text-xs text-blue-700 mt-1">Data seperti nama, NIK, nomor surat, dan tanggal akan diisi otomatis oleh sistem</p>
+                            </div>
+                          )}
+                          {typeForm.customFields.map((f, idx) => (
+                            <div key={f.key} className="bg-white border border-slate-200 p-4 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <code className="text-xs font-mono bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 break-all font-medium text-slate-700">{"{{"}{f.key}{"}}"}</code>
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleRemoveCustomField(idx)} 
+                                  className="w-9 h-9 shrink-0 rounded-xl text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors border border-transparent hover:border-red-200" 
+                                  title="Hapus field"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
-                              <div className="flex flex-col sm:flex-row gap-1.5">
-                                <Input className="flex-1 h-8 text-xs bg-white" value={f.label} onChange={(e) => handleCustomFieldChange(idx, { label: e.target.value })} placeholder="Label form" />
-                                <select className="h-8 text-xs border border-slate-300 rounded-md bg-white px-1.5 sm:w-28" value={f.type} onChange={(e) => handleCustomFieldChange(idx, { type: e.target.value as LetterCustomFieldDef["type"] })}>
+                              <div className="flex flex-col sm:flex-row gap-2.5">
+                                <Input 
+                                  className="flex-1 h-10 text-sm bg-white border-slate-300" 
+                                  value={f.label} 
+                                  onChange={(e) => handleCustomFieldChange(idx, { label: e.target.value })} 
+                                  placeholder="Label form" 
+                                />
+                                <select 
+                                  className="h-10 text-sm border border-slate-300 rounded-lg bg-white px-3 sm:w-32 font-medium" 
+                                  value={f.type} 
+                                  onChange={(e) => handleCustomFieldChange(idx, { type: e.target.value as LetterCustomFieldDef["type"] })}
+                                >
                                   <option value="text">Teks</option>
                                   <option value="number">Angka</option>
                                   <option value="date">Tanggal</option>
                                   <option value="textarea">Paragraf</option>
+                                  <option value="select">Dropdown Pilihan</option>
                                 </select>
-                                <label className="text-[11px] flex items-center gap-1.5 text-slate-600 whitespace-nowrap px-1">
-                                  <input type="checkbox" checked={f.required} onChange={(e) => handleCustomFieldChange(idx, { required: e.target.checked })} /> Wajib
+                                <label className="text-sm flex items-center gap-2 text-slate-700 whitespace-nowrap px-2 font-medium">
+                                  <input 
+                                    type="checkbox" 
+                                    className="h-4 w-4 rounded border-slate-300 text-slate-900" 
+                                    checked={f.required} 
+                                    onChange={(e) => handleCustomFieldChange(idx, { required: e.target.checked })} 
+                                  /> Wajib
                                 </label>
                               </div>
                             </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 text-center">Belum ada template. Upload dulu di langkah 1.</p>
-                  )}
+                          ))}
+                          <button
+                            type="button"
+                            onClick={handleAddCustomField}
+                            className="w-full h-10 rounded-xl border-2 border-dashed border-slate-300 text-sm font-medium text-slate-600 hover:border-[#1b365d] hover:text-[#1b365d] hover:bg-[#1b365d]/5 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="h-4 w-4" /> Tambah Field Manual
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center">
+                          <FileText className="h-10 w-10 mx-auto text-slate-400 mb-2" />
+                          <p className="text-sm text-slate-600 font-medium">Upload template DOCX di langkah 1</p>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed max-w-sm mx-auto">
+                            Sistem akan otomatis mendeteksi field isian dari baris yang diakhiri titik dua (:) atau titik-titik (......) di template Word.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="lg:sticky lg:top-2">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
-                    <LetterSimulationPreview
-                      templateBuffer={templateBuffer}
-                      placeholders={typeForm.templatePlaceholders}
-                      customFields={typeForm.customFields}
-                      fileName={templateFileName || undefined}
-                    />
+                  <div className="lg:sticky lg:top-6">
+                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <LetterSimulationPreview
+                        templateBuffer={templateBuffer}
+                        placeholders={typeForm.templatePlaceholders}
+                        customFields={typeForm.customFields}
+                        fileName={templateFileName || undefined}
+                      />
                     </div>
                   </div>
                 </div>
 
-                <div className="sticky bottom-0 -mx-5 md:-mx-6 px-5 md:px-6 py-3 bg-slate-50/95 backdrop-blur border-t flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                  <p className="text-[11px] text-slate-500">
-                    {typeForm.templatePlaceholders.length > 0
-                      ? `${typeForm.templatePlaceholders.length} field • ${typeForm.customFields.length} form user • cek preview kanan sebelum simpan`
-                      : "Upload template dulu agar field terisi otomatis"}
-                  </p>
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsTypeModalOpen(false)}>
+                <div className="sticky bottom-0 -mx-8 px-8 py-5 bg-white/95 backdrop-blur-sm border-t border-slate-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    {typeForm.templatePlaceholders.length > 0 ? (
+                      <>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                          <span className="font-medium text-slate-700">{typeForm.templatePlaceholders.length} field</span>
+                        </div>
+                        <span className="text-slate-300">•</span>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          <span className="font-medium text-slate-700">{typeForm.customFields.length} form user</span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-slate-500">Upload template agar field terdeteksi otomatis</p>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={() => setIsTypeModalOpen(false)} className="h-11 px-6 border-slate-300 hover:bg-slate-50">
                       Batal
                     </Button>
-                    <Button type="submit" disabled={scanningTemplate || uploadingTemplate} className="bg-[#1b365d] hover:bg-[#152a48]">
-                      {scanningTemplate ? "Memindai..." : uploadingTemplate ? "Mengunggah..." : "Simpan Jenis Surat"}
+                    <Button type="submit" disabled={scanningTemplate || uploadingTemplate} className="h-11 px-6 bg-slate-900 hover:bg-slate-800 text-white">
+                      {scanningTemplate ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Memindai...
+                        </>
+                      ) : uploadingTemplate ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Mengunggah...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Simpan Jenis Surat
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
               </form>
             </CardContent>
+            </div>
           </Card>
         </div>
       )}

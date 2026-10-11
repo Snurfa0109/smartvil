@@ -6,8 +6,10 @@ import { apiList, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 
 export default function PengaduanDashboardPage() {
+  const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedComplaint, setSelectedComplaint] = useState<any | null>(null);
@@ -87,7 +89,7 @@ export default function PengaduanDashboardPage() {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Gagal memperbarui status pengaduan.");
+      showError("Gagal memperbarui status pengaduan.");
     }
   };
 
@@ -99,7 +101,7 @@ export default function PengaduanDashboardPage() {
         admin_response: replyText.trim(),
         status: selectedComplaint?.status === "pending" ? "processed" : selectedComplaint?.status,
       });
-      alert("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
+      success("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
         setSelectedComplaint((prev: any) => ({
@@ -110,28 +112,34 @@ export default function PengaduanDashboardPage() {
       }
     } catch (error) {
       console.error("Error saving reply:", error);
-      alert("Gagal menyimpan tanggapan.");
+      showError("Gagal menyimpan tanggapan.");
     } finally {
       setSavingReply(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus pengaduan ini secara permanen?")) {
+    const confirmed = await showConfirm({
+      title: "Hapus Pengaduan?",
+      message: "Apakah Anda yakin ingin menghapus pengaduan ini secara permanen?",
+      variant: "danger",
+      confirmLabel: "Ya, Hapus",
+    });
+    if (confirmed) {
       try {
         await apiDelete("complaints", id);
         if (selectedComplaint?.id === id) setSelectedComplaint(null);
         fetchComplaints();
       } catch (error) {
         console.error("Error deleting complaint:", error);
-        alert("Gagal menghapus pengaduan.");
+        showError("Gagal menghapus pengaduan.");
       }
     }
   };
 
   const handleSendWhatsApp = (item: any) => {
     if (!item.phone) {
-      alert("Pelapor tidak mencantumkan nomor telepon.");
+      warning("Pelapor tidak mencantumkan nomor telepon.");
       return;
     }
     let clean = item.phone.replace(/\D/g, "");
