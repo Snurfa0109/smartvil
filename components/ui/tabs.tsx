@@ -3,6 +3,13 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
+interface TabsContextValue {
+  activeTab?: string
+  setActiveTab?: (value: string) => void
+}
+
+const TabsContext = React.createContext<TabsContextValue>({})
+
 const Tabs = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
@@ -24,14 +31,11 @@ const Tabs = React.forwardRef<
   )
 
   return (
-    <div ref={ref} className={cn("", className)} {...props}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, { activeTab, setActiveTab } as any)
-        }
-        return child
-      })}
-    </div>
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div ref={ref} className={cn("", className)} {...props}>
+        {children}
+      </div>
+    </TabsContext.Provider>
   )
 })
 Tabs.displayName = "Tabs"
@@ -40,7 +44,6 @@ const TabsList = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
-  const { activeTab, setActiveTab, ...domProps } = props as any
   return (
     <div
       ref={ref}
@@ -48,14 +51,9 @@ const TabsList = React.forwardRef<
         "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
         className
       )}
-      {...domProps}
+      {...props}
     >
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, { activeTab, setActiveTab } as any)
-        }
-        return child
-      })}
+      {children}
     </div>
   )
 })
@@ -64,7 +62,11 @@ TabsList.displayName = "TabsList"
 const TabsTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { value: string; activeTab?: string; setActiveTab?: (value: string) => void }
->(({ className, value, activeTab, setActiveTab, onClick, ...props }, ref) => {
+>(({ className, value, activeTab: propActiveTab, setActiveTab: propSetActiveTab, onClick, ...props }, ref) => {
+  const context = React.useContext(TabsContext)
+  const activeTab = propActiveTab !== undefined ? propActiveTab : context.activeTab
+  const setActiveTab = propSetActiveTab !== undefined ? propSetActiveTab : context.setActiveTab
+
   const isActive = activeTab === value
   return (
     <button
@@ -89,10 +91,11 @@ TabsTrigger.displayName = "TabsTrigger"
 const TabsContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { value: string; activeTab?: string }
->(({ className, value, activeTab, ...props }, ref) => {
-  if (activeTab !== value) return null
+>(({ className, value, activeTab: propActiveTab, ...props }, ref) => {
+  const context = React.useContext(TabsContext)
+  const activeTab = propActiveTab !== undefined ? propActiveTab : context.activeTab
 
-  const { setActiveTab, ...domProps } = props as any
+  if (activeTab !== value) return null
 
   return (
     <div
@@ -101,10 +104,10 @@ const TabsContent = React.forwardRef<
         "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className
       )}
-      {...domProps}
+      {...props}
     />
   )
 })
 TabsContent.displayName = "TabsContent"
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+export { Tabs, TabsList, TabsTrigger, TabsContent, TabsContext }

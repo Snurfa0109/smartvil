@@ -235,11 +235,11 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       try {
         const data = await apiGet("news", id);
         if (data) {
-          setTitle(data.title ?? "");
-          setCategory(data.category ?? "");
-          setDate(data.date ?? new Date().toISOString().split("T")[0]);
-          setImageUrl(data.image_url ?? "");
-          const content = data.content ?? "";
+          setTitle(String(data.title ?? ""));
+          setCategory(String(data.category ?? ""));
+          setDate(String(data.date ?? new Date().toISOString().split("T")[0]));
+          setImageUrl(String(data.image_url ?? ""));
+          const content = String(data.content ?? "");
           setLoadedContent(content || "<p></p>");
         }
         setLoading(false);

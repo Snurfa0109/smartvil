@@ -17,10 +17,29 @@ import {
   Phone,
   ArrowRight,
   ExternalLink,
+  Building2,
+  Compass,
+  Award,
+  Layers,
+  CheckCircle2,
+  User,
+  BookOpen,
+  Landmark
 } from "lucide-react";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
-
 import { PageBanner } from "@/components/layout/page-banner";
+
+// Data Sebaran 8 Rukun Warga (RW) Kelurahan Banjar Agung
+const RW_DATA = [
+  { rw: "RW 01", wilayah: "Lingkungan Bogeg", cakupan: "Pusat hunian warga asli & akses jalan utama", rtCount: 4 },
+  { rw: "RW 02", wilayah: "Lingkungan Banjar Agung Timur", cakupan: "Area pemukiman asri & sentra usaha warga", rtCount: 4 },
+  { rw: "RW 03", wilayah: "Perumahan Bumi Agung Permai (BAP) I", cakupan: "Kawasan BAP I Bagian Utara (Blok A – C)", rtCount: 5 },
+  { rw: "RW 04", wilayah: "Perumahan Bumi Agung Permai (BAP) I", cakupan: "Kawasan BAP I Bagian Selatan (Blok D – F)", rtCount: 5 },
+  { rw: "RW 05", wilayah: "Perumahan Bumi Agung Permai (BAP) II", cakupan: "Kawasan pemukiman BAP II & sarana fasilitas sosial", rtCount: 4 },
+  { rw: "RW 06", wilayah: "Perumahan Bumi Mutiara Serang", cakupan: "Hunian keluarga terpadu & masjid jami'", rtCount: 4 },
+  { rw: "RW 07", wilayah: "Lingkungan Cilaku Perbatasan", cakupan: "Kawasan hijau & pembinaan pertanian perkotaan", rtCount: 3 },
+  { rw: "RW 08", wilayah: "Kawasan Niaga & Hunian Baru", cakupan: "Sentra pertokoan, UMKM, & pemukiman berkembang", rtCount: 3 },
+];
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
@@ -46,8 +65,99 @@ export default function ProfilePage() {
     .map((m) => m.trim())
     .filter(Boolean);
 
+  const historyParagraphs = profile.history
+    .split("\n\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  // List aparatur dinamis (bersumber dari Admin CMS Settings)
+  const officialsList =
+    profile.officials && profile.officials.length > 0
+      ? profile.officials
+      : [
+          {
+            id: "head",
+            name: profile.headName,
+            title: profile.headTitle,
+            nip: profile.headNip,
+            photo: profile.headPhoto,
+            roleBadge: "PIMPINAN",
+            division: "Kelurahan",
+            duties:
+              "Penanggung jawab kebijakan wilayah, pembinaan kemasyarakatan, dan penandatanganan legalitas surat resmi warga.",
+          },
+          {
+            id: "sec",
+            name: profile.secretaryName,
+            title: profile.secretaryTitle,
+            nip: profile.secretaryNip,
+            photo: profile.secretaryPhoto,
+            roleBadge: "SEKRETARIAT",
+            division: "Sekretariat",
+            duties:
+              "Koordinator tata usaha, pengelolaan anggaran, dan administrasi kepegawaian internal kelurahan.",
+          },
+          {
+            id: "kasi-pem",
+            name: profile.kasiPemerintahanName,
+            title: profile.kasiPemerintahanTitle,
+            nip: profile.kasiPemerintahanNip,
+            photo: profile.kasiPemerintahanPhoto,
+            roleBadge: "KASI",
+            division: "Trantib & Wilayah",
+            duties:
+              "Pembinaan ketertiban umum, penanganan sengketa warga, dan koordinasi dengan ketua 8 RW & 32 RT.",
+          },
+          {
+            id: "kasi-pel",
+            name: profile.kasiPelayananName,
+            title: profile.kasiPelayananTitle,
+            nip: profile.kasiPelayananNip,
+            photo: profile.kasiPelayananPhoto,
+            roleBadge: "KASI",
+            division: "Pelayanan Umum",
+            duties:
+              "Verifikasi berkas persyaratan surat keterangan, legalisasi dokumen kependudukan, dan loket PATEN.",
+          },
+        ];
+
+  const headOfficial = officialsList[0];
+  const staffOfficials = officialsList.slice(1);
+
+  // List fasilitas umum dinamis (bersumber dari Admin CMS Settings)
+  const facilitiesList =
+    profile.facilities && profile.facilities.length > 0
+      ? profile.facilities
+      : [
+          {
+            id: "fac-1",
+            title: profile.facility1Title || "Balai Warga & Posyandu Terpadu",
+            category: "Fasilitas Sosial",
+            desc:
+              profile.facility1Desc ||
+              "Tersedia balai pertemuan warga di tiap RW dan Posyandu aktif untuk pemantauan tumbuh kembang balita serta lansia.",
+          },
+          {
+            id: "fac-2",
+            title: profile.facility2Title || "Puskesmas Pembantu Cipocok Jaya",
+            category: "Kesehatan Primer",
+            desc:
+              profile.facility2Desc ||
+              "Akses layanan kesehatan tingkat pertama, imunisasi balita, dan rujukan BPJS Kesehatan warga kelurahan.",
+          },
+          {
+            id: "fac-3",
+            title: profile.facility3Title || "Kawasan Perumahan & Niaga Mandiri",
+            category: "Pemukiman",
+            desc:
+              profile.facility3Desc ||
+              "Perumahan Bumi Agung Permai (BAP) I & II serta Bumi Mutiara Serang dengan fasilitas ibadah dan olahraga.",
+          },
+        ];
+
   return (
     <div className="space-y-10 pb-16">
+      {/* 1. Banner Resmi Halaman Profil */}
       <PageBanner
         pageKey="profil"
         overrideTitle={profile.title}
@@ -55,366 +165,577 @@ export default function ProfilePage() {
       />
 
       <div className="container mx-auto px-6 md:px-12 space-y-12">
-
-      {/* Info Identitas Resmi & Wilayah */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: "Kode Kemendagri", val: "36.73.05.1004" },
-          { label: "Kode Pos", val: "42122" },
-          { label: "Kecamatan", val: "Cipocok Jaya" },
-          { label: "Kota / Provinsi", val: "Kota Serang, Banten" },
-        ].map((item, idx) => (
-          <div key={idx} className="bg-white border border-slate-200/80 rounded-xl p-4 text-center shadow-xs">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">{item.label}</span>
-            <span className="text-sm md:text-base font-bold text-slate-800 mt-1 block">{item.val}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Sejarah & Selayang Pandang */}
-      <section className="grid md:grid-cols-2 gap-8 items-stretch">
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 md:p-7 flex flex-col justify-between shadow-xs space-y-6">
-          {/* Top Header */}
-          <div className="flex items-center justify-between gap-4 pb-5 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200/80 p-1 flex items-center justify-center shrink-0">
-                <Image
-                  src="/images/logo-kota-serang.png"
-                  alt="Logo Kota Serang"
-                  width={28}
-                  height={28}
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  Pemerintah Kota Serang
-                </p>
-                <h3 className="text-sm font-bold text-slate-900">
-                  {profile.villageName || "Kelurahan Banjar Agung"}
-                </h3>
-              </div>
-            </div>
-            <span className="text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md shrink-0">
-              Kecamatan Cipocok Jaya
+        {/* 2. Quick Jump Anchor Bar (UCD Navigation - Ramah Lansia & Cepat Dipindai) */}
+        <div className="sticky top-20 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2 sm:p-2.5 shadow-sm">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 shrink-0 hidden sm:inline-block">
+              Pintasan:
             </span>
-          </div>
-
-          {/* Core Services */}
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-base font-bold text-slate-900">
-                Pelayanan Administrasi Terpadu (PATEN)
-              </h4>
-              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Jam Kerja: Senin – Jumat, 08.00 – 15.30 WIB</span>
-              </p>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
-                <p className="text-xs font-semibold text-slate-800">
-                  Layanan Surat Keterangan Warga
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Pengurusan SKU, SKTM, Keterangan Domisili, dan Pengantar Administrasi Kependudukan.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
-                <p className="text-xs font-semibold text-slate-800">
-                  Program Warga & Kebersihan Lingkungan
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Kegiatan gotong royong terpadu &quot;Rabu Asri&quot; dan pembinaan kemasyarakatan di wilayah RW.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50">
-                <p className="text-xs font-semibold text-slate-800">
-                  Integrasi Fasilitas Publik
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                  Kawasan layanan terpadu dengan Puskesmas Banjar Agung dan Posyandu kelurahan.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5">
-            <Link
-              href="/layanan"
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Layanan Permohonan Surat</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
             <a
-              href={`https://wa.me/${(profile.villagePhone || "0813-1505-3901").replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors"
+              href="#identitas"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0"
             >
-              <Phone className="w-3.5 h-3.5" />
-              <span>Kontak WhatsApp</span>
+              <Building2 className="w-3.5 h-3.5 text-[#1b365d]" />
+              <span>Identitas &amp; PATEN</span>
+            </a>
+            <a
+              href="#aparatur"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <Users className="w-3.5 h-3.5 text-[#1b365d]" />
+              <span>Aparatur Kelurahan</span>
+            </a>
+            <a
+              href="#visimisi"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <Target className="w-3.5 h-3.5 text-[#1b365d]" />
+              <span>Visi &amp; Misi</span>
+            </a>
+            <a
+              href="#sejarah"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <History className="w-3.5 h-3.5 text-[#1b365d]" />
+              <span>Sejarah Wilayah</span>
+            </a>
+            <a
+              href="#teritorial"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#1b365d]" />
+              <span>Peta &amp; Sebaran RW</span>
+            </a>
+            <a
+              href="#fasilitas"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <Home className="w-3.5 h-3.5 text-[#1b365d]" />
+              <span>Fasilitas Publik</span>
             </a>
           </div>
         </div>
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[#1b365d]">
-            <History className="h-6 w-6" />
-            <h2 className="text-2xl font-bold">Sejarah & Profil Wilayah</h2>
-          </div>
-          <div className="text-muted-foreground leading-relaxed text-justify space-y-3 text-sm">
-            {profile.history.split("\n\n").map((para, idx) => (
-              <p key={idx}>{para}</p>
+
+        {/* 3. Info Identitas Resmi Legalitas Wilayah (Kode Kemendagri) */}
+        <section id="identitas" className="space-y-6 scroll-mt-28">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            {[
+              { label: "Kode Wilayah Kemendagri", val: profile.kemendagriCode || "36.73.05.1004", badge: "Resmi" },
+              { label: "Kode Pos Wilayah", val: profile.postalCode || "42122", badge: "Pos" },
+              { label: "Kecamatan", val: "Cipocok Jaya", badge: "Kecamatan" },
+              { label: "Pemerintah Daerah", val: "Kota Serang, Banten", badge: "Kota" },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 text-center shadow-xs hover:border-[#1b365d]/40 transition-colors"
+              >
+                <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    {item.label}
+                  </span>
+                </div>
+                <span className="text-sm md:text-base font-extrabold text-[#1b365d] block font-mono">
+                  {item.val}
+                </span>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Visi & Misi */}
-      <section className="grid md:grid-cols-2 gap-8">
-        <Card className="bg-gradient-to-br from-blue-50/40 to-white border border-[#1b365d]/15 shadow-xs">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-[#1b365d] mb-1">
-              <Target className="h-5 w-5" />
-              <CardTitle className="text-lg">Visi Kelurahan</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-base font-medium italic text-foreground leading-relaxed">
-              &quot;{profile.vision}&quot;
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50/40 to-white border border-[#1b365d]/15 shadow-xs">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-[#1b365d] mb-1">
-              <Target className="h-5 w-5" />
-              <CardTitle className="text-lg">Misi Pembangunan & Pelayanan</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
-              {missionItems.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2.5">
-                  <span className="h-5 w-5 rounded-full bg-[#1b365d]/15 text-[#1b365d] text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">
-                    {idx + 1}
+          {/* Kartu Pelayanan Terpadu & Standar PATEN */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs">
+            <div className="grid md:grid-cols-12 gap-6 items-center">
+              <div className="md:col-span-8 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-md">
+                    Standar Pelayanan Prima
                   </span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Fasilitas & Kawasan Pemukiman Utama */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-2 text-[#1b365d]">
-          <Home className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">Fasilitas & Pemukiman Utama</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-              <Home className="h-5 w-5" />
-            </div>
-            <h3 className="font-bold text-base text-foreground">{profile.facility1Title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {profile.facility1Desc}
-            </p>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <HeartHandshake className="h-5 w-5" />
-            </div>
-            <h3 className="font-bold text-base text-foreground">{profile.facility2Title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {profile.facility2Desc}
-            </p>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <h3 className="font-bold text-base text-foreground">{profile.facility3Title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {profile.facility3Desc}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Struktur Pemerintahan Kelurahan */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-2 text-[#1b365d]">
-          <Users className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">Struktur Organisasi Kelurahan</h2>
-        </div>
-        <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[420px]">
-          {/* Lurah */}
-          <div className="flex flex-col items-center">
-            <div className="relative group">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-[#1b365d] to-[#c9971c] p-1 shadow-md">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-3xl font-extrabold text-[#1b365d]">
-                  {profile.headName.charAt(0)}
+                  <span className="text-xs text-slate-500">• Bebas Biaya (Rp 0)</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+                  Pelayanan Administrasi Terpadu Kelurahan (PATEN) Banjar Agung
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl">
+                  Sistem pelayanan administrasi satu pintu bagi masyarakat di tingkat kelurahan. Mendukung pengurusan Surat Keterangan Usaha (SKU), Keterangan Tidak Mampu (SKTM), Keterangan Domisili, dan Pengantar Administrasi Kependudukan (KTP/KK) secara cepat dan transparan.
+                </p>
+                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#1b365d]" />
+                    <span>Jam Operasional: Senin – Jumat, 08.00 – 15.30 WIB</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Estimasi Selesai: 1 – 2 Hari Kerja</span>
+                  </span>
                 </div>
               </div>
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#1b365d] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs whitespace-nowrap">
-                LURAH
-              </span>
-            </div>
-            <div className="text-center mt-3">
-              <h3 className="font-bold text-lg text-foreground">{profile.headName}</h3>
-              <p className="text-sm text-[#1b365d] font-medium">{profile.headTitle}</p>
+
+              <div className="md:col-span-4 flex flex-col sm:flex-row md:flex-col gap-2.5">
+                <Link
+                  href="/layanan"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-bold py-3 px-4 rounded-xl shadow-xs transition-all"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Ajukan Surat Mandiri Online</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <a
+                  href={`https://wa.me/${(profile.villagePhone || "0813-1505-3901").replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-xl transition-all"
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Konsultasi Loket PATEN</span>
+                </a>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div className="w-px h-8 bg-gray-300 my-3" />
+        {/* 4. Struktur Organisasi & Aparatur Kelurahan (Sinkron dengan Admin CMS) */}
+        <section id="aparatur" className="space-y-6 scroll-mt-28">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                  Struktur Organisasi &amp; Aparatur Kelurahan
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  Pejabat struktural dan aparatur penggerak pelayanan masyarakat Kelurahan Banjar Agung
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full w-fit">
+              Diverifikasi Pemerintah Kota Serang
+            </span>
+          </div>
 
-          {/* Staf / Aparatur Kelurahan */}
-          <div className="w-full max-w-3xl border-t border-gray-300 relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-6 bg-gray-300" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 w-full">
-              {/* Seklur */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#1b365d] to-blue-400 p-1 mb-2">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xl font-bold text-[#1b365d]">
-                    {profile.secretaryName.charAt(0)}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 space-y-8 shadow-xs">
+            {/* Kartu Pimpinan Utama: LURAH */}
+            {headOfficial && (
+              <div className="max-w-md mx-auto">
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-xs relative">
+                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#1b365d] text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-2xs">
+                    {headOfficial.roleBadge || "KEPALA KELURAHAN (LURAH)"}
+                  </span>
+
+                  <div className="mt-3 flex flex-col items-center">
+                    <div className="w-24 h-24 rounded-full border border-slate-200 bg-slate-50 shadow-2xs mb-3 flex items-center justify-center overflow-hidden">
+                      {headOfficial.photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={headOfficial.photo}
+                          alt={headOfficial.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <User className="w-12 h-12" />
+                        </div>
+                      )}
+                    </div>
+
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                      {headOfficial.name || "Nama Pimpinan"}
+                    </h3>
+                    <p className="text-xs font-semibold text-[#1b365d] mt-0.5">
+                      {headOfficial.title || "Kepala Kelurahan (Lurah)"}
+                    </p>
+
+                    {headOfficial.nip && (
+                      <div className="mt-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-md text-[11px] font-mono text-slate-600">
+                        NIP: {headOfficial.nip}
+                      </div>
+                    )}
+
+                    {headOfficial.duties && (
+                      <p className="text-xs text-slate-500 mt-2.5 leading-relaxed max-w-xs">
+                        {headOfficial.duties}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <h4 className="font-bold text-sm text-foreground">{profile.secretaryName}</h4>
-                <p className="text-xs text-[#1b365d] font-medium">{profile.secretaryTitle}</p>
-                <span className="text-[10px] text-muted-foreground mt-1 bg-slate-100 px-2 py-0.5 rounded">Sekretariat Kelurahan</span>
               </div>
+            )}
 
-              {/* Kasi Pemerintahan */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 p-1 mb-2">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xl font-bold text-emerald-700">
-                    {profile.kasiPemerintahanName.charAt(0)}
-                  </div>
+            {/* Garis Penghubung Hirarki */}
+            {staffOfficials.length > 0 && (
+              <div className="flex flex-col items-center">
+                <div className="w-px h-6 bg-slate-200" />
+                <div className="w-full max-w-4xl border-t border-slate-200 relative">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-6 bg-slate-200" />
                 </div>
-                <h4 className="font-bold text-sm text-foreground">{profile.kasiPemerintahanName}</h4>
-                <p className="text-xs text-[#1b365d] font-medium">{profile.kasiPemerintahanTitle}</p>
-                <span className="text-[10px] text-muted-foreground mt-1 bg-slate-100 px-2 py-0.5 rounded">Wilayah & Ketertiban Umum</span>
               </div>
+            )}
 
-              {/* Kasi Pelayanan */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#c9971c] to-amber-400 p-1 mb-2">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xl font-bold text-[#c9971c]">
-                    {profile.kasiPelayananName.charAt(0)}
+            {/* Grid Aparatur & Staf Kelurahan (Dinamis dari Admin CMS) */}
+            {staffOfficials.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-1">
+                {staffOfficials.map((off, idx) => (
+                  <div
+                    key={off.id || idx}
+                    className="bg-white border border-slate-200 rounded-2xl p-5 text-center shadow-xs flex flex-col items-center justify-between hover:border-slate-300 transition-colors"
+                  >
+                    <div className="flex flex-col items-center w-full">
+                      <div className="w-18 h-18 rounded-full border border-slate-200 bg-slate-50 shadow-2xs mb-3 flex items-center justify-center overflow-hidden">
+                        {off.photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={off.photo}
+                            alt={off.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-base font-mono">
+                            {off.name ? off.name.charAt(0).toUpperCase() : "A"}
+                          </div>
+                        )}
+                      </div>
+
+                      {(off.roleBadge || off.division) && (
+                        <span className="text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-700 px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-1.5">
+                          {off.division || off.roleBadge}
+                        </span>
+                      )}
+
+                      <h4 className="font-bold text-sm text-slate-900 leading-snug">
+                        {off.name}
+                      </h4>
+                      <p className="text-xs font-semibold text-[#1b365d] mt-0.5">
+                        {off.title}
+                      </p>
+
+                      {off.nip && (
+                        <span className="text-[10px] font-mono text-slate-500 mt-1 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
+                          NIP: {off.nip}
+                        </span>
+                      )}
+                    </div>
+
+                    {off.duties && (
+                      <p className="text-[11px] text-slate-500 mt-3 pt-3 border-t border-slate-100 leading-relaxed w-full">
+                        {off.duties}
+                      </p>
+                    )}
                   </div>
-                </div>
-                <h4 className="font-bold text-sm text-foreground">{profile.kasiPelayananName}</h4>
-                <p className="text-xs text-[#1b365d] font-medium">{profile.kasiPelayananTitle}</p>
-                <span className="text-[10px] text-muted-foreground mt-1 bg-slate-100 px-2 py-0.5 rounded">Administrasi & Surat Menyurat</span>
+                ))}
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Peta Wilayah & Geografis Kelurahan */}
-      <section className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        {/* 5. Visi & Misi Pembangunan */}
+        <section id="visimisi" className="space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
             <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
-              <MapPin className="w-5 h-5" />
+              <Target className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Peta Wilayah & Batas Kelurahan</h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Batas administrasi dan pemetaan spasial wilayah Kelurahan Banjar Agung</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                Visi &amp; Misi Pembangunan
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Arah kebijakan dan komitmen pelayanan publik jangka panjang Kelurahan Banjar Agung
+              </p>
             </div>
           </div>
-          <a
-            href="https://share.google/rIjtFAgp2fw7DaBNx"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-[#1b365d] hover:bg-slate-50 bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs transition-all w-fit"
-          >
-            <span>Buka Peta di Google Maps</span>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-          </a>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Kolom Kiri: Peta Batas Wilayah Polygon */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col">
-            <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-slate-100 group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/peta-wilayah-banjaragung.png"
-                alt="Peta Batas Administrasi Kelurahan Banjar Agung"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute top-3 left-3 bg-[#0F2236]/90 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/20 shadow-md flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                <span>Batas Administrasi Kelurahan Banjar Agung</span>
+          <div className="grid md:grid-cols-12 gap-6 items-stretch">
+            {/* Visi */}
+            <div className="md:col-span-5 bg-gradient-to-br from-[#1b365d] to-[#12243d] text-white rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-sm space-y-4">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 bg-white/10 px-3 py-1 rounded-md inline-block">
+                  Visi Kelurahan
+                </span>
+                <h3 className="text-lg font-bold text-white mt-3">
+                  Arah Pembangunan Menuju Kota Serang Berkelanjutan
+                </h3>
+                <blockquote className="mt-4 text-sm md:text-base leading-relaxed text-blue-50 italic border-l-2 border-amber-400 pl-4 py-1">
+                  &quot;{profile.vision}&quot;
+                </blockquote>
+              </div>
+              <div className="pt-4 border-t border-white/15 text-xs text-blue-200 flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Selaras dengan RPJMD Pemerintah Kota Serang</span>
               </div>
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span>Sumber: Google Maps • Wilayah Hukum Kec. Cipocok Jaya</span>
-              <span className="font-mono font-semibold text-[#1b365d]">Luas: {profile.geoArea}</span>
+
+            {/* Misi */}
+            <div className="md:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs space-y-4">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#1b365d] bg-blue-50 border border-blue-200 px-3 py-1 rounded-md inline-block">
+                Misi Pelayanan &amp; Wilayah
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                5 Prioritas Aksi Pelayanan Masyarakat
+              </h3>
+              <ul className="space-y-3 pt-1">
+                {missionItems.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-700">
+                    <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                      {idx + 1}
+                    </span>
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* 6. Sejarah & Karakteristik Wilayah (UCD Chunking - Mengurangi Cognitive Load) */}
+        <section id="sejarah" className="space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+            <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
+              <History className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                Sejarah &amp; Selayang Pandang Wilayah
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Latar belakang perkembangan kawasan dan kearifan masyarakat lokal
+              </p>
             </div>
           </div>
 
-          {/* Kolom Kanan: Rincian Luas & Batas-Batas */}
-          <div className="lg:col-span-5 flex flex-col justify-between gap-4">
-            <Card className="border border-slate-200/80 shadow-xs">
-              <CardHeader className="pb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cakupan Wilayah</span>
-                <CardTitle className="text-2xl font-extrabold text-[#1b365d] font-mono">
-                  {profile.geoArea}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {profile.geoAreaDesc}
-                </p>
-                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Koordinat:</span>
-                  <span className="font-mono font-semibold text-slate-800">{profile.geoCoord}</span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* 3 Kartu Sorotan Sejarah */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-2">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Gerbang Ibu Kota Banten</h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Terletak di Kecamatan Cipocok Jaya sebagai kawasan penyangga utama pusat pemerintahan Provinsi Banten (KP3B) dan simpul akses Gerbang Tol Serang Timur.
+              </p>
+            </div>
 
-            <Card className="border border-slate-200/80 shadow-xs flex-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold text-slate-900">Batas-Batas Wilayah</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <ul className="text-xs space-y-2.5 text-muted-foreground">
+            <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-2">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                <Home className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Kawasan Pemukiman Mandiri</h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Tumbuh pesat dengan sentra hunian keluarga seperti Perumahan Bumi Agung Permai (BAP) I &amp; II serta Bumi Mutiara Serang dengan kerukunan warga yang kokoh.
+              </p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-2">
+              <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                <HeartHandshake className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-sm text-slate-900">Kearifan &quot;Rabu Asri&quot;</h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Tradisi gotong royong kerja bakti terpadu, pembinaan posyandu di setiap RW, dan penyaluran bantuan sosial pangan yang tepat sasaran bagi warga prasejahtera.
+              </p>
+            </div>
+          </div>
+
+          {/* Narasi Rinci Sejarah */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs">
+            <h3 className="font-bold text-base text-slate-900 mb-3 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-[#1b365d]" />
+              <span>Kilas Sejarah &amp; Perkembangan Kelurahan</span>
+            </h3>
+            <div className="text-slate-600 leading-relaxed space-y-3 text-xs sm:text-sm text-justify">
+              {historyParagraphs.map((para, idx) => (
+                <p key={idx}>{para}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 7. Peta Batas Wilayah Spasial & Sebaran 8 Rukun Warga (RW) */}
+        <section id="teritorial" className="space-y-6 scroll-mt-28">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                  Peta Batas Spasial &amp; Sebaran Wilayah RW
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  Pemetaan batas administrasi kelurahan dan rincian 8 Rukun Warga (32 RT)
+                </p>
+              </div>
+            </div>
+            <a
+              href={profile.googleMapsUrl || "https://maps.google.com/?q=Kelurahan+Banjar+Agung+Cipocok+Jaya+Kota+Serang"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-[#1b365d] hover:bg-slate-50 bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs transition-all w-fit"
+            >
+              <span>Buka Google Maps</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Peta Polygon */}
+            <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col justify-between">
+              <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-slate-100 group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/peta-wilayah-banjaragung.png"
+                  alt="Peta Batas Administrasi Kelurahan Banjar Agung"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-3 left-3 bg-[#0F2236]/90 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/20 shadow-md flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <span>Batas Administrasi Kelurahan Banjar Agung</span>
+                </div>
+              </div>
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                <span>Luas Wilayah: <strong className="font-mono text-[#1b365d]">{profile.geoArea}</strong></span>
+                <span className="font-mono text-slate-500">{profile.geoCoord}</span>
+              </div>
+            </div>
+
+            {/* Batas-Batas 4 Arah Mata Angin */}
+            <div className="lg:col-span-5 flex flex-col justify-between gap-4">
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Batas Administratif
+                </span>
+                <h3 className="font-bold text-sm text-slate-900">
+                  Batas Wilayah dengan Kelurahan Tetangga
+                </h3>
+                <ul className="text-xs space-y-2.5 text-slate-600 pt-1">
                   <li className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="font-semibold text-slate-700">Utara</span>
-                    <span className="text-right">{profile.boundaryNorth}</span>
+                    <span className="font-bold text-slate-700">Utara</span>
+                    <span className="text-right font-medium">{profile.boundaryNorth}</span>
                   </li>
                   <li className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="font-semibold text-slate-700">Selatan</span>
-                    <span className="text-right">{profile.boundarySouth}</span>
+                    <span className="font-bold text-slate-700">Selatan</span>
+                    <span className="text-right font-medium">{profile.boundarySouth}</span>
                   </li>
                   <li className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="font-semibold text-slate-700">Timur</span>
-                    <span className="text-right">{profile.boundaryEast}</span>
+                    <span className="font-bold text-slate-700">Timur</span>
+                    <span className="text-right font-medium">{profile.boundaryEast}</span>
                   </li>
                   <li className="flex justify-between pt-0.5">
-                    <span className="font-semibold text-slate-700">Barat</span>
-                    <span className="text-right">{profile.boundaryWest}</span>
+                    <span className="font-bold text-slate-700">Barat</span>
+                    <span className="text-right font-medium">{profile.boundaryWest}</span>
                   </li>
                 </ul>
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-5 shadow-xs space-y-2">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-blue-700" />
+                  <span>Karakteristik Wilayah</span>
+                </h4>
+                <p className="text-xs text-blue-900/80 leading-relaxed">
+                  {profile.geoAreaDesc}
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+
+          {/* Tabel Sebaran 8 Rukun Warga (RW) */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#1b365d]" />
+                  <span>Direktori Teritorial 8 Rukun Warga (RW) &amp; 32 RT</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Cek kawasan pemukiman atau perumahan tempat domisili tempat tinggal Anda
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full w-fit">
+                Total: 8 RW • 32 RT Aktif
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {RW_DATA.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5 space-y-1.5 hover:bg-white hover:border-[#1b365d]/40 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-[#1b365d] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-2xs font-mono">
+                      {item.rw}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-500">
+                      {item.rtCount} Rukun Tetangga (RT)
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-xs text-slate-900 leading-snug">
+                    {item.wilayah}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    {item.cakupan}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 8. Fasilitas & Kawasan Pemukiman Utama */}
+        <section id="fasilitas" className="space-y-6 scroll-mt-28">
+          <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+            <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
+              <Home className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                Fasilitas Publik &amp; Pemukiman Utama
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Sarana sosial, pelayanan kesehatan primer, dan kawasan pemukiman warga
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {facilitiesList.map((fac, idx) => {
+              const iconStyles = [
+                { bg: "bg-blue-50", text: "text-blue-600", borderHover: "hover:border-blue-300", icon: Home },
+                { bg: "bg-emerald-50", text: "text-emerald-600", borderHover: "hover:border-emerald-300", icon: HeartHandshake },
+                { bg: "bg-amber-50", text: "text-amber-700", borderHover: "hover:border-amber-300", icon: ShieldCheck },
+                { bg: "bg-indigo-50", text: "text-indigo-600", borderHover: "hover:border-indigo-300", icon: Building2 },
+                { bg: "bg-slate-100", text: "text-slate-700", borderHover: "hover:border-slate-300", icon: Landmark },
+              ];
+              const style = iconStyles[idx % iconStyles.length];
+              const IconComp = style.icon;
+
+              return (
+                <div
+                  key={fac.id || idx}
+                  className={`bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 ${style.borderHover} transition-colors flex flex-col justify-between`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`w-10 h-10 rounded-xl ${style.bg} ${style.text} flex items-center justify-center font-bold`}>
+                        <IconComp className="h-5 w-5" />
+                      </div>
+                      {fac.category && (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          {fac.category}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-base text-slate-900 leading-snug">{fac.title}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {fac.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+      </div>
     </div>
-  </div>
   );
 }

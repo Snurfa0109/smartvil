@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
@@ -174,7 +174,7 @@ export default function PengaduanDashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Daftar Pengaduan Masuk</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Kelola dan tindak lanjuti aspirasi serta keluhan warga kelurahan.</p>
+          <p className="text-slate-500 text-sm mt-0.5">Kelola dan tindak lanjuti aspirasi warga kelurahan. Data identitas dan kontak pelapor bersifat internal dan terlindungi.</p>
         </div>
         <div className="text-sm bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20 px-3 py-1.5 rounded-lg font-semibold">
           Total: {complaints.length} Laporan

@@ -5,119 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserCheck, Baby, Briefcase, GraduationCap, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, LayoutGrid, MapPin, Calendar, ArrowRight, BarChart3, PieChart, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { stripHtml } from "@/lib/utils";
 import { PageBanner } from "@/components/layout/page-banner";
 import { apiList } from "@/lib/api";
+import { getSiteSettings, DEFAULT_SITE_SETTINGS, ExternalLinkItem } from "@/lib/site-config";
 
-const EXTERNAL_LINKS = [
-  {
-    category: "Pemerintah Wilayah",
-    icon: MapPin,
-    color: "text-[#1b365d]",
-    bg: "bg-[#1b365d]/10",
-    border: "border-[#1b365d]/20",
-    links: [
-      {
-        name: "Kecamatan Cipocok Jaya",
-        desc: "Portal resmi Kecamatan Cipocok Jaya — informasi kegiatan, layanan, dan pengumuman wilayah kecamatan.",
-        url: "https://cipocokjaya.serangkota.go.id",
-        badge: "Kecamatan",
-      },
-      {
-        name: "Pemerintah Kota Serang",
-        desc: "Portal utama Pemerintah Kota Serang — berita resmi, agenda pemerintahan, dan layanan publik kota.",
-        url: "https://serangkota.go.id",
-        badge: "Kota Serang",
-      },
-    ],
-  },
-  {
-    category: "Bantuan Sosial & Kesejahteraan",
-    icon: Banknote,
-    color: "text-emerald-700",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    links: [
-      {
-        name: "Cek Bansos Kemensos RI",
-        desc: "Cek status penerima program bantuan sosial PKH, BPNT, dan program perlindungan sosial lainnya dari Kemensos.",
-        url: "https://cekbansos.kemensos.go.id",
-        badge: "Bansos",
-      },
-      {
-        name: "DTKS Online — Data Terpadu Kessos",
-        desc: "Portal pendataan keluarga miskin dan rentan untuk keperluan program perlindungan sosial pemerintah pusat.",
-        url: "https://dtks.kemensos.go.id",
-        badge: "Kesejahteraan",
-      },
-    ],
-  },
-  {
-    category: "Kependudukan & Administrasi",
-    icon: BookOpen,
-    color: "text-indigo-700",
-    bg: "bg-indigo-50",
-    border: "border-indigo-200",
-    links: [
-      {
-        name: "Dukcapil Kemendagri",
-        desc: "Layanan kependudukan nasional: e-KTP, KK, akta kelahiran, dan dokumen administrasi kependudukan online.",
-        url: "https://dukcapil.kemendagri.go.id",
-        badge: "Adminduk",
-      },
-      {
-        name: "Disdukcapil Kota Serang",
-        desc: "Dinas Kependudukan dan Pencatatan Sipil Kota Serang — layanan cetak dokumen dan informasi administrasi lokal.",
-        url: "https://disdukcapil.serangkota.go.id",
-        badge: "Dukcapil Lokal",
-      },
-    ],
-  },
-  {
-    category: "Kesehatan",
-    icon: HeartPulse,
-    color: "text-rose-700",
-    bg: "bg-rose-50",
-    border: "border-rose-200",
-    links: [
-      {
-        name: "BPJS Kesehatan",
-        desc: "Portal resmi BPJS Kesehatan — cek kepesertaan JKN, cetak kartu digital, dan informasi fasilitas kesehatan terdekat.",
-        url: "https://bpjs-kesehatan.go.id",
-        badge: "JKN/BPJS",
-      },
-      {
-        name: "Aplikasi Mobile JKN",
-        desc: "Unduh aplikasi Mobile JKN untuk mengakses layanan BPJS Kesehatan langsung dari smartphone Anda.",
-        url: "https://bpjs-kesehatan.go.id/bpjs/pages/detail/2014/13",
-        badge: "Mobile JKN",
-      },
-    ],
-  },
-  {
-    category: "Layanan Digital Nasional",
-    icon: Globe,
-    color: "text-purple-700",
-    bg: "bg-purple-50",
-    border: "border-purple-200",
-    links: [
-      {
-        name: "Portal Nasional Indonesia",
-        desc: "Pintu masuk layanan pemerintah pusat: layanan online, pengaduan, dan informasi kebijakan nasional.",
-        url: "https://indonesia.go.id",
-        badge: "Portal Nasional",
-      },
-      {
-        name: "LAPOR! — Layanan Aspirasi & Pengaduan",
-        desc: "Platform pengaduan online nasional terintegrasi lintas instansi pemerintah pusat dan daerah.",
-        url: "https://lapor.go.id",
-        badge: "Aspirasi",
-      },
-    ],
-  },
-];
+const CATEGORY_STYLES: Record<string, { icon: any; color: string; bg: string; border: string }> = {
+  "Pemerintah Wilayah": { icon: MapPin, color: "text-[#1b365d]", bg: "bg-[#1b365d]/10", border: "border-[#1b365d]/20" },
+  "Bantuan Sosial & Kesejahteraan": { icon: Banknote, color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
+  "Kependudukan & Administrasi": { icon: BookOpen, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
+  "Kesehatan": { icon: HeartPulse, color: "text-rose-700", bg: "bg-rose-50", border: "border-rose-200" },
+  "Layanan Digital Nasional": { icon: Globe, color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200" },
+};
+
 
 type AgeGroups = {
   children: number;
@@ -178,6 +78,11 @@ const DEFAULT_BANJAR_AGUNG_DEMOGRAPHY: DataStats = {
 export default function DataPage() {
   const [stats, setStats] = useState<DataStats>(DEFAULT_BANJAR_AGUNG_DEMOGRAPHY);
   const [loading, setLoading] = useState(false);
+  const [externalLinks, setExternalLinks] = useState<ExternalLinkItem[]>(DEFAULT_SITE_SETTINGS.externalLinks || []);
+  const [demographyMeta, setDemographyMeta] = useState({
+    period: DEFAULT_SITE_SETTINGS.demography?.updatedPeriod || "Semester II Tahun 2026",
+    source: DEFAULT_SITE_SETTINGS.demography?.source || "Rekapitulasi Monografi BPS & Kelurahan Banjar Agung",
+  });
 
   type NewsItem = {
     id: string;
@@ -193,9 +98,16 @@ export default function DataPage() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const q = query(collection(db, "news"), orderBy("date", "desc"), limit(3));
-        const snap = await getDocs(q);
-        setLatestNews(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const rows = await apiList("news", { orderBy: "date", order: "desc", limit: 3 });
+        const mapped = (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          content: String(row.content || ""),
+          date: String(row.date || ""),
+          category: String(row.category || ""),
+          imageUrl: String(row.image_url || ""),
+        }));
+        setLatestNews(mapped);
       } catch (err) {
         console.error("Error fetching news in data page:", err);
       } finally {
@@ -225,19 +137,42 @@ export default function DataPage() {
         } catch {
           // ignore
         }
-        if (residents.length === 0) {
-          try {
-            const snapshot = await getDocs(collection(db, "residents"));
-            residents = snapshot.docs.map((d) => d.data() as any);
-          } catch {
-            // ignore
+
+        // Ambil konfigurasi profil & demografi resmi dari site settings
+        let siteConfig = null;
+        try {
+          siteConfig = await getSiteSettings();
+          if (siteConfig.demography) {
+            setDemographyMeta({
+              period: siteConfig.demography.updatedPeriod,
+              source: siteConfig.demography.source,
+            });
           }
+          if (siteConfig.externalLinks && siteConfig.externalLinks.length > 0) {
+            setExternalLinks(siteConfig.externalLinks);
+          }
+        } catch {
+          // ignore
         }
 
         // Jika data di database adalah sampel uji coba awal (< 50 orang),
-        // tampilkan data statistik agregat resmi Banjar Agung yang representatif & realistis
+        // gunakan data statistik agregat resmi yang dikelola admin di dashboard
         if (residents.length < 50) {
-          setStats(DEFAULT_BANJAR_AGUNG_DEMOGRAPHY);
+          const demo = siteConfig?.demography || DEFAULT_SITE_SETTINGS.demography!;
+          setStats({
+            total: demo.total,
+            male: demo.male,
+            female: demo.female,
+            kk: demo.kk,
+            ageGroups: {
+              children: demo.ageChildren,
+              adults: demo.ageAdults,
+              seniors: demo.ageSeniors,
+            },
+            educations: DEFAULT_BANJAR_AGUNG_DEMOGRAPHY.educations,
+            occupations: DEFAULT_BANJAR_AGUNG_DEMOGRAPHY.occupations,
+            religions: DEFAULT_BANJAR_AGUNG_DEMOGRAPHY.religions,
+          });
           setLoading(false);
           return;
         }
@@ -337,7 +272,9 @@ export default function DataPage() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">Infografis Data Kependudukan</h2>
-              <p className="text-xs text-slate-500">Statistik resmi penduduk Kelurahan Banjar Agung berdasarkan data sistem administrasi aktif</p>
+              <p className="text-xs text-slate-500">
+                Statistik resmi Kelurahan Banjar Agung • {demographyMeta.period} ({demographyMeta.source})
+              </p>
             </div>
           </div>
 
@@ -778,48 +715,67 @@ export default function DataPage() {
           </div>
 
           <div className="space-y-6">
-            {EXTERNAL_LINKS.map((section, sIdx) => (
-              <div key={sIdx}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={`w-6 h-6 rounded-md ${section.bg} ${section.color} flex items-center justify-center`}>
-                    <section.icon className="h-3.5 w-3.5" />
+            {(() => {
+              // Kelompokkan tautan berdasarkan kategori
+              const map = new Map<string, ExternalLinkItem[]>();
+              externalLinks.forEach((item) => {
+                const cat = item.category || "Layanan Lainnya";
+                if (!map.has(cat)) map.set(cat, []);
+                map.get(cat)!.push(item);
+              });
+              const grouped = Array.from(map.entries()).map(([category, links]) => {
+                const style = CATEGORY_STYLES[category] || {
+                  icon: Globe,
+                  color: "text-[#1b365d]",
+                  bg: "bg-[#1b365d]/10",
+                  border: "border-[#1b365d]/20",
+                };
+                return { category, ...style, links };
+              });
+
+              return grouped.map((section, sIdx) => (
+                <div key={sIdx}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-6 h-6 rounded-md ${section.bg} ${section.color} flex items-center justify-center`}>
+                      <section.icon className="h-3.5 w-3.5" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800">{section.category}</h3>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-800">{section.category}</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {section.links.map((link, lIdx) => (
-                    <a
-                      key={lIdx}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group block bg-white border ${section.border} rounded-xl p-4 hover:shadow-md transition-all duration-150`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${section.bg} ${section.color} border ${section.border}`}>
-                              {link.badge}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {section.links.map((link, lIdx) => (
+                      <a
+                        key={link.id || lIdx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`group block bg-white border ${section.border} rounded-xl p-4 hover:shadow-md transition-all duration-150`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${section.bg} ${section.color} border ${section.border}`}>
+                                {link.badge || "Resmi"}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-sm text-slate-900 group-hover:text-[#1b365d] transition-colors leading-snug">
+                              {link.name}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 mt-1 leading-relaxed line-clamp-2">
+                              {link.desc}
+                            </p>
+                            <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-mono text-slate-400 truncate">
+                              <Globe className="h-2.5 w-2.5 shrink-0" />
+                              {link.url.replace(/^https?:\/\//, "")}
                             </span>
                           </div>
-                          <h4 className="font-bold text-sm text-slate-900 group-hover:text-[#1b365d] transition-colors leading-snug">
-                            {link.name}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed line-clamp-2">
-                            {link.desc}
-                          </p>
-                          <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-mono text-slate-400 truncate">
-                            <Globe className="h-2.5 w-2.5 shrink-0" />
-                            {link.url.replace("https://", "")}
-                          </span>
+                          <ExternalLink className={`h-4 w-4 shrink-0 mt-0.5 ${section.color} opacity-50 group-hover:opacity-100 transition-opacity`} />
                         </div>
-                        <ExternalLink className={`h-4 w-4 shrink-0 mt-0.5 ${section.color} opacity-50 group-hover:opacity-100 transition-opacity`} />
-                      </div>
-                    </a>
-                  ))}
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
 
           <div className="mt-8 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">

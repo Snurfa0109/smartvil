@@ -445,6 +445,16 @@ export default function ServicesPage() {
             </button>
           </div>
 
+          <div className="bg-emerald-100/60 border border-emerald-300/80 rounded-xl p-3 text-xs text-emerald-950 text-left space-y-1 max-w-lg mx-auto">
+            <div className="font-semibold flex items-center gap-1.5 text-emerald-950">
+              <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              Standar Waktu Verifikasi &amp; Cetak Berkas:
+            </div>
+            <p className="text-[11px] text-emerald-800 leading-relaxed">
+              Permohonan diproses dalam <strong>1–2 hari kerja (Senin–Jumat, 08:00–15:30)</strong>. Anda dapat memantau status secara berkala melalui menu <strong>Lacak Permohonan</strong> atau konfirmasi melalui WhatsApp loket kelurahan.
+            </p>
+          </div>
+
           <div className="pt-2 space-y-2 max-w-md mx-auto">
             <a
               href={generateWhatsAppUrl(submittedTicket)}

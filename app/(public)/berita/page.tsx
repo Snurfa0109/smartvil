@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { apiList } from "@/lib/api";
 import { Calendar, ChevronLeft, ChevronRight, Search, X, Tag, RotateCcw } from "lucide-react";
 import { stripHtml } from "@/lib/utils";
@@ -49,19 +47,6 @@ export default function NewsPage() {
           }
         } catch {
           // fallback
-        }
-
-        if (loaded.length === 0) {
-          try {
-            const q = query(collection(db, "news"), orderBy("date", "desc"));
-            const querySnapshot = await getDocs(q);
-            loaded = querySnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as NewsItem[];
-          } catch {
-            // fallback
-          }
         }
 
         setNewsItems(loaded);

@@ -557,7 +557,7 @@ export default function LayananDashboardPage() {
             Pelayanan &amp; Administrasi Surat
           </h1>
           <p className="text-sm text-slate-500 mt-1 ml-10">
-            Kelola permohonan surat masuk warga, kelola jenis surat, dan cetak dokumen resmi.
+            Kelola permohonan surat masuk warga, kelola jenis surat, dan cetak dokumen resmi (Standar Layanan: 1–2 hari kerja).
           </p>
         </div>
 

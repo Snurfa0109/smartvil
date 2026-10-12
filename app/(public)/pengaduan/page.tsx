@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
+import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
@@ -504,6 +504,16 @@ export default function ComplaintsPage() {
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-2.5 text-xs text-slate-600">
+                    <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-800 block">Jaminan Kerahasiaan Data Pelapor:</span>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        Identitas dan nomor kontak Anda dijamin kerahasiaannya, tidak dipublikasikan secara terbuka, dan hanya diakses oleh petugas verifikator kelurahan untuk tindak lanjut penanganan masalah.
+                      </p>
+                    </div>
                   </div>
 
                   <Button

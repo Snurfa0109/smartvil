@@ -1,5 +1,4 @@
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export interface PageBannerData {
   enabledCustom: boolean;        // Jika true, gunakan banner event/custom ini
@@ -105,14 +104,12 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
 };
 
 /**
- * Mengambil konfigurasi seluruh banner dari Firestore `settings/banners`.
+ * Mengambil konfigurasi seluruh banner dari settings store.
  */
 export async function getAllBanners(): Promise<Record<BannerPages, PageBannerData>> {
   try {
-    const ref = doc(db, "settings", "banners");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data() as Partial<Record<BannerPages, Partial<PageBannerData>>>;
+    const data = await getSetting<Partial<Record<BannerPages, Partial<PageBannerData>>>>("banners", {});
+    if (data && typeof data === "object") {
       const merged = { ...DEFAULT_PAGE_BANNERS };
       for (const key of Object.keys(DEFAULT_PAGE_BANNERS) as BannerPages[]) {
         if (data[key]) {
@@ -131,9 +128,16 @@ export async function getAllBanners(): Promise<Record<BannerPages, PageBannerDat
 }
 
 /**
- * Menyimpan banner untuk halaman tertentu ke Firestore `settings/banners`.
+ * Menyimpan banner untuk halaman tertentu ke settings store.
  */
 export async function saveBanner(pageKey: BannerPages, config: Partial<PageBannerData>): Promise<void> {
-  const ref = doc(db, "settings", "banners");
-  await setDoc(ref, { [pageKey]: config }, { merge: true });
+  const current = await getAllBanners();
+  const updated = {
+    ...current,
+    [pageKey]: {
+      ...current[pageKey],
+      ...config,
+    },
+  };
+  await saveSetting("banners", updated);
 }

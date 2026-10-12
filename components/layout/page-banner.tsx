@@ -82,13 +82,12 @@ export function PageBanner({
             {/* Top Pill Badge */}
             <div className="flex flex-wrap items-center gap-2.5">
               {isCustomEvent ? (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-rose-600/90 text-white border border-rose-400 shadow-md animate-pulse">
-                  <Flame className="w-3.5 h-3.5 text-amber-300" />
-                  <span>EVENT AKTIF</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-700 text-white border border-rose-500/40 shadow-xs">
+                  <Calendar className="w-3.5 h-3.5 text-rose-200" />
+                  <span>AGENDA RESMI</span>
                   {banner.eventDate && (
                     <>
                       <span className="opacity-50">•</span>
-                      <Calendar className="w-3.5 h-3.5" />
                       <span>{banner.eventDate}</span>
                     </>
                   )}

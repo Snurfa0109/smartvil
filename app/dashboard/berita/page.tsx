@@ -230,7 +230,7 @@ export default function BeritaDashboardPage() {
                 {loading ? (
                   <div className="h-7 w-12 bg-slate-100 rounded-lg mt-1.5 animate-pulse" />
                 ) : (
-                  <p className={`${stat.isText ? "text-sm" : "text-2xl"} font-extrabold mt-1 tabular-nums tracking-tight ${stat.numText}`}>
+                  <p className={`${('isText' in stat && stat.isText) ? "text-sm" : "text-2xl"} font-extrabold mt-1 tabular-nums tracking-tight ${stat.numText}`}>
                     {typeof stat.value === "number" ? stat.value.toLocaleString("id-ID") : stat.value}
                   </p>
                 )}
