@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { apiGet } from "@/lib/api";
 import { Calendar, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -34,16 +33,19 @@ export default function BeritaDetailPage() {
 
     const fetchBerita = async () => {
       try {
-        const ref = doc(db, "news", id);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
+        const data = await apiGet("news", id);
+        if (!data) {
           setNotFound(true);
           setItem(null);
           return;
         }
         setItem({
-          id: snap.id,
-          ...(snap.data() as Omit<BeritaItem, "id">),
+          id: String(data.id),
+          title: String(data.title || ""),
+          content: String(data.content || ""),
+          date: String(data.date || ""),
+          category: String(data.category || ""),
+          imageUrl: String(data.image_url || ""),
         });
       } catch (error) {
         console.error("Error fetching berita:", error);
@@ -127,7 +129,6 @@ export default function BeritaDetailPage() {
             </h1>
           </header>
 
-          {/* Cover Banner */}
           <div className="w-full h-64 sm:h-80 md:h-96 rounded-2xl overflow-hidden shadow-xs border border-slate-200 bg-slate-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

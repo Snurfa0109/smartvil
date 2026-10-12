@@ -9,6 +9,7 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { stripHtml } from "@/lib/utils";
 import { PageBanner } from "@/components/layout/page-banner";
+import { apiList } from "@/lib/api";
 
 const EXTERNAL_LINKS = [
   {
@@ -207,8 +208,31 @@ export default function DataPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const snapshot = await getDocs(collection(db, "residents"));
-        const residents = snapshot.docs.map((d) => d.data() as any);
+        let residents: any[] = [];
+        try {
+          const apiData = await apiList("residents");
+          if (Array.isArray(apiData) && apiData.length > 0) {
+            residents = apiData.map((row: Record<string, any>) => ({
+              gender: row.gender,
+              birthDate: row.birth_date,
+              occupation: row.occupation,
+              agama: row.agama,
+              education: row.education,
+              status: row.status,
+              statusKeluarga: row.status_keluarga,
+            }));
+          }
+        } catch {
+          // ignore
+        }
+        if (residents.length === 0) {
+          try {
+            const snapshot = await getDocs(collection(db, "residents"));
+            residents = snapshot.docs.map((d) => d.data() as any);
+          } catch {
+            // ignore
+          }
+        }
 
         // Jika data di database adalah sampel uji coba awal (< 50 orang),
         // tampilkan data statistik agregat resmi Banjar Agung yang representatif & realistis

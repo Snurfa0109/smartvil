@@ -20,7 +20,6 @@ export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
 
-  // Keyboard shortcut Ctrl+K or Cmd+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -38,7 +37,6 @@ export function Navbar() {
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex h-16 items-center justify-between gap-6">
 
-            {/* Logo dengan Lambang Resmi Kota Serang */}
             <Link href="/" className="flex items-center gap-3 shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -52,7 +50,6 @@ export function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop links */}
             <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
@@ -75,7 +72,6 @@ export function Navbar() {
               })}
             </div>
 
-            {/* Search & CTA */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
               <button
                 type="button"
@@ -94,7 +90,6 @@ export function Navbar() {
               </Link>
             </div>
 
-            {/* Mobile buttons */}
             <div className="md:hidden flex items-center gap-1.5">
               <button
                 type="button"
@@ -117,7 +112,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile menu dropdown */}
         {isOpen && (
           <div className="md:hidden border-t border-border bg-white px-4 py-3 space-y-1">
             {navLinks.map((link) => {
@@ -148,7 +142,6 @@ export function Navbar() {
         )}
       </nav>
 
-      {/* Global Search Modal */}
       <GlobalSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}

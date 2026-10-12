@@ -22,9 +22,10 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { DEFAULT_LETTER_TYPES, LetterType } from "@/lib/letters";
+import { useToast } from "@/components/ui/toast";
+import { apiInsert, apiFind } from "@/lib/api";
+import { LetterType, getLetterTypes, DEFAULT_LETTER_TYPES } from "@/lib/letters";
+import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
 
 interface StoredTicket {
@@ -36,8 +37,9 @@ interface StoredTicket {
 }
 
 export default function ServicesPage() {
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
-  const [letterTypesList, setLetterTypesList] = useState<LetterType[]>(DEFAULT_LETTER_TYPES);
+  const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -61,6 +63,16 @@ export default function ServicesPage() {
   const [trackedRequests, setTrackedRequests] = useState<any[] | null>(null);
   const [recentTickets, setRecentTickets] = useState<StoredTicket[]>([]);
   const [copied, setCopied] = useState(false);
+  const [villagePhone, setVillagePhone] = useState(DEFAULT_SITE_SETTINGS.villagePhone);
+
+  const toWaNumber = (phone: string) => {
+    const digits = phone.replace(/[^0-9]/g, "");
+    return digits.startsWith("0") ? "62" + digits.slice(1) : digits;
+  };
+
+  useEffect(() => {
+    getSiteSettings().then((s) => setVillagePhone(s.villagePhone)).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     try {
@@ -76,16 +88,10 @@ export default function ServicesPage() {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-        const snap = await getDocs(collection(db, "letter_types"));
-        if (!snap.empty) {
-          const fromDb: LetterType[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as any),
-          }));
-          const activeOnly = fromDb.filter((item) => item.active !== false);
-          if (activeOnly.length > 0) {
-            setLetterTypesList(activeOnly);
-          }
+        const fromDb = await getLetterTypes();
+        const activeOnly = fromDb.filter((item) => item.active !== false);
+        if (activeOnly.length > 0) {
+          setLetterTypesList(activeOnly);
         }
       } catch (err) {
         console.error("Error fetching letter types, using defaults:", err);
@@ -120,11 +126,21 @@ export default function ServicesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLetter) return;
+    const WARGA_HIDDEN_KEYS = new Set([
+      "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+      "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+      "keperluan", "kebutuhan", "tujuan", "keterangan",
+      "dipergunakan_untuk", "digunakan_untuk",
+      "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+      "bermaksud_untuk", "dimaksudkan_untuk",
+      "surat_keterangan_ini_dipergunakan_untuk",
+      "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+    ]);
     const requiredMissing = (activeLetterObj?.customFields || []).filter(
-      (f) => f.required && !(customFormData[f.key] || "").trim()
+      (f) => !WARGA_HIDDEN_KEYS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_") && f.required && !(customFormData[f.key] || "").trim()
     );
     if (requiredMissing.length > 0) {
-      alert(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
+      warning(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
       return;
     }
     setLoading(true);
@@ -135,17 +151,18 @@ export default function ServicesPage() {
       const letterObj = activeLetterObj;
       const letterName = letterObj?.name || "Surat Keterangan";
 
-      await addDoc(collection(db, "requests"), {
-        ...formData,
-        formData: customFormData,
-        ticketCode,
+      await apiInsert("requests", {
+        nik: formData.nik,
+        nama: formData.nama,
+        phone: formData.phone,
+        keperluan: formData.keperluan,
+        form_data: customFormData,
+        ticket_code: ticketCode,
         type: letterObj?.code || selectedLetter,
-        typeName: letterName,
-        templateNarrative: letterObj?.templateNarrative || "",
-        requirements: letterObj?.requirements || [],
-        createdAt: serverTimestamp(),
+        type_name: letterName,
+        template_narrative: letterObj?.templateNarrative || "",
         status: "pending",
-        adminNotes: "",
+        admin_notes: "",
       });
 
       const submittedData = {
@@ -176,7 +193,7 @@ export default function ServicesPage() {
       setSelectedLetter(null);
     } catch (error) {
       console.error("Error submitting request:", error);
-      alert("Gagal mengirim permohonan surat. Silakan coba lagi.");
+      showError("Gagal mengirim permohonan surat. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -188,26 +205,38 @@ export default function ServicesPage() {
 
     setTrackLoading(true);
     try {
+      const toItem = (row: Record<string, any>) => ({
+        id: row.id,
+        ticketCode: row.ticket_code,
+        nama: row.nama,
+        nik: row.nik,
+        phone: row.phone,
+        type: row.type,
+        typeName: row.type_name,
+        keperluan: row.keperluan,
+        formData: row.form_data || {},
+        templateNarrative: row.template_narrative,
+        status: row.status,
+        adminNotes: row.admin_notes,
+        createdAt: row.created_at,
+      });
       let results: any[] = [];
       const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
       const cleanedDigits = rawSearch.replace(/\D/g, "");
 
-      const qByCode = query(collection(db, "requests"), where("ticketCode", "==", rawSearch));
-      const snapCode = await getDocs(qByCode);
-      snapCode.docs.forEach((d) => results.push({ id: d.id, ...d.data() }));
+      const codeRows = await apiFind("requests", { column: "ticket_code", value: rawSearch }).catch(() => []);
+      (codeRows || []).forEach((row) => results.push(toItem(row)));
 
       if (isDigitsOnly && cleanedDigits.length >= 15) {
-        const qByNik = query(collection(db, "requests"), where("nik", "==", cleanedDigits));
-        const snapNik = await getDocs(qByNik);
-        snapNik.docs.forEach((d) => {
-          if (!results.some((r) => r.id === d.id)) {
-            results.push({ id: d.id, ...d.data() });
+        const nikRows = await apiFind("requests", { column: "nik", value: cleanedDigits }).catch(() => []);
+        (nikRows || []).forEach((row) => {
+          if (!results.some((r) => r.id === row.id)) {
+            results.push(toItem(row));
           }
         });
       }
 
       if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
-        // Coba variasi 08xx dan 628xx
         let phoneVariations = [cleanedDigits];
         if (cleanedDigits.startsWith("0")) {
           phoneVariations.push("62" + cleanedDigits.substring(1));
@@ -217,11 +246,10 @@ export default function ServicesPage() {
         }
 
         for (const phoneVal of phoneVariations) {
-          const qByPhone = query(collection(db, "requests"), where("phone", "==", phoneVal));
-          const snapPhone = await getDocs(qByPhone);
-          snapPhone.docs.forEach((d) => {
-            if (!results.some((r) => r.id === d.id)) {
-              results.push({ id: d.id, ...d.data() });
+          const phoneRows = await apiFind("requests", { column: "phone", value: phoneVal }).catch(() => []);
+          (phoneRows || []).forEach((row) => {
+            if (!results.some((r) => r.id === row.id)) {
+              results.push(toItem(row));
             }
           });
         }
@@ -230,7 +258,7 @@ export default function ServicesPage() {
       setTrackedRequests(results);
     } catch (err) {
       console.error("Error tracking request:", err);
-      alert("Gagal memuat status surat. Coba beberapa saat lagi.");
+      showError("Gagal memuat status surat. Coba beberapa saat lagi.");
     } finally {
       setTrackLoading(false);
     }
@@ -259,8 +287,7 @@ export default function ServicesPage() {
       `• *Tanggal:* ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}\n\n` +
       `Mohon informasinya jika dokumen saya sudah selesai diverifikasi dan siap diambil di loket kelurahan. Terima kasih.`
     );
-    // WhatsApp Resmi Kelurahan Banjar Agung: 0813-1505-3901
-    return `https://wa.me/6281315053901?text=${text}`;
+    return `https://wa.me/${toWaNumber(villagePhone)}?text=${text}`;
   };
 
   return (
@@ -385,7 +412,7 @@ export default function ServicesPage() {
           </div>
           <div>
             <div className="text-xs text-slate-500 font-medium">WhatsApp Layanan</div>
-            <div className="font-bold text-amber-800 text-xs md:text-sm">0813-1505-3901</div>
+            <div className="font-bold text-amber-800 text-xs md:text-sm">{villagePhone}</div>
           </div>
         </div>
       </div>
@@ -601,15 +628,42 @@ export default function ServicesPage() {
                       />
                     </div>
 
-                    {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (
+                    {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (() => {
+                      const WARGA_HIDDEN = new Set([
+                        "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+                        "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+                        "keperluan", "kebutuhan", "tujuan", "keterangan",
+                        "dipergunakan_untuk", "digunakan_untuk",
+                        "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+                        "bermaksud_untuk", "dimaksudkan_untuk",
+                        "surat_keterangan_ini_dipergunakan_untuk",
+                        "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+                      ]);
+                      const visibleFields = activeLetterObj.customFields.filter(
+                        (f) => !WARGA_HIDDEN.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
+                      );
+                      return visibleFields.length > 0 ? (
                       <div className="space-y-3 pt-2 border-t">
                         <p className="text-xs font-bold text-slate-800">Data tambahan sesuai template surat ini:</p>
-                        {activeLetterObj.customFields.map((f) => (
+                        {visibleFields.map((f) => (
                           <div key={f.key} className="space-y-1.5">
                             <label htmlFor={`custom-${f.key}`} className="text-xs font-semibold text-slate-700">
                               {f.label} {f.required && <span className="text-red-500">*</span>}
                             </label>
-                            {f.type === "textarea" ? (
+                            {f.type === "select" && f.options && f.options.length > 0 ? (
+                              <select
+                                id={`custom-${f.key}`}
+                                required={f.required}
+                                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
+                                value={customFormData[f.key] || ""}
+                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                              >
+                                <option value="">Pilih {f.label.toLowerCase()}...</option>
+                                {f.options.map((opt) => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            ) : f.type === "textarea" ? (
                               <textarea
                                 id={`custom-${f.key}`}
                                 required={f.required}
@@ -633,7 +687,7 @@ export default function ServicesPage() {
                           </div>
                         ))}
                       </div>
-                    )}
+                    ) : null; })()}
 
                     <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-lg text-xs text-slate-600 space-y-1">
                       <p className="font-semibold text-slate-800 flex items-center gap-1.5">
@@ -769,12 +823,12 @@ export default function ServicesPage() {
                   </div>
                   <div className="pt-2">
                     <a
-                      href="https://wa.me/6281315053901?text=Halo%20Admin%20Kelurahan%20Banjar%20Agung,%20saya%20ingin%20menanyakan%20status%20surat%20saya"
+                      href={`https://wa.me/${toWaNumber(villagePhone)}?text=Halo%20Admin%20Kelurahan%20Banjar%20Agung,%20saya%20ingin%20menanyakan%20status%20surat%20saya`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs text-[#1b365d] font-semibold bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
                     >
-                      <PhoneCall className="h-3.5 w-3.5" /> Butuh Bantuan? Tanya Loket via WhatsApp (0813-1505-3901)
+                      <PhoneCall className="h-3.5 w-3.5" /> Butuh Bantuan? Tanya Loket via WhatsApp ({villagePhone})
                     </a>
                   </div>
                 </div>

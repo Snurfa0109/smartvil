@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Lock, Mail, Shield } from "lucide-react";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { writeAuditLog } from "@/lib/audit";
+import { setToken } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -21,53 +18,22 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const user = userCredential.user;
-
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      let role = "admin";
-      let displayName = user.displayName || "Admin";
-
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.active === false) {
-          await signOut(auth);
-          setError("Akun ini telah dinonaktifkan. Hubungi Super Admin kelurahan.");
-          await writeAuditLog(
-            "AKSES_DITOLAK",
-            "auth",
-            `Login diblokir: Akun ${user.email} berstatus nonaktif`,
-            { uid: user.uid, email: user.email || email, displayName: data.displayName || "Admin", role: data.role || "user" }
-          );
-          setLoading(false);
-          return;
-        }
-
-        role = data.role || "admin";
-        displayName = data.displayName || displayName;
-
-        await updateDoc(doc(db, "users", user.uid), {
-          lastLogin: serverTimestamp(),
-        }).catch(() => {});
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.error || "Email atau kata sandi tidak sesuai. Silakan coba lagi.");
+        setLoading(false);
+        return;
       }
-
-      await writeAuditLog(
-        "LOGIN",
-        "auth",
-        `Login berhasil ke CMS Kelurahan (${role})`,
-        { uid: user.uid, email: user.email || email, displayName, role }
-      );
-
+      setToken(body.token);
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       setError("Email atau kata sandi tidak sesuai. Silakan coba lagi.");
-      await writeAuditLog(
-        "AKSES_DITOLAK",
-        "auth",
-        `Percobaan login gagal untuk email: ${email.trim()}`
-      );
-    } finally {
       setLoading(false);
     }
   };

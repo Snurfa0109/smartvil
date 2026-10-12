@@ -1,34 +1,43 @@
-"use client";
+﻿"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
-import { collection, query, orderBy, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { apiList, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 
 export default function PengaduanDashboardPage() {
+  const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedComplaint, setSelectedComplaint] = useState<any | null>(null);
   const [replyText, setReplyText] = useState("");
   const [savingReply, setSavingReply] = useState(false);
   const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
-
-  // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPhone, setFilterPhone] = useState<string | null>(null);
 
   const fetchComplaints = async () => {
     try {
-      const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
-      setComplaints(data);
+      const rows = await apiList("complaints", { orderBy: "created_at", order: "desc" });
+      setComplaints(
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          nama: String(row.nama || ""),
+          email: String(row.email || ""),
+          phone: String(row.phone || ""),
+          category: String(row.category || ""),
+          message: String(row.message || ""),
+          photoUrl: String(row.photo_url || ""),
+          status: String(row.status || ""),
+          adminResponse: String(row.admin_response || ""),
+          createdAt: row.created_at,
+          ticketCode: String(row.ticket_code || ""),
+        }))
+      );
     } catch (error) {
       console.error("Error fetching complaints:", error);
     } finally {
@@ -73,16 +82,14 @@ export default function PengaduanDashboardPage() {
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
-      await updateDoc(doc(db, "complaints", id), {
-        status: newStatus,
-      });
+      await apiUpdate("complaints", id, { status: newStatus });
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
         setSelectedComplaint((prev: any) => ({ ...prev, status: newStatus }));
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Gagal memperbarui status pengaduan.");
+      showError("Gagal memperbarui status pengaduan.");
     }
   };
 
@@ -90,11 +97,11 @@ export default function PengaduanDashboardPage() {
     if (!replyText.trim()) return;
     setSavingReply(true);
     try {
-      await updateDoc(doc(db, "complaints", id), {
-        adminResponse: replyText.trim(),
+      await apiUpdate("complaints", id, {
+        admin_response: replyText.trim(),
         status: selectedComplaint?.status === "pending" ? "processed" : selectedComplaint?.status,
       });
-      alert("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
+      success("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
         setSelectedComplaint((prev: any) => ({
@@ -105,28 +112,34 @@ export default function PengaduanDashboardPage() {
       }
     } catch (error) {
       console.error("Error saving reply:", error);
-      alert("Gagal menyimpan tanggapan.");
+      showError("Gagal menyimpan tanggapan.");
     } finally {
       setSavingReply(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus pengaduan ini secara permanen?")) {
+    const confirmed = await showConfirm({
+      title: "Hapus Pengaduan?",
+      message: "Apakah Anda yakin ingin menghapus pengaduan ini secara permanen?",
+      variant: "danger",
+      confirmLabel: "Ya, Hapus",
+    });
+    if (confirmed) {
       try {
-        await deleteDoc(doc(db, "complaints", id));
+        await apiDelete("complaints", id);
         if (selectedComplaint?.id === id) setSelectedComplaint(null);
         fetchComplaints();
       } catch (error) {
         console.error("Error deleting complaint:", error);
-        alert("Gagal menghapus pengaduan.");
+        showError("Gagal menghapus pengaduan.");
       }
     }
   };
 
   const handleSendWhatsApp = (item: any) => {
     if (!item.phone) {
-      alert("Pelapor tidak mencantumkan nomor telepon.");
+      warning("Pelapor tidak mencantumkan nomor telepon.");
       return;
     }
     let clean = item.phone.replace(/\D/g, "");
@@ -143,8 +156,8 @@ export default function PengaduanDashboardPage() {
       `*INFORMASI PENGADUAN - KELURAHAN BANJAR AGUNG*\n\n` +
       `Yth. Bpk/Ibu *${item.nama || "Pelapor"}*,\n\n` +
       `Kami menginformasikan bahwa pengaduan Anda:\n` +
-      `• *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
-      `• *Status:* ${statusText}.\n\n` +
+      `â€¢ *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
+      `â€¢ *Status:* ${statusText}.\n\n` +
       (item.adminResponse ? `*Tanggapan Resmi Kami:*\n${item.adminResponse}\n\n` : "") +
       `Jika ada pertanyaan, silakan balas pesan ini.\n\n` +
       `_Pemerintah Kelurahan Banjar Agung, Kec. Cipocok Jaya, Kota Serang_`
@@ -167,8 +180,6 @@ export default function PengaduanDashboardPage() {
           Total: {complaints.length} Laporan
         </div>
       </div>
-
-      {/* Filter and Search Bar */}
       <div className="bg-white border border-slate-200/90 rounded-xl p-4 space-y-3 shadow-xs">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
@@ -286,11 +297,11 @@ export default function PengaduanDashboardPage() {
                         </span>
                       )}
                       {item.adminResponse && (
-                        <span className="text-emerald-700 font-medium">✓ Sudah Ditanggapi</span>
+                        <span className="text-emerald-700 font-medium">âœ“ Sudah Ditanggapi</span>
                       )}
                     </div>
                     <span>
-                      {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-"}
+                      {item.createdAt ? new Date(typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-"}
                     </span>
                   </div>
 
@@ -336,8 +347,6 @@ export default function PengaduanDashboardPage() {
           })
         )}
       </div>
-
-      {/* Detail & Reply Modal */}
       {selectedComplaint && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <Card className="w-full max-w-2xl bg-white relative my-8 max-h-[90vh] flex flex-col">
@@ -351,11 +360,10 @@ export default function PengaduanDashboardPage() {
                     </p>
                   )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedComplaint(null)}>✕</Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedComplaint(null)}>âœ•</Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-5 p-6 overflow-y-auto">
-              {/* Frequency Notice */}
               {selectedComplaint.phone && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 flex items-center justify-between gap-3">
                   <div>
@@ -395,8 +403,8 @@ export default function PengaduanDashboardPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Tanggal Laporan</p>
                   <p className="font-semibold">
-                    {selectedComplaint.createdAt?.seconds
-                      ? new Date(selectedComplaint.createdAt.seconds * 1000).toLocaleString("id-ID")
+                    {selectedComplaint.createdAt
+                      ? new Date(typeof selectedComplaint.createdAt === "string" ? selectedComplaint.createdAt : selectedComplaint.createdAt.seconds * 1000).toLocaleString("id-ID")
                       : "-"}
                   </p>
                 </div>
@@ -451,8 +459,6 @@ export default function PengaduanDashboardPage() {
                   <p className="text-[11px] text-muted-foreground mt-1">Klik gambar untuk melihat ukuran penuh.</p>
                 </div>
               )}
-
-              {/* Tanggapan Form */}
               <div className="border-t pt-4 space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Tulis Tanggapan Resmi / Catatan Tindak Lanjut
@@ -500,8 +506,6 @@ export default function PengaduanDashboardPage() {
           </Card>
         </div>
       )}
-
-      {/* Full Image Modal */}
       {imageModalUrl && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -522,3 +526,4 @@ export default function PengaduanDashboardPage() {
     </div>
   );
 }
+

@@ -1,18 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  orderBy,
-  query,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +19,7 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 type AgendaItem = {
   id: string;
@@ -63,6 +53,7 @@ const EMPTY_FORM: Omit<AgendaItem, "id"> = {
 };
 
 export default function AgendaDashboardPage() {
+  const { warning, error: showError } = useToast();
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,16 +66,22 @@ export default function AgendaDashboardPage() {
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, "agenda"), orderBy("order", "asc"));
-      const snap = await getDocs(q);
-      setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgendaItem, "id">) })));
-    } catch {
-      try {
-        const snap = await getDocs(collection(db, "agenda"));
-        setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgendaItem, "id">) })));
-      } catch (err2) {
-        console.error("Error fetching agenda:", err2);
-      }
+      const rows = await apiList("agenda", { orderBy: "sort_order", order: "asc" });
+      setItems(
+        (rows || []).map((row) => ({
+          id: String(row.id),
+          title: String(row.title || ""),
+          category: String(row.category || ""),
+          categoryColor: (row.category_color as any) || "blue",
+          schedule: String(row.schedule || ""),
+          description: String(row.description || ""),
+          timeLocation: String(row.time_location || ""),
+          active: Number(row.active) !== 0,
+          order: Number(row.sort_order ?? 0),
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching agenda:", err);
     } finally {
       setLoading(false);
     }
@@ -123,21 +120,31 @@ export default function AgendaDashboardPage() {
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.category.trim()) {
-      alert("Judul dan Kategori wajib diisi.");
+      warning("Judul dan Kategori wajib diisi.");
       return;
     }
     setSaving(true);
     try {
+      const payload = {
+        title: form.title,
+        category: form.category,
+        category_color: form.categoryColor,
+        schedule: form.schedule,
+        description: form.description,
+        time_location: form.timeLocation,
+        active: form.active ? 1 : 0,
+        sort_order: form.order,
+      };
       if (editingId) {
-        await updateDoc(doc(db, "agenda", editingId), { ...form, updatedAt: serverTimestamp() });
+        await apiUpdate("agenda", editingId, payload);
       } else {
-        await addDoc(collection(db, "agenda"), { ...form, createdAt: serverTimestamp() });
+        await apiInsert("agenda", payload);
       }
       await fetchItems();
       closeDialog();
     } catch (err) {
       console.error(err);
-      alert("Gagal menyimpan agenda.");
+      showError("Gagal menyimpan agenda.");
     } finally {
       setSaving(false);
     }
@@ -146,11 +153,11 @@ export default function AgendaDashboardPage() {
   const handleDelete = async (item: AgendaItem) => {
     setDeleting(item.id);
     try {
-      await deleteDoc(doc(db, "agenda", item.id));
+      await apiDelete("agenda", item.id);
       await fetchItems();
       setConfirmDelete(null);
     } catch {
-      alert("Gagal menghapus agenda.");
+      showError("Gagal menghapus agenda.");
     } finally {
       setDeleting(null);
     }
@@ -158,10 +165,10 @@ export default function AgendaDashboardPage() {
 
   const handleToggleActive = async (item: AgendaItem) => {
     try {
-      await updateDoc(doc(db, "agenda", item.id), { active: !item.active });
+      await apiUpdate("agenda", item.id, { active: item.active ? 0 : 1 });
       setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, active: !it.active } : it)));
     } catch {
-      alert("Gagal mengubah status.");
+      showError("Gagal mengubah status.");
     }
   };
 

@@ -1,3 +1,5 @@
+import { getSetting, saveSetting } from "@/lib/settings-store";
+
 export interface ChatbotSettings {
   enabled: boolean;
   botName: string;
@@ -35,3 +37,12 @@ export const DEFAULT_CHATBOT_SETTINGS: ChatbotSettings = {
     "Mohon maaf, kanal ini khusus melayani informasi administrasi, layanan surat, dan pengaduan warga Kelurahan Banjar Agung. Untuk keperluan lainnya, silakan datang langsung ke Kantor Kelurahan pada jam kerja (Senin - Jumat, 08:00 - 15:30 WIB).",
   includeLiveContext: true,
 };
+
+export async function getChatbotSettings(): Promise<ChatbotSettings> {
+  const stored = await getSetting<Partial<ChatbotSettings>>("chatbot", {});
+  return { ...DEFAULT_CHATBOT_SETTINGS, ...stored };
+}
+
+export async function saveChatbotSettings(settings: ChatbotSettings): Promise<void> {
+  await saveSetting("chatbot", settings);
+}

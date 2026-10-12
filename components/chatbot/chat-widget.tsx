@@ -19,9 +19,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
-import { DEFAULT_CHATBOT_SETTINGS } from "@/lib/chatbot-config";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { DEFAULT_CHATBOT_SETTINGS, getChatbotSettings } from "@/lib/chatbot-config";
 
 export interface ChatAction {
   label: string;
@@ -61,7 +59,6 @@ export function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize welcome message once and fetch saved settings if available
   useEffect(() => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -77,18 +74,15 @@ export function ChatWidget() {
 
     const loadRemoteChatbotSettings = async () => {
       try {
-        const snap = await getDoc(doc(db, "settings", "chatbot"));
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.botName) setBotName(data.botName);
-          if (data.welcomeMessage) {
-            setWelcomeText(data.welcomeMessage);
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === "welcome-msg" ? { ...msg, text: data.welcomeMessage } : msg
-              )
-            );
-          }
+        const remote = await getChatbotSettings();
+        setBotName(remote.botName);
+        if (remote.welcomeMessage) {
+          setWelcomeText(remote.welcomeMessage);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === "welcome-msg" ? { ...msg, text: remote.welcomeMessage } : msg
+            )
+          );
         }
       } catch (err) {
         console.warn("Could not load dynamic chatbot settings:", err);
@@ -98,14 +92,12 @@ export function ChatWidget() {
     loadRemoteChatbotSettings();
   }, []);
 
-  // Auto scroll to bottom when new messages arrive
   useEffect(() => {
     if (isOpen && !isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, loading, isOpen, isMinimized]);
 
-  // Focus input when opened
   useEffect(() => {
     if (isOpen && !isMinimized) {
       setTimeout(() => {
@@ -131,7 +123,6 @@ export function ChatWidget() {
     setLoading(true);
 
     try {
-      // Build history for context (exclude the welcome message if desired, or include)
       const historyPayload = messages
         .filter((m) => m.id !== "welcome-msg")
         .slice(-6)
@@ -217,14 +208,12 @@ export function ChatWidget() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      {/* Chat Window Dialog */}
       {isOpen && (
         <div
           className={`w-[92vw] sm:w-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-200 mb-3 ${
             isMinimized ? "h-16" : "h-[540px] max-h-[82vh]"
           }`}
         >
-          {/* Header */}
           <div className="bg-gradient-to-r from-[#1b365d] to-[#234575] text-white p-3.5 flex items-center justify-between select-none shadow-sm">
             <div className="flex items-center gap-2.5">
               <div className="relative shrink-0 flex items-center justify-center">
@@ -271,7 +260,6 @@ export function ChatWidget() {
 
           {!isMinimized && (
             <>
-              {/* Message List */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70">
                 {messages.map((msg) => (
                   <div
@@ -435,7 +423,6 @@ export function ChatWidget() {
                   </div>
                 ))}
 
-                {/* Loading indicator */}
                 {loading && (
                   <div className="flex items-start gap-2.5">
                     <div className="h-7 w-7 rounded-full bg-white text-[#1b365d] border border-slate-200 shadow-xs flex items-center justify-center shrink-0">
@@ -454,7 +441,6 @@ export function ChatWidget() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Suggestion Chips (shown when few messages) */}
               {messages.length <= 2 && !loading && (
                 <div className="px-3 py-2 bg-slate-100/70 border-t border-slate-200/70 flex flex-wrap gap-1.5">
                   {QUICK_PROMPTS.map((prompt, idx) => (
@@ -469,7 +455,6 @@ export function ChatWidget() {
                 </div>
               )}
 
-              {/* Input Footer */}
               <div className="p-3 bg-white border-t border-slate-100">
                 <div className="flex items-center gap-2">
                   <input
@@ -500,7 +485,6 @@ export function ChatWidget() {
         </div>
       )}
 
-      {/* Floating Action Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}

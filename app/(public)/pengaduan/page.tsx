@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useToast } from "@/components/ui/toast";
+import { apiInsert, apiFind } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { PageBanner } from "@/components/layout/page-banner";
 
@@ -25,6 +25,7 @@ interface StoredPhone {
 }
 
 export default function ComplaintsPage() {
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -79,7 +80,7 @@ export default function ComplaintsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nama.trim() || !formData.phone.trim()) {
-      alert("Nama lengkap dan nomor telepon wajib diisi.");
+      warning("Nama lengkap dan nomor telepon wajib diisi.");
       return;
     }
 
@@ -98,26 +99,22 @@ export default function ComplaintsPage() {
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const ticketCode = `PGD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
 
-      // Clean phone representation
       const rawPhone = formData.phone.trim();
 
       const payload = {
-        ticketCode,
+        ticket_code: ticketCode,
         nama: formData.nama.trim(),
         email: formData.email.trim(),
         phone: rawPhone,
         category: formData.category,
         title: formData.judul.trim(),
-        judul: formData.judul.trim(),
         message: formData.isi.trim(),
-        isi: formData.isi.trim(),
-        photoUrl,
+        photo_url: photoUrl,
         status: "pending",
-        adminResponse: "",
-        createdAt: serverTimestamp(),
+        admin_response: "",
       };
 
-      await addDoc(collection(db, "complaints"), payload);
+      await apiInsert("complaints", payload);
 
       setSubmittedInfo({
         nama: formData.nama.trim(),
@@ -126,7 +123,6 @@ export default function ComplaintsPage() {
         category: formData.category,
       });
 
-      // Save phone to localStorage for easy return
       try {
         const stored = localStorage.getItem("banjaragung_saved_phones");
         const prevList: StoredPhone[] = stored ? JSON.parse(stored) : [];
@@ -155,7 +151,7 @@ export default function ComplaintsPage() {
       removeFile();
     } catch (error) {
       console.error("Error submitting complaint:", error);
-      alert("Gagal mengirim laporan. Silakan periksa koneksi dan coba lagi.");
+      showError("Gagal mengirim laporan. Silakan periksa koneksi dan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -167,6 +163,22 @@ export default function ComplaintsPage() {
 
     setTrackingLoading(true);
     try {
+      const toItem = (row: Record<string, any>) => ({
+        id: row.id,
+        ticketCode: row.ticket_code,
+        nama: row.nama,
+        email: row.email,
+        phone: row.phone,
+        category: row.category,
+        title: row.title,
+        judul: row.title,
+        message: row.message,
+        isi: row.message,
+        photoUrl: row.photo_url,
+        status: row.status,
+        adminResponse: row.admin_response,
+        createdAt: row.created_at,
+      });
       const digitsOnly = rawSearch.replace(/\D/g, "");
 
       // Generate phone variations (08xxx, 628xxx, +628xxx)
@@ -183,32 +195,28 @@ export default function ComplaintsPage() {
       }
 
       // Also support legacy search by exact ticketCode if user happens to enter one
-      const qByTicket = query(collection(db, "complaints"), where("ticketCode", "==", rawSearch));
-      const snapTicket = await getDocs(qByTicket);
-      const results: any[] = snapTicket.docs.map((d) => ({ id: d.id, ...d.data() }));
+      let results: any[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
 
-      // Query by phone variants
       for (const phoneVal of Array.from(new Set(phoneCandidates))) {
-        const qByPhone = query(collection(db, "complaints"), where("phone", "==", phoneVal));
-        const snapPhone = await getDocs(qByPhone);
-        snapPhone.docs.forEach((d) => {
-          if (!results.some((r) => r.id === d.id)) {
-            results.push({ id: d.id, ...d.data() });
+        const phoneRows = await apiFind("complaints", { column: "phone", value: phoneVal }).catch(() => []);
+        (phoneRows || []).forEach((row) => {
+          const item = toItem(row);
+          if (!results.some((r) => r.id === item.id)) {
+            results.push(item);
           }
         });
       }
 
-      // Sort newest first
       results.sort((a, b) => {
-        const timeA = a.createdAt?.seconds || 0;
-        const timeB = b.createdAt?.seconds || 0;
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeB - timeA;
       });
 
       setTrackedComplaints(results);
     } catch (err) {
       console.error("Error tracking complaint by phone:", err);
-      alert("Gagal memuat status pengaduan. Coba beberapa saat lagi.");
+      showError("Gagal memuat status pengaduan. Coba beberapa saat lagi.");
     } finally {
       setTrackingLoading(false);
     }
@@ -219,7 +227,6 @@ export default function ComplaintsPage() {
     await handleTrackWithPhone();
   };
 
-  // Status statistics for tracked phone
   const stats = trackedComplaints
     ? {
         total: trackedComplaints.length,
@@ -261,7 +268,6 @@ export default function ComplaintsPage() {
 
       <div className="container mx-auto px-6 md:px-12 space-y-10">
 
-      {/* Success Notification after submission */}
       {submittedInfo && (
         <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-950 space-y-4 shadow-xs">
           <div className="flex items-center gap-3">
@@ -309,7 +315,6 @@ export default function ComplaintsPage() {
 
       {activeTab === "form" ? (
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Side Info */}
           <div className="space-y-6">
             <Card className="border-slate-200/90 shadow-xs">
               <CardHeader className="pb-3 border-b border-slate-100">
@@ -363,7 +368,6 @@ export default function ComplaintsPage() {
             </Card>
           </div>
 
-          {/* Form Pengaduan */}
           <div className="md:col-span-2">
             <Card className="border-slate-200/90 shadow-xs">
               <CardHeader className="border-b border-slate-100 pb-4">
@@ -470,7 +474,6 @@ export default function ComplaintsPage() {
                     />
                   </div>
 
-                  {/* Foto Bukti */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-800 block">
                       Lampiran Foto Pendukung (Opsional)
@@ -556,7 +559,6 @@ export default function ComplaintsPage() {
                 </Button>
               </form>
 
-              {/* Laporan Terakhir Tersimpan di Perangkat Ini */}
               {recentPhones.length > 0 && (
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
@@ -585,7 +587,6 @@ export default function ComplaintsPage() {
             </CardContent>
           </Card>
 
-          {/* Results Section */}
           {trackedComplaints !== null && (
             <div className="space-y-4">
               {trackedComplaints.length === 0 ? (
@@ -600,7 +601,6 @@ export default function ComplaintsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Summary Card for Phone Number */}
                   <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
@@ -630,7 +630,6 @@ export default function ComplaintsPage() {
                     </div>
                   </div>
 
-                  {/* List of Complaints */}
                   <div className="space-y-4">
                     {trackedComplaints.map((item, idx) => (
                       <Card key={item.id} className="border-slate-200/90 shadow-xs overflow-hidden">
@@ -678,7 +677,6 @@ export default function ComplaintsPage() {
                             </div>
                           )}
 
-                          {/* Tanggapan Resmi Kelurahan */}
                           {item.adminResponse ? (
                             <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 space-y-1">
                               <p className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">

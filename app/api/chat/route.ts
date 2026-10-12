@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
-import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings } from "@/lib/chatbot-config";
+import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@/lib/chatbot-config";
+import { getSiteSettings } from "@/lib/site-config";
+import { getLetterTypes } from "@/lib/letters";
 
 interface ChatAction {
   label: string;
@@ -113,22 +113,15 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { message, history } = body;
+    const { message, history } = await req.json();
 
-    if (!message || typeof message !== "string" || !message.trim()) {
-      return NextResponse.json(
-        { error: "Pesan tidak boleh kosong." },
-        { status: 400 }
-      );
+    if (!message || typeof message !== "string") {
+      return NextResponse.json({ error: "Pesan tidak valid." }, { status: 400 });
     }
 
-    let settings: ChatbotSettings = { ...DEFAULT_CHATBOT_SETTINGS };
+    let settings: ChatbotSettings = DEFAULT_CHATBOT_SETTINGS;
     try {
-      const chatbotSnap = await getDoc(doc(db, "settings", "chatbot"));
-      if (chatbotSnap.exists()) {
-        settings = { ...settings, ...(chatbotSnap.data() as Partial<ChatbotSettings>) };
-      }
+      settings = await getChatbotSettings();
     } catch (e) {
       console.warn("Could not fetch chatbot settings from DB, using defaults:", e);
     }
@@ -151,30 +144,7 @@ export async function POST(req: NextRequest) {
     let liveContext = "";
     if (settings.includeLiveContext) {
       try {
-        const profileSnap = await getDoc(doc(db, "settings", "profile"));
-        const profile = profileSnap.exists() ? profileSnap.data() : null;
-
-        // Ambil 4 berita & publikasi terbaru dari database secara real-time
-        let latestNewsSection = "";
-        try {
-          const newsSnap = await getDocs(
-            query(collection(db, "news"), orderBy("date", "desc"), limit(4))
-          );
-          if (!newsSnap.empty) {
-            const newsItems = newsSnap.docs.map((docSnap) => {
-              const nd = docSnap.data();
-              return `- "${nd.title || "Berita Kelurahan"}" (Kategori: ${nd.category || "Umum"}, Tanggal: ${nd.date || "Terbaru"}) -> Link: /berita/${docSnap.id}`;
-            });
-            latestNewsSection = `
-[PUBLIKASI & WARTA KELURAHAN TERBARU]:
-Kelurahan memiliki portal publikasi warta resmi di /berita.
-Daftar berita & pengumuman terkini:
-${newsItems.join("\n")}
-            `.trim();
-          }
-        } catch (ne) {
-          console.warn("Could not fetch latest news for chatbot context:", ne);
-        }
+        const profile = await getSiteSettings();
 
         liveContext = `
 [INFORMASI RESMI KELURAHAN TERKINI]:
@@ -193,19 +163,12 @@ ${newsItems.join("\n")}
 
 [LAYANAN MANDIRI / ADMINISTRASI SURAT]:
 Banjar Agung menyediakan pembuatan surat pengantar secara online di menu "Layanan Mandiri" (/layanan).
-Jenis-jenis surat yang dapat diajukan secara mandiri:
-1. Surat Keterangan Tidak Mampu (SKTM) - Untuk beasiswa, keringanan berobat, dan bansos.
-2. Surat Keterangan Domisili - Bukti domisili tempat tinggal warga.
-3. Surat Keterangan Usaha (SKU) - Legalitas usaha mikro & pengajuan KUR perbankan.
-4. Surat Pengantar KTP / KK - Syarat penerbitan KTP / KK ke Disdukcapil.
-5. Surat Keterangan Kelahiran - Syarat pembuatan akta kelahiran anak.
-6. Surat Keterangan Kematian - Syarat pembuatan akta kematian & administrasi waris.
-Alur pengajuan: Warga buka halaman /layanan, isi NIK, Nama, Keperluan, & Kontak WA, lalu kirim. Beri tahu warga bahwa ada tombol CTA langsung ke /layanan.
+Jenis-jenis surat yang dapat diajukan:
+${await (async () => { try { const types = await getLetterTypes(); return types.filter(t => t.active !== false).map((t, i) => `${i + 1}. ${t.name} - ${t.desc}`).join("\n") || "Belum ada jenis surat terdaftar. Silakan hubungi petugas kelurahan."; } catch { return "Data jenis surat sedang dimuat dari database."; } })()}
+Alur pengajuan: Warga memilih jenis surat di halaman /layanan, mengisi NIK, Nama Lengkap, Keperluan, dan Nomor WhatsApp/Telepon, lalu klik Kirim Permohonan. Petugas desa akan memproses permohonan. Beri tahu warga bahwa ada tombol tindakan langsung.
 
 [PENGADUAN WARGA]:
-Warga dapat menyampaikan aspirasi, keluhan jalan rusak, sampah, lampu mati, atau pengaduan lingkungan melalui halaman "Pengaduan" (/pengaduan) secara online. Beri tahu warga bahwa ada tombol CTA langsung ke /pengaduan.
-
-${latestNewsSection}
+Warga dapat menyampaikan aspirasi atau laporan pengaduan melalui halaman "Pengaduan" (/pengaduan) dengan mengisi formulir secara online. Laporan akan ditindaklanjuti oleh aparatur kelurahan. Beri tahu warga bahwa ada tombol tindakan langsung ke /pengaduan.
         `.trim();
       } catch (e) {
         console.warn("Could not fetch live profile context:", e);

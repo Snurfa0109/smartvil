@@ -1,16 +1,16 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import {
-  onAuthStateChanged,
-  User,
-  signOut as firebaseSignOut,
-} from "firebase/auth";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { apiGet, getToken, setToken } from "@/lib/api";
 
 export type AdminRole = "superadmin" | "admin" | "operator";
+
+export interface AuthUser {
+  uid: string;
+  email: string;
+  displayName: string;
+}
 
 export interface AdminProfile {
   uid: string;
@@ -24,7 +24,7 @@ export interface AdminProfile {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   role: AdminRole | "user" | null;
   adminProfile: AdminProfile | null;
   loading: boolean;
@@ -46,109 +46,72 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [role, setRole] = useState<AdminRole | "user" | null>(null);
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-
-      if (firebaseUser) {
-        try {
-          const userDocRef = doc(db, "users", firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            let userRole = (data.role as AdminRole) || "admin";
-            // Akun utama kelurahan selalu memegang peran Super Administrator
-            if (firebaseUser.email === "admin@banjaragung.go.id") {
-              userRole = "superadmin";
-            }
-            const active = data.active !== false; // default true if not set
-
-            setRole(active ? userRole : "user");
-            setAdminProfile({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email ?? "",
-              displayName: firebaseUser.displayName ?? data.displayName ?? "Admin",
-              role: userRole,
-              active,
-              department: data.department ?? "",
-              lastLogin: data.lastLogin ?? null,
-              permissions: Array.isArray(data.permissions) ? (data.permissions as string[]) : undefined,
-            });
-          } else {
-            // First time or legacy admin: bootstrap as superadmin
-            const initialProfile: AdminProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email ?? "",
-              displayName: firebaseUser.displayName ?? "Super Admin",
-              role: "superadmin",
-              active: true,
-              department: "Sekretariat Kelurahan",
-            };
-            try {
-              const { setDoc } = await import("firebase/firestore");
-              await setDoc(userDocRef, {
-                ...initialProfile,
-                createdAt: serverTimestamp(),
-              });
-            } catch (initErr) {
-              console.warn("Could not auto-bootstrap admin record:", initErr);
-            }
-            setRole("superadmin");
-            setAdminProfile(initialProfile);
-          }
-        } catch (error) {
-          console.error("Error fetching user role:", error);
-          // Fallback to admin to prevent accidental lockouts
-          setRole("admin");
-          setAdminProfile({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email ?? "",
-            displayName: firebaseUser.displayName ?? "Admin",
-            role: "admin",
-            active: true,
-          });
-        }
-      } else {
-        setRole(null);
-        setAdminProfile(null);
-      }
-
+    const token = getToken();
+    if (!token) {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+      return;
+    }
+    // Decode JWT payload (uid/email) to hydrate basic user info
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1])) as { uid?: string; email?: string };
+      apiGet("profiles", payload.uid || "")
+        .then((row) => {
+          if (!row || Number(row.active) === 0) {
+            setToken(null);
+            setUser(null);
+            setRole(null);
+            setAdminProfile(null);
+            setLoading(false);
+            return;
+          }
+          const profile: AdminProfile = {
+            uid: String(row.id),
+            email: String(row.email),
+            displayName: String(row.display_name || "Admin"),
+            role: (row.role as AdminRole) || "admin",
+            active: Number(row.active) !== 0,
+            department: String(row.department || ""),
+            lastLogin: row.last_login ? new Date(row.last_login as string).toISOString() : undefined,
+            permissions: (row.permissions as string[]) || [],
+          };
+          setUser({ uid: profile.uid, email: profile.email, displayName: profile.displayName });
+          setRole(profile.role);
+          setAdminProfile(profile);
+          setLoading(false);
+        })
+        .catch(() => {
+          setToken(null);
+          setLoading(false);
+        });
+    } catch {
+      setToken(null);
+      setLoading(false);
+    }
   }, []);
 
   const signOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-      router.push("/login");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    setToken(null);
+    setUser(null);
+    setRole(null);
+    setAdminProfile(null);
+    router.push("/login");
   };
 
-  // Admin kelurahan (superadmin atau admin) memiliki wewenang penuh untuk kelola admin/sub-admin dan audit trail
   const isSuperAdmin = role === "superadmin" || role === "admin";
 
-  const canAccess = (featureKey: string): boolean => {
-    if (!user) return false;
-    if (featureKey === "audit" || featureKey === "admins") {
-      return role === "superadmin" || role === "admin";
-    }
-    if (role === "superadmin" || role === "admin") {
-      return true;
-    }
-    if (adminProfile && Array.isArray(adminProfile.permissions)) {
-      return adminProfile.permissions.includes(featureKey);
-    }
-    return true;
+  const canAccess = (featureKey: string) => {
+    if (isSuperAdmin) return true;
+    if (!adminProfile) return false;
+    const perms = adminProfile.permissions ?? [];
+    if (perms.includes("*")) return true;
+    return perms.includes(featureKey);
   };
 
   return (

@@ -29,25 +29,27 @@ import {
   Trash2,
   GripVertical,
 } from "lucide-react";
-import { seedDatabase } from "@/utils/seedData";
-import { db, auth, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { updateProfile, updatePassword } from "firebase/auth";
-import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings } from "@/lib/chatbot-config";
+import { useAuth } from "@/contexts/AuthContext";
+import { uploadImageToStorage } from "@/lib/uploadImage";
+import { getToken } from "@/lib/api";
+import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings, saveChatbotSettings } from "@/lib/chatbot-config";
 import {
   SiteSettings,
   DEFAULT_SITE_SETTINGS,
   getSiteSettings,
   saveSiteSettings,
+  invalidateSiteSettings,
   getBeritaCategories,
   saveBeritaCategories,
   DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
 import { BannerManagement } from "@/components/dashboard/banner-management";
+import { useToast } from "@/components/ui/toast";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
+  const { user: authUser } = useAuth();
+  const { success, error: showError, confirm: showConfirm } = useToast();
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -76,8 +78,6 @@ function SettingsContent() {
   const [accountMsg, setAccountMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [seeding, setSeeding] = useState(false);
-
-  // Kategori Berita State
   const [beritaCategories, setBeritaCategories] = useState<string[]>(DEFAULT_BERITA_CATEGORIES);
   const [newCategoryInput, setNewCategoryInput] = useState("");
   const [editingCategoryIdx, setEditingCategoryIdx] = useState<number | null>(null);
@@ -105,11 +105,8 @@ function SettingsContent() {
       }
 
       try {
-        const ref = doc(db, "settings", "chatbot");
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setChatbotForm((prev) => ({ ...prev, ...(snap.data() as Partial<ChatbotSettings>) }));
-        }
+        const config = await getChatbotSettings();
+        setChatbotForm((prev) => ({ ...prev, ...config }));
       } catch (err) {
         console.error("Error loading chatbot settings:", err);
       } finally {
@@ -128,8 +125,8 @@ function SettingsContent() {
 
     loadData();
 
-    if (auth.currentUser?.displayName) {
-      setAccountName(auth.currentUser.displayName);
+    if (authUser?.displayName) {
+      setAccountName(authUser.displayName);
     }
   }, []);
 
@@ -138,6 +135,7 @@ function SettingsContent() {
     setSiteMsg(null);
     try {
       await saveSiteSettings(siteForm);
+      invalidateSiteSettings();
       setSiteMsg({
         type: "success",
         text: `Berhasil! ${sectionName} telah diperbarui dan otomatis tampil di halaman website.`,
@@ -163,13 +161,11 @@ function SettingsContent() {
     const key = field as string;
     setUploadingPhoto(key);
     try {
-      const storageRef = ref(storage, `aparatur/${key}-${Date.now()}-${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadImageToStorage(file, "aparatur");
       setSiteForm((p) => ({ ...p, [field]: url }));
     } catch (err) {
       console.error("Photo upload error:", err);
-      alert("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
+      showError("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
     } finally {
       setUploadingPhoto(null);
     }
@@ -178,18 +174,14 @@ function SettingsContent() {
   const handleSaveChatbot = async () => {
     try {
       setSavingChatbot(true);
-      await setDoc(
-        doc(db, "settings", "chatbot"),
-        {
-          ...chatbotForm,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
-      alert("Pengaturan Chatbot AI berhasil disimpan!");
+      await saveChatbotSettings({
+        ...chatbotForm,
+        updatedAt: new Date().toISOString(),
+      });
+      success("Pengaturan Chatbot AI berhasil disimpan!");
     } catch (error) {
       console.error("Error saving chatbot settings:", error);
-      alert("Gagal menyimpan pengaturan chatbot.");
+      showError("Gagal menyimpan pengaturan chatbot.");
     } finally {
       setSavingChatbot(false);
     }
@@ -198,16 +190,18 @@ function SettingsContent() {
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setAccountMsg(null);
-    const user = auth.currentUser;
-    if (!user) {
+    
+    if (!authUser) {
       setAccountMsg({ type: "error", text: "Sesi login tidak ditemukan. Silakan login kembali." });
       return;
     }
 
     setSavingAccount(true);
     try {
-      if (accountName.trim() && accountName !== user.displayName) {
-        await updateProfile(user, { displayName: accountName.trim() });
+      const updates: Record<string, unknown> = {};
+      
+      if (accountName.trim() && accountName !== authUser.displayName) {
+        updates.display_name = accountName.trim();
       }
 
       if (newPassword) {
@@ -217,9 +211,25 @@ function SettingsContent() {
         if (newPassword !== confirmPassword) {
           throw new Error("Konfirmasi password tidak cocok.");
         }
-        await updatePassword(user, newPassword);
-        setNewPassword("");
-        setConfirmPassword("");
+        updates.password = newPassword;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const res = await fetch(`/api/admins`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: authUser.uid, ...updates }),
+        });
+        
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Gagal memperbarui profil.");
+        }
+        
+        if (newPassword) {
+          setNewPassword("");
+          setConfirmPassword("");
+        }
       }
 
       setAccountMsg({ type: "success", text: "Informasi profil akun & kata sandi berhasil diperbarui!" });
@@ -232,14 +242,28 @@ function SettingsContent() {
   };
 
   const handleSeed = async () => {
-    if (confirm("Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.")) {
+    const confirmed = await showConfirm({
+      title: "Isi Database Dummy?",
+      message: "Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.",
+      variant: "danger",
+      confirmLabel: "Ya, Isi Data",
+    });
+    if (confirmed) {
       setSeeding(true);
-      const success = await seedDatabase();
-      setSeeding(false);
-      if (success) {
-        alert("Database berhasil diisi dengan data dummy!");
-      } else {
-        alert("Gagal mengisi database.");
+      try {
+        const token = getToken();
+        const res = await fetch("/api/seed", { 
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal mengisi database.");
+        success("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
+      } catch (err: any) {
+        console.error("Seed error:", err);
+        showError("Gagal mengisi database: " + (err.message || "Unknown error"));
+      } finally {
+        setSeeding(false);
       }
     }
   };
@@ -295,10 +319,7 @@ function SettingsContent() {
             <Database className="h-4 w-4" /> Sistem
           </TabsTrigger>
         </TabsList>
-
-        {/* TAB 1: PROFIL KELURAHAN */}
         <TabsContent value="profile" className="space-y-6">
-          {/* Header & Judul */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Judul Halaman Profil</CardTitle>
@@ -329,8 +350,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Sejarah, Visi & Misi */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Sejarah, Visi & Misi Kelurahan</CardTitle>
@@ -378,8 +397,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Struktur Organisasi & Aparatur */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Struktur Organisasi & Aparatur Kelurahan</CardTitle>
@@ -388,13 +405,11 @@ function SettingsContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Lurah */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="font-semibold text-sm text-[#1b365d] flex items-center gap-2">
                   <User className="h-4 w-4" /> Pimpinan / Kepala Kelurahan (Lurah)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                  {/* Foto */}
                   <div className="space-y-2">
                     <Label className="text-xs">Foto Resmi</Label>
                     <div className="flex flex-col items-center gap-2">
@@ -423,11 +438,13 @@ function SettingsContent() {
                       <Label htmlFor="head-title">Jabatan Resmi</Label>
                       <Input id="head-title" value={siteForm.headTitle} onChange={(e) => setSiteForm((p) => ({ ...p, headTitle: e.target.value }))} disabled={siteLoading} />
                     </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="head-nip">NIP (untuk tanda tangan surat)</Label>
+                      <Input id="head-nip" value={siteForm.headNip} onChange={(e) => setSiteForm((p) => ({ ...p, headNip: e.target.value }))} disabled={siteLoading} placeholder="19780512 200501 1 004" />
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Seklur */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="font-semibold text-sm text-blue-700 flex items-center gap-2">
                   <User className="h-4 w-4" /> Sekretaris Kelurahan (Seklur)
@@ -464,10 +481,7 @@ function SettingsContent() {
                   </div>
                 </div>
               </div>
-
-              {/* Kasi Pemerintahan & Kasi Pelayanan */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Kasi Pemerintahan */}
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="font-semibold text-sm text-emerald-700 flex items-center gap-2">
                     <User className="h-4 w-4" /> Kasi Pemerintahan & Trantib
@@ -495,8 +509,6 @@ function SettingsContent() {
                     <Input id="kasi-pem-title" value={siteForm.kasiPemerintahanTitle} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPemerintahanTitle: e.target.value }))} disabled={siteLoading} />
                   </div>
                 </div>
-
-                {/* Kasi Pelayanan */}
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="font-semibold text-sm text-amber-700 flex items-center gap-2">
                     <User className="h-4 w-4" /> Kasi Pelayanan Umum
@@ -527,8 +539,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Fasilitas & Pemukiman Utama */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Fasilitas & Pemukiman Utama</CardTitle>
@@ -591,8 +601,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Geografis & Batas Wilayah */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Geografis & Batas Wilayah</CardTitle>
@@ -619,7 +627,7 @@ function SettingsContent() {
                     value={siteForm.geoCoord}
                     onChange={(e) => setSiteForm((p) => ({ ...p, geoCoord: e.target.value }))}
                     disabled={siteLoading}
-                    placeholder="Contoh: 6°7′25″S 106°11′54″E"
+                    placeholder="Contoh: 6Â°7â€²25â€³S 106Â°11â€²54â€³E"
                   />
                 </div>
               </div>
@@ -688,8 +696,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Identitas & Kode Wilayah */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -748,7 +754,7 @@ function SettingsContent() {
                   className="font-mono text-xs"
                 />
                 <p className="text-[11px] text-slate-500">
-                  Buka Google Maps → Bagikan → Sematkan Peta → Salin URL dari atribut <code>src</code> pada kode iframe.
+                  Buka Google Maps â†’ Bagikan â†’ Sematkan Peta â†’ Salin URL dari atribut <code>src</code> pada kode iframe.
                 </p>
               </div>
             </CardContent>
@@ -765,10 +771,7 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB 2: BERANDA & LOKET */}
         <TabsContent value="home" className="space-y-6">
-          {/* Hero Beranda */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Teks Hero Beranda Utama</CardTitle>
@@ -810,8 +813,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Status & Jam Operasional Loket */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Status & Jadwal Loket Pelayanan</CardTitle>
@@ -859,8 +860,6 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Kontak Darurat Wilayah Terpadu */}
           <Card className="border-slate-200">
             <CardHeader>
               <CardTitle className="text-lg">Kontak Darurat Wilayah Terpadu</CardTitle>
@@ -934,8 +933,6 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB 3: KONTAK & MEDSOS */}
         <TabsContent value="contact" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1029,8 +1026,6 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB 4: CHATBOT AI */}
         <TabsContent value="chatbot" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1189,8 +1184,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* TAB 5: AKUN ADMIN */}
         <TabsContent value="account" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1221,7 +1214,7 @@ function SettingsContent() {
                   <Input
                     type="email"
                     disabled
-                    value={auth.currentUser?.email || "admin@banjaragung.go.id"}
+                    value={authUser?.email || "admin@banjaragung.go.id"}
                     className="bg-slate-100 text-slate-500 font-mono text-xs"
                   />
                   <p className="text-[11px] text-slate-500">Email login terikat dengan lisensi akun desa.</p>
@@ -1281,8 +1274,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* TAB 6: SISTEM */}
         <TabsContent value="system" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1307,8 +1298,6 @@ function SettingsContent() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* TAB: KATEGORI BERITA */}
         <TabsContent value="categories" className="space-y-6">
           <Card className="border-slate-200">
             <CardHeader>
@@ -1483,3 +1472,4 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
+

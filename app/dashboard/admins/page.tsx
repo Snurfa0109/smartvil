@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { db, firebaseConfig } from "@/lib/firebase";
+import { apiList, apiUpdate, apiDelete, getToken } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
-import {
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
 import {
   ShieldCheck,
   UserPlus,
@@ -37,6 +26,7 @@ import {
   MANAGEABLE_FEATURES,
   DEFAULT_ADMIN_PERMISSIONS,
 } from "@/lib/permissions";
+import { useToast } from "@/components/ui/toast";
 
 interface AdminUser {
   id: string;
@@ -61,6 +51,7 @@ const DEPARTMENTS = [
 
 export default function AdminsManagementPage() {
   const { user: currentUser, isSuperAdmin } = useAuth();
+  const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -86,27 +77,23 @@ export default function AdminsManagementPage() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "users"));
-      const list: AdminUser[] = [];
-      snap.forEach((d) => {
-        const data = d.data();
-        list.push({
-          id: d.id,
-          uid: data.uid || d.id,
-          displayName: data.displayName || "Admin",
-          email: data.email || "-",
-          role: data.role || "admin",
-          department: data.department || "Kelurahan",
-          active: data.active !== false,
-          createdAt: data.createdAt,
-          lastLogin: data.lastLogin,
-          permissions: Array.isArray(data.permissions)
-            ? data.permissions
-            : data.role === "superadmin"
-            ? []
-            : DEFAULT_ADMIN_PERMISSIONS,
-        });
-      });
+      const rows = await apiList("profiles");
+      const list: AdminUser[] = (rows || []).map((row) => ({
+        id: String(row.id),
+        uid: String(row.id),
+        displayName: String(row.display_name || "Admin"),
+        email: String(row.email || "-"),
+        role: (row.role as any) || "admin",
+        department: String(row.department || "Kelurahan"),
+        active: Number(row.active) !== 0,
+        createdAt: row.created_at,
+        lastLogin: row.last_login,
+        permissions: Array.isArray(row.permissions)
+          ? row.permissions
+          : row.role === "superadmin"
+          ? []
+          : DEFAULT_ADMIN_PERMISSIONS,
+      }));
       list.sort((a, b) => {
         if (a.role === "superadmin" && b.role !== "superadmin") return -1;
         if (b.role === "superadmin" && a.role !== "superadmin") return 1;
@@ -170,34 +157,31 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      const secondaryAppName = `SecondaryApp_${Date.now()}`;
-      const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
-      const secondaryAuth = getAuth(secondaryApp);
-
-      const userCred = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        formData.email.trim(),
-        formData.password
-      );
-
-      await updateProfile(userCred.user, {
-        displayName: formData.displayName.trim(),
+      const token = getToken();
+      if (!token) {
+        setErrorMsg("Sesi login tidak ditemukan. Silakan login kembali.");
+        return;
+      }
+      const res = await fetch("/api/admins", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+          displayName: formData.displayName.trim(),
+          role: formData.role,
+          department: formData.department,
+          permissions: formData.role === "superadmin" ? [] : formData.permissions,
+        }),
       });
-
-      const newAdminData = {
-        uid: userCred.user.uid,
-        displayName: formData.displayName.trim(),
-        email: formData.email.trim(),
-        role: formData.role,
-        department: formData.department,
-        permissions: formData.role === "superadmin" ? [] : formData.permissions,
-        active: true,
-        createdAt: serverTimestamp(),
-      };
-
-      await setDoc(doc(db, "users", userCred.user.uid), newAdminData);
-
-      await signOut(secondaryAuth);
+      const result = await res.json();
+      if (!res.ok) {
+        setErrorMsg(result.error || "Gagal membuat admin baru.");
+        return;
+      }
 
       await writeAuditLog(
         "CREATE",
@@ -210,11 +194,7 @@ export default function AdminsManagementPage() {
       await fetchAdmins();
     } catch (err: any) {
       console.error(err);
-      if (err.code === "auth/email-already-in-use") {
-        setErrorMsg("Email sudah terdaftar. Gunakan email lain.");
-      } else {
-        setErrorMsg(err.message || "Gagal membuat admin baru.");
-      }
+      setErrorMsg(err.message || "Gagal membuat admin baru.");
     } finally {
       setSubmitting(false);
     }
@@ -228,16 +208,13 @@ export default function AdminsManagementPage() {
     setErrorMsg("");
 
     try {
-      const updatePayload = {
-        displayName: formData.displayName.trim(),
+      await apiUpdate("profiles", editingAdmin.uid, {
+        display_name: formData.displayName.trim(),
         role: formData.role,
         department: formData.department,
         permissions: formData.role === "superadmin" ? [] : formData.permissions,
-        active: formData.active,
-        updatedAt: serverTimestamp(),
-      };
-
-      await updateDoc(doc(db, "users", editingAdmin.uid), updatePayload);
+        active: formData.active ? 1 : 0,
+      });
 
       await writeAuditLog(
         "UPDATE",
@@ -261,7 +238,7 @@ export default function AdminsManagementPage() {
 
   const handleToggleStatus = async (admin: AdminUser) => {
     if (admin.uid === currentUser?.uid) {
-      alert("Anda tidak dapat menonaktifkan akun sendiri.");
+      warning("Anda tidak dapat menonaktifkan akun sendiri.");
       return;
     }
 
@@ -270,13 +247,16 @@ export default function AdminsManagementPage() {
       ? `Aktifkan kembali akses untuk ${admin.displayName}?`
       : `Nonaktifkan akun ${admin.displayName}? Pengguna ini tidak akan bisa login ke dashboard.`;
 
-    if (!confirm(confirmMsg)) return;
+    const confirmed = await showConfirm({
+      title: nextState ? "Aktifkan Akun?" : "Nonaktifkan Akun?",
+      message: confirmMsg,
+      variant: nextState ? "default" : "danger",
+      confirmLabel: nextState ? "Ya, Aktifkan" : "Ya, Nonaktifkan",
+    });
+    if (!confirmed) return;
 
     try {
-      await updateDoc(doc(db, "users", admin.uid), {
-        active: nextState,
-        updatedAt: serverTimestamp(),
-      });
+      await apiUpdate("profiles", admin.uid, { active: nextState ? 1 : 0 });
 
       await writeAuditLog(
         "UPDATE",
@@ -287,22 +267,43 @@ export default function AdminsManagementPage() {
       await fetchAdmins();
     } catch (err) {
       console.error(err);
-      alert("Gagal mengubah status akun admin.");
+      showError("Gagal mengubah status akun admin.");
     }
   };
 
   const handleDeleteAdmin = async (admin: AdminUser) => {
     if (admin.uid === currentUser?.uid) {
-      alert("Anda tidak dapat menghapus akun sendiri!");
+      warning("Anda tidak dapat menghapus akun sendiri!");
       return;
     }
 
-    if (!confirm(`Hapus permanen hak akses admin ${admin.displayName} (${admin.email})?`)) {
-      return;
-    }
+    const confirmed = await showConfirm({
+      title: "Hapus Admin?",
+      message: `Hapus permanen hak akses admin ${admin.displayName} (${admin.email})?`,
+      variant: "danger",
+      confirmLabel: "Ya, Hapus",
+    });
+    if (!confirmed) return;
 
     try {
-      await deleteDoc(doc(db, "users", admin.uid));
+      const token = getToken();
+      if (!token) {
+        showError("Sesi login tidak ditemukan. Silakan login kembali.");
+        return;
+      }
+      const res = await fetch("/api/admins", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uid: admin.uid }),
+      });
+      if (!res.ok) {
+        const result = await res.json();
+        showError(result.error || "Gagal menghapus admin.");
+        return;
+      }
 
       await writeAuditLog(
         "DELETE",
@@ -313,7 +314,7 @@ export default function AdminsManagementPage() {
       await fetchAdmins();
     } catch (err) {
       console.error(err);
-      alert("Gagal menghapus admin.");
+      showError("Gagal menghapus admin.");
     }
   };
 
