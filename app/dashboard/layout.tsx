@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   History,
   ShieldAlert,
-  ArrowLeft
+  ArrowLeft,
+  Sparkles
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,7 +86,8 @@ export default function DashboardLayout({
     { key: "layanan", href: "/dashboard/layanan", label: "Permohonan Surat", icon: FileText },
     { key: "penduduk", href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
     { key: "pengaduan", href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
-    { key: "settings", href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe },
+    { key: "settings", href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe, exact: true },
+    { key: "settings", href: "/dashboard/settings?tab=banners", label: "Kelola Banner Web", icon: Sparkles },
   ];
 
   const baseNavItems = allBaseNavItems.filter((item) => canAccess(item.key));

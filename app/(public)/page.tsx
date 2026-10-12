@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
 import { stripHtml } from "@/lib/utils";
+import { PageBanner } from "@/components/layout/page-banner";
 
 type LandingNewsItem = {
   id: string;
@@ -202,126 +203,103 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-12 pb-16">
-      {/* Hero Section - Formal Government Portal */}
-      <section className="relative py-12 md:py-16 bg-[#f0f4f9] border-b border-slate-200">
-        <div className="container mx-auto px-6 md:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-semibold bg-white text-[#1b365d] border border-slate-200 shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                {siteConfig.heroBadge}
+      {/* Dynamic Aesthetic Hero Banner */}
+      <PageBanner
+        pageKey="beranda"
+        overrideTitle={siteConfig.heroTitle}
+        overrideSubtitle={siteConfig.heroSubtitle}
+        overrideBadge={siteConfig.heroBadge}
+      />
+
+      {/* Info Loket & Layanan Cepat (Floating Summary Bar) */}
+      <div className="container mx-auto px-6 md:px-12 -mt-6 sm:-mt-8 relative z-20">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            
+            {/* Loket Status */}
+            <div className="md:col-span-4 flex items-center justify-between border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center font-bold shrink-0">
+                  <Building className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900">Kantor Kelurahan</h4>
+                  <p className="text-xs text-slate-500">Pusat Layanan Terpadu</p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                siteConfig.counterStatus === "Buka" 
+                  ? "text-emerald-700 bg-emerald-50 border border-emerald-200" 
+                  : "text-amber-700 bg-amber-50 border border-amber-200"
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${siteConfig.counterStatus === "Buka" ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                Loket {siteConfig.counterStatus === "Buka" ? "Dibuka" : "Ditutup"}
+              </span>
+            </div>
+
+            {/* Jam Operasional & Layanan Mandiri */}
+            <div className="md:col-span-4 grid grid-cols-2 gap-3 text-xs border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6">
+              <div className="bg-slate-50/80 border border-slate-100 p-2.5 rounded-xl space-y-0.5">
+                <div className="flex items-center gap-1.5 text-slate-600 font-medium text-[11px]">
+                  <Clock className="w-3 h-3 text-[#1b365d]" />
+                  <span>Loket Fisik</span>
+                </div>
+                <span className="font-bold text-slate-800 text-xs block">{siteConfig.counterHours}</span>
+                <span className="text-[10px] text-slate-500 block">{siteConfig.counterDays}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.2]">
-                {siteConfig.heroTitle}
-              </h1>
-
-              <p className="text-sm md:text-base text-slate-600 leading-relaxed max-w-xl">
-                {siteConfig.heroSubtitle}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <Link href="/layanan#alur">
-                  <Button size="lg" className="bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold rounded-lg shadow-xs">
-                    Alur Permohonan Surat <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/pengaduan#alur">
-                  <Button variant="outline" size="lg" className="border-slate-300 text-slate-700 bg-white hover:bg-slate-50 font-semibold rounded-lg">
-                    Alur Pengaduan Masyarakat
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center gap-5 text-xs text-slate-600 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Bebas Biaya Retribusi
+              <div className="bg-emerald-50/50 border border-emerald-100 p-2.5 rounded-xl space-y-0.5">
+                <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[11px]">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>Layanan Mandiri</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-[#1b365d]" />
-                  Standar Proses 1 - 2 Hari Kerja
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FileCheck2 className="w-4 h-4 text-[#c9971c]" />
-                  Nomor Tiket Terverifikasi
-                </div>
+                <span className="font-bold text-[#1b365d] text-xs block">Online 24 Jam</span>
+                <span className="text-[10px] text-emerald-700/80 block">Dari rumah / gawai</span>
               </div>
             </div>
 
-            {/* Right: Info Loket & Layanan Cepat */}
-            <div className="lg:col-span-5">
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center font-bold">
-                      <Building className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-900">Kantor Kelurahan</h4>
-                      <p className="text-xs text-slate-500">Pusat Layanan Terpadu</p>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    siteConfig.counterStatus === "Buka" 
-                      ? "text-emerald-700 bg-emerald-50 border border-emerald-200" 
-                      : "text-amber-700 bg-amber-50 border border-amber-200"
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${siteConfig.counterStatus === "Buka" ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
-                    Loket {siteConfig.counterStatus === "Buka" ? "Dibuka" : "Ditutup"}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-slate-50/80 border border-slate-100 p-3.5 rounded-xl space-y-1">
-                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                      <Clock className="w-3.5 h-3.5 text-[#1b365d]" />
-                      <span>Loket Fisik</span>
-                    </div>
-                    <span className="font-bold text-slate-800 text-sm block">{siteConfig.counterHours}</span>
-                    <span className="text-[11px] text-slate-500 block">{siteConfig.counterDays}</span>
-                  </div>
-
-                  <div className="bg-emerald-50/50 border border-emerald-100 p-3.5 rounded-xl space-y-1">
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Layanan Mandiri</span>
-                    </div>
-                    <span className="font-bold text-[#1b365d] text-sm block">Online 24 Jam</span>
-                    <span className="text-[11px] text-emerald-700/80 block">Dari rumah / gawai</span>
-                  </div>
-                </div>
-
-                {/* Quick Info: Alamat & WhatsApp Resmi */}
-                <div className="pt-2 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#1b365d] shrink-0" />
-                    <span className="truncate text-slate-600 font-medium">{siteConfig.villageAddress}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 bg-slate-50/80 px-3 py-2 rounded-lg border border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="text-slate-600">WhatsApp Resmi:</span>
-                    </div>
-                    <a
-                      href={`https://wa.me/${siteConfig.villagePhone.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1"
-                    >
-                      {siteConfig.villagePhone}
-                      <ArrowRight className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
+            {/* Alamat & WhatsApp */}
+            <div className="md:col-span-4 space-y-2 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1b365d] shrink-0" />
+                <span className="truncate text-slate-600 font-medium">{siteConfig.villageAddress}</span>
               </div>
+              <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <Phone className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span className="text-[11px] text-slate-600">WhatsApp:</span>
+                </div>
+                <a
+                  href={`https://wa.me/${siteConfig.villagePhone.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-xs text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1"
+                >
+                  {siteConfig.villagePhone}
+                  <ArrowRight className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Trust Indicators Bar */}
+          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 font-medium">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              Bebas Biaya Retribusi (Gratis)
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-[#1b365d]" />
+              Standar Proses 1 - 2 Hari Kerja
+            </div>
+            <div className="flex items-center gap-1.5">
+              <FileCheck2 className="w-4 h-4 text-[#c9971c]" />
+              Nomor Tiket Terverifikasi Otomatis
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* 4 Pilar Layanan Publik - Clean Formal Grid */}
       <section className="container mx-auto px-6 md:px-12">

@@ -82,6 +82,17 @@ export default function NewsPage() {
     );
   }, [newsItems]);
 
+  const categoryCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    newsItems.forEach((n) => {
+      if (n.category && n.category.trim()) {
+        const cat = n.category.trim();
+        map[cat] = (map[cat] || 0) + 1;
+      }
+    });
+    return map;
+  }, [newsItems]);
+
   const archives = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
     newsItems.forEach((item) => {
@@ -155,97 +166,128 @@ export default function NewsPage() {
   const activeArchiveLabel = archives.find((a) => a.key === selectedArchive)?.label;
 
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      {/* Header Section */}
-      <div className="max-w-3xl space-y-3">
-        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-          Warta & Publikasi Resmi
-        </span>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-          Berita & Pengumuman Kelurahan
-        </h1>
-        <p className="text-slate-600 text-sm leading-relaxed">
-          Informasi terkini mengenai kegiatan pemerintahan, pengumuman layanan, dan pembangunan di lingkungan Kelurahan Banjar Agung.
-        </p>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 md:p-6 shadow-xs space-y-4">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Cari berdasarkan judul, isi berita, atau kata kunci..."
-            className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] transition-all"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => handleSearchChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-              title="Hapus pencarian"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+    <div className="pb-20 pt-6 md:pt-8 bg-slate-50/50 min-h-screen">
+      <div className="container mx-auto px-6 md:px-12 space-y-8">
+        {/* Clean Header: Langsung ke Inti Berita & Pengumuman */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-200">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20 mb-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#1b365d]" />
+              <span>Publikasi & Informasi Publik</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Warta & Pengumuman Kelurahan
+            </h1>
+            <p className="text-slate-500 text-sm sm:text-base mt-1.5 max-w-2xl leading-relaxed">
+              Informasi terkini kegiatan aparatur, siaran pers pembangunan, agenda kemasyarakatan, dan pengumuman resmi Kelurahan Banjar Agung.
+            </p>
+          </div>
+          <div className="text-xs text-slate-500 font-medium shrink-0 bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs w-fit">
+            Total Publikasi: <span className="font-bold text-[#1b365d] font-mono">{newsItems.length}</span> Berita
+          </div>
         </div>
 
-        {/* Filter Categories & Status */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1">
-              <Tag className="w-3.5 h-3.5" />
-              Kategori:
-            </span>
-            <button
-              onClick={() => handleCategoryChange(null)}
-              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors border ${
-                !selectedCategory || selectedCategory === "Semua"
-                  ? "bg-[#1b365d] text-white border-[#1b365d]"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-              }`}
-            >
-              Semua ({newsItems.length})
-            </button>
-            {categories.map((cat) => (
+        {/* Search & Filter Bar with Enhanced UCD Contrast & Affordance */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
+          {/* Search Input Box */}
+          <div className="relative flex items-center bg-slate-50/90 hover:bg-white focus-within:bg-white border-2 border-slate-200 hover:border-slate-300 focus-within:border-[#1b365d] rounded-xl transition-all shadow-2xs">
+            <div className="pl-4 pr-1 text-[#1b365d] flex items-center pointer-events-none">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Cari berita berdasarkan judul, topik, isi, atau kata kunci..."
+              className="w-full pl-2.5 pr-10 py-3 text-sm text-slate-900 placeholder-slate-400 bg-transparent focus:outline-none font-medium"
+            />
+            {searchTerm && (
               <button
-                key={cat}
-                onClick={() => handleCategoryChange(cat)}
-                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors border ${
-                  selectedCategory === cat
-                    ? "bg-[#1b365d] text-white border-[#1b365d]"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                }`}
+                onClick={() => handleSearchChange("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 bg-slate-200/60 hover:bg-slate-200 rounded-full p-1 transition-colors"
+                title="Hapus pencarian"
               >
-                {cat}
+                <X className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Active Filter Indicators & Reset */}
-          {isFiltering && (
-            <div className="flex items-center gap-2">
-              {selectedArchive && (
-                <span className="inline-flex items-center gap-1.5 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
-                  Arsip: {activeArchiveLabel}
-                  <button onClick={() => handleArchiveChange(null)} className="hover:text-slate-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
+          {/* Filter Categories & Status */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1.5 uppercase tracking-wider">
+                <Tag className="w-3.5 h-3.5 text-[#1b365d]" />
+                Kategori:
+              </span>
               <button
-                onClick={handleResetFilters}
-                className="inline-flex items-center gap-1 text-xs text-[#1b365d] hover:underline font-semibold"
+                onClick={() => handleCategoryChange(null)}
+                className={`text-xs px-3.5 py-1.5 rounded-xl font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                  !selectedCategory || selectedCategory === "Semua"
+                    ? "bg-[#1b365d] text-white shadow-xs ring-2 ring-[#1b365d]/20 scale-[1.02]"
+                    : "bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200/80 hover:border-slate-300"
+                }`}
               >
-                <RotateCcw className="w-3 h-3" />
-                Reset Filter
+                <span>Semua</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    !selectedCategory || selectedCategory === "Semua"
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-200/80 text-slate-600"
+                  }`}
+                >
+                  {newsItems.length}
+                </span>
               </button>
+              {categories.map((cat) => {
+                const isSelected = selectedCategory === cat;
+                const count = categoryCounts[cat] || 0;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryChange(cat)}
+                    className={`text-xs px-3.5 py-1.5 rounded-xl font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? "bg-[#1b365d] text-white shadow-xs ring-2 ring-[#1b365d]/20 scale-[1.02]"
+                        : "bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200/80 hover:border-slate-300"
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-200/80 text-slate-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )}
+
+            {/* Active Filter Indicators & Reset */}
+            {isFiltering && (
+              <div className="flex items-center gap-2">
+                {selectedArchive && (
+                  <span className="inline-flex items-center gap-1.5 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+                    Arsip: {activeArchiveLabel}
+                    <button onClick={() => handleArchiveChange(null)} className="hover:text-slate-900">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#1b365d] hover:bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 font-bold transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Reset Filter
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
       <div ref={listTopRef} />
 
@@ -318,7 +360,7 @@ export default function NewsPage() {
           </span>
           <Link href={`/berita/${featuredItem.id}`} className="block group">
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-[#1b365d] hover:shadow-lg transition-all grid md:grid-cols-12">
-              <div className="md:col-span-6 lg:col-span-7 aspect-video md:aspect-auto h-56 md:h-full bg-slate-100 relative overflow-hidden">
+              <div className="w-full md:col-span-6 lg:col-span-7 aspect-[16/9] sm:aspect-[16/10] md:aspect-auto md:h-full min-h-[220px] sm:min-h-[280px] bg-slate-100 relative overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={featuredItem.imageUrl || "/images/default-news.jpg"}
@@ -541,5 +583,6 @@ export default function NewsPage() {
         </div>
       )}
     </div>
+  </div>
   );
 }

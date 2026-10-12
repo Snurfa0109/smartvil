@@ -44,11 +44,19 @@ import {
   saveBeritaCategories,
   DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
+import { BannerManagement } from "@/components/dashboard/banner-management";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const [siteForm, setSiteForm] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [siteLoading, setSiteLoading] = useState(true);
@@ -273,6 +281,9 @@ function SettingsContent() {
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
             <Tag className="h-4 w-4" /> Kategori Berita
+          </TabsTrigger>
+          <TabsTrigger value="banners" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
+            <Sparkles className="h-4 w-4 text-amber-500" /> Banner &amp; Event
           </TabsTrigger>
           <TabsTrigger value="chatbot" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
             <Bot className="h-4 w-4" /> Chatbot AI
@@ -1453,6 +1464,11 @@ function SettingsContent() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* TAB: BANNER & EVENT */}
+        <TabsContent value="banners" className="space-y-6">
+          <BannerManagement />
         </TabsContent>
 
       </Tabs>

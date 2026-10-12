@@ -348,8 +348,8 @@ export default function AdminsManagementPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-slate-800">Pengaturan Admin & Hak Akses</h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
-              Super Admin Only
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+              Administrator Kelurahan
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">

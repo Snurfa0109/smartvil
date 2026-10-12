@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { uploadImageToStorage } from "@/lib/uploadImage";
+import { PageBanner } from "@/components/layout/page-banner";
 
 const complaintCategories = [
   "Infrastruktur & Jalan",
@@ -229,41 +230,36 @@ export default function ComplaintsPage() {
     : null;
 
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      {/* Header */}
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-          Kanal Aspirasi & Pengaduan Resmi
-        </span>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-          Layanan Pengaduan Masyarakat
-        </h1>
-        <p className="text-slate-600 text-sm leading-relaxed">
-          Sampaikan keluhan fasilitas lingkungan, pelayanan publik, atau aspirasi warga. Semua laporan diverifikasi secara transparan melalui nomor telepon Anda.
-        </p>
-
-        {/* Navigation Tabs */}
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-2">
+    <div className="space-y-10 pb-16">
+      <PageBanner pageKey="pengaduan">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setActiveTab("form")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
-              activeTab === "form" ? "bg-white text-[#1b365d] shadow-xs" : "text-slate-600 hover:text-slate-900"
+            className={`px-6 py-3 rounded-lg text-sm inline-flex items-center gap-2 shadow-md transition-all cursor-pointer ${
+              activeTab === "form"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Formulir Pengaduan Baru
+            <span>Tulis Pengaduan Baru</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("track")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
-              activeTab === "track" ? "bg-white text-[#1b365d] shadow-xs" : "text-slate-600 hover:text-slate-900"
+            className={`px-6 py-3 rounded-lg text-sm transition-all cursor-pointer backdrop-blur-sm ${
+              activeTab === "track"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Cek Riwayat via No. Telepon
+            Lacak Status Pengaduan
           </button>
         </div>
-      </div>
+      </PageBanner>
+
+      <div className="container mx-auto px-6 md:px-12 space-y-10">
 
       {/* Success Notification after submission */}
       {submittedInfo && (
@@ -710,5 +706,6 @@ export default function ComplaintsPage() {
         </div>
       )}
     </div>
+  </div>
   );
 }

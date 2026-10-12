@@ -25,6 +25,7 @@ import { useState, useEffect } from "react";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { DEFAULT_LETTER_TYPES, LetterType } from "@/lib/letters";
+import { PageBanner } from "@/components/layout/page-banner";
 
 interface StoredTicket {
   ticketCode: string;
@@ -263,43 +264,36 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
-          <FileCheck className="h-3.5 w-3.5" /> Pelayanan Administrasi Terpadu Kelurahan (PATEN)
-        </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-          Layanan Administrasi Surat Kelurahan
-        </h1>
-        <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-          Pengajuan surat pengantar dan keterangan resmi Kelurahan Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang. Cepat, transparan, dan 100% bebas biaya retribusi (Gratis).
-        </p>
-
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-4 shadow-2xs">
+    <div className="space-y-10 pb-16">
+      <PageBanner pageKey="layanan">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setActiveTab("apply")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            className={`px-6 py-3 rounded-lg text-sm inline-flex items-center gap-2 shadow-md transition-all cursor-pointer ${
               activeTab === "apply"
-                ? "bg-white text-[#1b365d] shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Buat Permohonan Surat
+            <span>Buat Surat Mandiri</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("track")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            className={`px-6 py-3 rounded-lg text-sm transition-all cursor-pointer backdrop-blur-sm ${
               activeTab === "track"
-                ? "bg-white text-[#1b365d] shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Lacak Status Permohonan
+            Lacak Permohonan
           </button>
         </div>
-      </div>
+      </PageBanner>
+
+      <div className="container mx-auto px-6 md:px-12 space-y-10">
 
       <section id="alur" className="scroll-mt-24">
         <div className="rounded-2xl bg-gradient-to-br from-[#1b365d]/5 to-blue-50 border border-[#1b365d]/10 p-6 md:p-8 space-y-5">
@@ -908,5 +902,6 @@ export default function ServicesPage() {
         </div>
       )}
     </div>
+  </div>
   );
 }

@@ -62,7 +62,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
             const data = userDoc.data();
-            const userRole = (data.role as AdminRole) || "admin";
+            let userRole = (data.role as AdminRole) || "admin";
+            // Akun utama kelurahan selalu memegang peran Super Administrator
+            if (firebaseUser.email === "admin@banjaragung.go.id") {
+              userRole = "superadmin";
+            }
             const active = data.active !== false; // default true if not set
 
             setRole(active ? userRole : "user");
@@ -130,14 +134,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const isSuperAdmin = role === "superadmin";
+  // Admin kelurahan (superadmin atau admin) memiliki wewenang penuh untuk kelola admin/sub-admin dan audit trail
+  const isSuperAdmin = role === "superadmin" || role === "admin";
 
   const canAccess = (featureKey: string): boolean => {
     if (!user) return false;
     if (featureKey === "audit" || featureKey === "admins") {
-      return role === "superadmin";
+      return role === "superadmin" || role === "admin";
     }
-    if (role === "superadmin") {
+    if (role === "superadmin" || role === "admin") {
       return true;
     }
     if (adminProfile && Array.isArray(adminProfile.permissions)) {

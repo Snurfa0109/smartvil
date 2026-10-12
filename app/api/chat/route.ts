@@ -1,7 +1,115 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings } from "@/lib/chatbot-config";
+
+interface ChatAction {
+  label: string;
+  url: string;
+  type: "pengaduan" | "layanan" | "berita" | "data" | "profil";
+}
+
+function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
+  const combined = `${userMsg} ${botReply}`.toLowerCase();
+  const actions: ChatAction[] = [];
+
+  // 1. Pengaduan / Aspirasi / Lapor Masalah
+  const isPengaduan =
+    combined.includes("lapor") ||
+    combined.includes("pengaduan") ||
+    combined.includes("aspirasi") ||
+    combined.includes("keluhan") ||
+    combined.includes("mengadukan") ||
+    combined.includes("laporan") ||
+    combined.includes("aduan") ||
+    combined.includes("/pengaduan");
+
+  if (isPengaduan) {
+    actions.push({
+      label: "Buat Pengaduan Online",
+      url: "/pengaduan",
+      type: "pengaduan",
+    });
+  }
+
+  // 2. Administrasi Surat / Layanan Mandiri
+  const isSurat =
+    combined.includes("surat") ||
+    combined.includes("sktm") ||
+    combined.includes("sku") ||
+    combined.includes("domisili") ||
+    combined.includes("keterangan usaha") ||
+    combined.includes("pengantar ktp") ||
+    combined.includes("pengantar kk") ||
+    combined.includes("akta") ||
+    combined.includes("kematian") ||
+    combined.includes("kelahiran") ||
+    combined.includes("layanan mandiri") ||
+    combined.includes("ajukan surat") ||
+    combined.includes("/layanan");
+
+  if (isSurat) {
+    actions.push({
+      label: "Ajukan Surat Mandiri",
+      url: "/layanan",
+      type: "layanan",
+    });
+  }
+
+  // 3. Warta & Berita / Pengumuman / Kegiatan
+  const isBerita =
+    combined.includes("berita") ||
+    combined.includes("kabar") ||
+    combined.includes("pengumuman") ||
+    combined.includes("agenda") ||
+    combined.includes("kegiatan") ||
+    combined.includes("warta") ||
+    combined.includes("bansos") ||
+    combined.includes("terbaru") ||
+    combined.includes("/berita");
+
+  if (isBerita) {
+    actions.push({
+      label: "Lihat Warta & Berita",
+      url: "/berita",
+      type: "berita",
+    });
+  }
+
+  // 4. Data / Statistik
+  const isData =
+    combined.includes("jumlah penduduk") ||
+    combined.includes("data kependudukan") ||
+    combined.includes("statistik") ||
+    combined.includes("demografi") ||
+    combined.includes("/data");
+
+  if (isData && actions.length < 2) {
+    actions.push({
+      label: "Buka Data & Statistik",
+      url: "/data",
+      type: "data",
+    });
+  }
+
+  // 5. Kontak & Lokasi
+  const isProfil =
+    combined.includes("lokasi kantor") ||
+    combined.includes("alamat kantor") ||
+    combined.includes("kantor kelurahan dimana") ||
+    combined.includes("peta wilayah") ||
+    combined.includes("/profil");
+
+  if (isProfil && actions.length < 2) {
+    actions.push({
+      label: "Lihat Profil & Lokasi",
+      url: "/profil",
+      type: "profil",
+    });
+  }
+
+  return actions.slice(0, 2);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,6 +154,28 @@ export async function POST(req: NextRequest) {
         const profileSnap = await getDoc(doc(db, "settings", "profile"));
         const profile = profileSnap.exists() ? profileSnap.data() : null;
 
+        // Ambil 4 berita & publikasi terbaru dari database secara real-time
+        let latestNewsSection = "";
+        try {
+          const newsSnap = await getDocs(
+            query(collection(db, "news"), orderBy("date", "desc"), limit(4))
+          );
+          if (!newsSnap.empty) {
+            const newsItems = newsSnap.docs.map((docSnap) => {
+              const nd = docSnap.data();
+              return `- "${nd.title || "Berita Kelurahan"}" (Kategori: ${nd.category || "Umum"}, Tanggal: ${nd.date || "Terbaru"}) -> Link: /berita/${docSnap.id}`;
+            });
+            latestNewsSection = `
+[PUBLIKASI & WARTA KELURAHAN TERBARU]:
+Kelurahan memiliki portal publikasi warta resmi di /berita.
+Daftar berita & pengumuman terkini:
+${newsItems.join("\n")}
+            `.trim();
+          }
+        } catch (ne) {
+          console.warn("Could not fetch latest news for chatbot context:", ne);
+        }
+
         liveContext = `
 [INFORMASI RESMI KELURAHAN TERKINI]:
 - Nama Kelurahan: ${profile?.villageName || "Kelurahan Banjar Agung"}
@@ -63,17 +193,19 @@ export async function POST(req: NextRequest) {
 
 [LAYANAN MANDIRI / ADMINISTRASI SURAT]:
 Banjar Agung menyediakan pembuatan surat pengantar secara online di menu "Layanan Mandiri" (/layanan).
-Jenis-jenis surat yang dapat diajukan:
-1. Surat Keterangan Tidak Mampu (SKTM) - Untuk keperluan beasiswa anak, keringanan biaya berobat/kesehatan, dan bansos.
-2. Surat Keterangan Domisili - Bukti keterangan domisili atau tempat tinggal warga.
-3. Surat Keterangan Usaha - Persyaratan pengajuan kredit perbankan (KUR) atau legalitas usaha mikro.
-4. Surat Pengantar KTP / KK - Syarat penerbitan atau pembaruan KTP dan Kartu Keluarga ke Disdukcapil.
+Jenis-jenis surat yang dapat diajukan secara mandiri:
+1. Surat Keterangan Tidak Mampu (SKTM) - Untuk beasiswa, keringanan berobat, dan bansos.
+2. Surat Keterangan Domisili - Bukti domisili tempat tinggal warga.
+3. Surat Keterangan Usaha (SKU) - Legalitas usaha mikro & pengajuan KUR perbankan.
+4. Surat Pengantar KTP / KK - Syarat penerbitan KTP / KK ke Disdukcapil.
 5. Surat Keterangan Kelahiran - Syarat pembuatan akta kelahiran anak.
-6. Surat Keterangan Kematian - Syarat pembuatan akta kematian dan urusan waris.
-Alur pengajuan: Warga memilih jenis surat di halaman /layanan, mengisi NIK, Nama Lengkap, Keperluan, dan Nomor WhatsApp/Telepon, lalu klik Kirim Permohonan. Petugas desa akan memproses permohonan.
+6. Surat Keterangan Kematian - Syarat pembuatan akta kematian & administrasi waris.
+Alur pengajuan: Warga buka halaman /layanan, isi NIK, Nama, Keperluan, & Kontak WA, lalu kirim. Beri tahu warga bahwa ada tombol CTA langsung ke /layanan.
 
 [PENGADUAN WARGA]:
-Warga dapat menyampaikan aspirasi atau laporan pengaduan melalui halaman "Pengaduan" (/pengaduan) dengan mengisi formulir secara online. Laporan akan ditindaklanjuti oleh aparatur kelurahan.
+Warga dapat menyampaikan aspirasi, keluhan jalan rusak, sampah, lampu mati, atau pengaduan lingkungan melalui halaman "Pengaduan" (/pengaduan) secara online. Beri tahu warga bahwa ada tombol CTA langsung ke /pengaduan.
+
+${latestNewsSection}
         `.trim();
       } catch (e) {
         console.warn("Could not fetch live profile context:", e);
@@ -197,9 +329,12 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, "")
       .trim();
 
+    const actions = determineChatActions(message, cleanReply);
+
     return NextResponse.json({
       reply: cleanReply,
       botName: settings.botName,
+      actions,
     });
   } catch (error) {
     console.error("Chat route handler exception:", error);

@@ -16,8 +16,11 @@ import {
   FileText,
   Phone,
   ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
+
+import { PageBanner } from "@/components/layout/page-banner";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
@@ -44,22 +47,14 @@ export default function ProfilePage() {
     .filter(Boolean);
 
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12 space-y-12">
-      {/* Title Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
-          <span>Kecamatan Cipocok Jaya • Kota Serang</span>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1b365d]">
-          {profile.title}
-        </h1>
-        <p className="text-muted-foreground text-base md:text-lg">
-          {profile.subtitle}
-        </p>
-        {loading && (
-          <p className="text-xs text-muted-foreground">Memuat data profil terbaru...</p>
-        )}
-      </div>
+    <div className="space-y-10 pb-16">
+      <PageBanner
+        pageKey="profil"
+        overrideTitle={profile.title}
+        overrideSubtitle={profile.subtitle}
+      />
+
+      <div className="container mx-auto px-6 md:px-12 space-y-12">
 
       {/* Info Identitas Resmi & Wilayah */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -219,65 +214,6 @@ export default function ProfilePage() {
         </Card>
       </section>
 
-      {/* Geografis & Batas Wilayah */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-2 text-[#1b365d]">
-          <MapPin className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">Geografis & Batas Wilayah</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="border border-slate-200/80 shadow-xs">
-            <CardHeader>
-              <CardTitle className="text-base">Kawasan & Luas Wilayah</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-extrabold text-[#1b365d]">
-                {profile.geoArea}
-              </p>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                {profile.geoAreaDesc}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-200/80 shadow-xs">
-            <CardHeader>
-              <CardTitle className="text-base">Koordinat Geografis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg font-bold font-mono text-foreground">{profile.geoCoord}</p>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                {profile.geoCoordDesc}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border border-slate-200/80 shadow-xs">
-            <CardHeader>
-              <CardTitle className="text-base">Batas Wilayah</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-sm space-y-2 text-muted-foreground">
-                <li className="flex justify-between border-b pb-1.5">
-                  <span className="font-semibold text-foreground">Utara</span>
-                  <span>{profile.boundaryNorth}</span>
-                </li>
-                <li className="flex justify-between border-b pb-1.5">
-                  <span className="font-semibold text-foreground">Selatan</span>
-                  <span>{profile.boundarySouth}</span>
-                </li>
-                <li className="flex justify-between border-b pb-1.5">
-                  <span className="font-semibold text-foreground">Timur</span>
-                  <span>{profile.boundaryEast}</span>
-                </li>
-                <li className="flex justify-between pt-0.5">
-                  <span className="font-semibold text-foreground">Barat</span>
-                  <span>{profile.boundaryWest}</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
       {/* Fasilitas & Kawasan Pemukiman Utama */}
       <section className="space-y-6">
         <div className="flex items-center gap-2 text-[#1b365d]">
@@ -386,44 +322,99 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* Lokasi Kantor */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#1b365d]/10 flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-[#1b365d]" />
+      {/* Peta Wilayah & Geografis Kelurahan */}
+      <section className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Peta Wilayah & Batas Kelurahan</h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Batas administrasi dan pemetaan spasial wilayah Kelurahan Banjar Agung</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-foreground">Lokasi Kantor Kelurahan</h2>
-            <p className="text-sm text-muted-foreground">Jl. Syech Nawawi Albantani No. 16, Banjar Agung, Cipocok Jaya, Kota Serang</p>
-          </div>
-        </div>
-
-        <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3965.553186774327!2d106.18526387499237!3d-6.132261593865507!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e418b6f37a00001%3A0xfb48b3a8f7a1a77f!2sKelurahan%20Banjar%20Agung!5e0!3m2!1sid!2sid!4v1727188800000!5m2!1sid!2sid"
-            width="100%"
-            height="400"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title="Lokasi Kantor Kelurahan Banjar Agung"
-            className="w-full"
-          />
-        </div>
-
-        <div className="flex justify-end">
           <a
-            href="https://maps.google.com/?q=Kelurahan+Banjar+Agung+Cipocok+Jaya+Kota+Serang"
+            href="https://share.google/rIjtFAgp2fw7DaBNx"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1b365d] text-white text-sm font-semibold hover:bg-[#1b365d]/90 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-[#1b365d] hover:bg-slate-50 bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs transition-all w-fit"
           >
-            <MapPin className="w-4 h-4" />
-            Buka di Google Maps
+            <span>Buka Peta di Google Maps</span>
+            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
           </a>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Kolom Kiri: Peta Batas Wilayah Polygon */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col">
+            <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-slate-100 group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/peta-wilayah-banjaragung.png"
+                alt="Peta Batas Administrasi Kelurahan Banjar Agung"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute top-3 left-3 bg-[#0F2236]/90 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/20 shadow-md flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span>Batas Administrasi Kelurahan Banjar Agung</span>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>Sumber: Google Maps • Wilayah Hukum Kec. Cipocok Jaya</span>
+              <span className="font-mono font-semibold text-[#1b365d]">Luas: {profile.geoArea}</span>
+            </div>
+          </div>
+
+          {/* Kolom Kanan: Rincian Luas & Batas-Batas */}
+          <div className="lg:col-span-5 flex flex-col justify-between gap-4">
+            <Card className="border border-slate-200/80 shadow-xs">
+              <CardHeader className="pb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cakupan Wilayah</span>
+                <CardTitle className="text-2xl font-extrabold text-[#1b365d] font-mono">
+                  {profile.geoArea}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {profile.geoAreaDesc}
+                </p>
+                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Koordinat:</span>
+                  <span className="font-mono font-semibold text-slate-800">{profile.geoCoord}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-slate-200/80 shadow-xs flex-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold text-slate-900">Batas-Batas Wilayah</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ul className="text-xs space-y-2.5 text-muted-foreground">
+                  <li className="flex justify-between border-b border-slate-100 pb-2">
+                    <span className="font-semibold text-slate-700">Utara</span>
+                    <span className="text-right">{profile.boundaryNorth}</span>
+                  </li>
+                  <li className="flex justify-between border-b border-slate-100 pb-2">
+                    <span className="font-semibold text-slate-700">Selatan</span>
+                    <span className="text-right">{profile.boundarySouth}</span>
+                  </li>
+                  <li className="flex justify-between border-b border-slate-100 pb-2">
+                    <span className="font-semibold text-slate-700">Timur</span>
+                    <span className="text-right">{profile.boundaryEast}</span>
+                  </li>
+                  <li className="flex justify-between pt-0.5">
+                    <span className="font-semibold text-slate-700">Barat</span>
+                    <span className="text-right">{profile.boundaryWest}</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
     </div>
+  </div>
   );
 }

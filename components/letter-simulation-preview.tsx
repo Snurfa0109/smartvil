@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { renderAsync } from "docx-preview";
+
 import { generateSampleFilledDocx, downloadBlob } from "@/lib/letter-template";
 import { Button } from "@/components/ui/button";
 import { Download, FileWarning } from "lucide-react";
@@ -81,6 +81,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
 
       try {
         if (!el) return;
+        const { renderAsync } = await import("docx-preview");
         await renderAsync(blobToRender, el, undefined, {
           inWrapper: true,
           ignoreWidth: false,
