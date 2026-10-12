@@ -52,6 +52,21 @@ const ADMIN_ONLY_FIELDS = new Set([
   "nama_pejabat",
   "jabatan_pejabat",
   "nip_pejabat",
+  // Narrative/paragraph-context fields — admin edits these in print editor
+  "keperluan",
+  "kebutuhan",
+  "tujuan",
+  "keterangan",
+  "dipergunakan_untuk",
+  "digunakan_untuk",
+  "guna_keperluan",
+  "untuk_keperluan",
+  "maksud_dan_tujuan",
+  "bermaksud_untuk",
+  "dimaksudkan_untuk",
+  "surat_keterangan_ini_dipergunakan_untuk",
+  "surat_ini_dipergunakan_untuk",
+  "surat_ini_digunakan_untuk",
 ]);
 
 export function prettifyKey(key: string): string {
@@ -105,17 +120,46 @@ export async function extractPlaceholdersFromDocx(file: File | ArrayBuffer): Pro
 
 export function stripPlaceholdersFromDocx(buf: ArrayBuffer): ArrayBuffer {
   const zip = new PizZip(buf);
-  const partNames = Object.keys(zip.files).filter((n) =>
-    /^word\/(document|header\d*|footer\d*)\.xml$/.test(n)
+  let xml = zip.file("word/document.xml")?.asText() ?? "";
+
+  // Step 1: For runs that contain ONLY a placeholder, replace with appropriate
+  // fill text (for signer-zone fields) or remove entirely (for appended fields)
+  xml = xml.replace(
+    /<w:r\b[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?\s*<w:t[^>]*>\s*\{\{([a-zA-Z0-9_]+)\}\}\s*<\/w:t>\s*<\/w:r>/g,
+    (_full: string, key: string) => {
+      const k = key.toLowerCase();
+      // Signer zone fields: restore fill text so re-scanning can detect them
+      if (k.includes("nama_pejabat")) {
+        // Restore with ALL-CAPS placeholder name
+        return _full.replace(/\{\{[^}]+\}\}/, "NAMA LENGKAP PEJABAT");
+      }
+      // Regular appended fields: remove entirely
+      return "";
+    }
   );
-  for (const name of partNames) {
-    let xml = zip.file(name)?.asText() ?? "";
-    xml = xml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/g, (_full, attrs: string, text: string) => {
-      const cleaned = text.replace(/\s*\{\{[a-zA-Z0-9_]+\}\}/g, "");
-      return `<w:t${attrs}>${cleaned}</w:t>`;
-    });
-    zip.file(name, xml);
-  }
+
+  // Step 2: For runs with text+placeholder mix (e.g. "Nomor: {{nomor_surat}}"
+  // or "Cigoong, {{tanggal_surat}}"), keep the text prefix and restore dots
+  // so re-scanning can detect the field again
+  xml = xml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/g, (_full: string, attrs: string, text: string) => {
+    if (!text.includes("{{")) return _full;
+    const cleaned = text.replace(/\s*\{\{[a-zA-Z0-9_]+\}\}/g, "").trimEnd();
+    if (!cleaned) return "";
+    // If text ends with ":", ",", or "." after stripping placeholder, restore fill dots
+    // so re-scanning can detect the field again.
+    // "Nomor:" → "Nomor: .........." / "Cigoong," → "Cigoong, .........."
+    // "NIP." → "NIP. .........."
+    const restored = /[,:.]$/.test(cleaned)
+      ? `${cleaned} ..........`
+      : cleaned;
+    return `<w:t${attrs}>${restored}</w:t>`;
+  });
+
+  // Step 3: Remove runs that became empty after stripping
+  xml = xml.replace(/<w:r\b[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?\s*<w:t[^>]*>\s*<\/w:t>\s*<\/w:r>/g, "");
+  xml = xml.replace(/<w:r\b[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?\s*<\/w:r>/g, "");
+
+  zip.file("word/document.xml", xml);
   return zip.generate({ type: "arraybuffer" }) as ArrayBuffer;
 }
 
@@ -174,13 +218,39 @@ export async function smartTemplateFromStaticDocx(
       ? `<w:rPr>${existingRpr}</w:rPr>`
       : `<w:rPr>${TNR_FONTS}<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>`;
 
-    if (/nomor\s*:/i.test(trimmed) && /\d{3}/.test(trimmed) && trimmed.length < 80) {
+    if (/nomor\s*:/i.test(trimmed) && trimmed.length < 80) {
       const key = uniqueKey("nomor_surat");
       injected.push({ label: "Nomor Surat", key });
-      return appendRun(paraXml, rprTag, key);
+      // Replace the entire nomor line content with "Nomor: {{nomor_surat}}"
+      const nomorPrefix = trimmed.match(/^(.*?nomor\s*:\s*)/i)?.[1] || "Nomor: ";
+      return replaceAllRuns(paraXml, rprTag, `${nomorPrefix}{{${key}}}`);
     }
 
-    if (idx >= signerZoneStart) return paraXml;
+    if (idx >= signerZoneStart) {
+      // Detect signer-zone date line: "NamaKota, ........" or "NamaKota, tanggal"
+      if (/^[A-Za-z]+\s*,\s*[._\u2026\s]*$/i.test(trimmed) || /^[A-Za-z]+\s*,\s*\d/i.test(trimmed)) {
+        const commaIdx = trimmed.indexOf(",");
+        const cityName = trimmed.slice(0, commaIdx).trim();
+        const key = uniqueKey("tanggal_surat");
+        injected.push({ label: "Tanggal Surat", key });
+        return replaceAllRuns(paraXml, rprTag, `${cityName}, {{${key}}}`);
+      }
+      // Detect NIP line: "NIP. xxxxxxxx" or "NIP : xxxxxxx" or "NIP. ........"
+      if (/^nip[\s.:]/i.test(trimmed)) {
+        const key = uniqueKey("nip_pejabat");
+        injected.push({ label: "NIP Pejabat", key });
+        return replaceAllRuns(paraXml, rprTag, `NIP. {{${key}}}`);
+      }
+      // Detect signer name line: ALL CAPS name (likely the pejabat name)
+      // Must be > 4 chars, all uppercase, no special prefix
+      if (/^[A-Z][A-Z\s.,]+$/.test(trimmed) && trimmed.length >= 5 && trimmed.length < 40
+          && !/^(AN\.|A\.N\.|LURAH|CAMAT|KEPALA|SEKRETARIS|PLT|PLH|MENGETAHUI|DIKETAHUI|HORMAT|TEMBUSAN)/i.test(trimmed)) {
+        const key = uniqueKey("nama_pejabat");
+        injected.push({ label: "Nama Pejabat", key });
+        return replaceAllRuns(paraXml, rprTag, `{{${key}}}`);
+      }
+      return paraXml;
+    }
     if (trimmed.length > 80) return paraXml;
     if (isNarrativeLine(trimmed)) return paraXml;
     if (isHeaderOrTitle(trimmed)) return paraXml;
@@ -188,6 +258,8 @@ export async function smartTemplateFromStaticDocx(
     const label = extractLabel(trimmed);
     if (label && label.length >= 2 && label.length <= 45) {
       let base = normalizeLabelToKey(label);
+      // Skip labels that are narrative/paragraph-context (admin-editable, not warga data)
+      if (NARRATIVE_LABEL_KEYS.has(base)) return paraXml;
       const sectionSuffix = duplicateLabels.get(base)?.[idx];
       if (sectionSuffix) base = `${base}_${sectionSuffix}`;
       const key = uniqueKey(base);
@@ -210,29 +282,88 @@ function appendRun(paraXml: string, rprTag: string, key: string): string {
   return paraXml.replace(/<\/w:p>\s*$/, `<w:r>${rprTag}<w:t xml:space="preserve"> {{${key}}}</w:t></w:r></w:p>`);
 }
 
+function replaceAllRuns(paraXml: string, rprTag: string, newText: string): string {
+  // Find all runs and their text
+  const runMatches = [...paraXml.matchAll(/<w:r\b[\s\S]*?<\/w:r>/g)];
+  if (runMatches.length === 0) {
+    // No runs, just append
+    return paraXml.replace(/<\/w:p>\s*$/, `<w:r>${rprTag}<w:t xml:space="preserve">${newText}</w:t></w:r></w:p>`);
+  }
+  // Replace text in the first run, clear text in subsequent runs
+  let firstReplaced = false;
+  let result = paraXml;
+  for (const rm of runMatches) {
+    const runXml = rm[0];
+    if (!firstReplaced) {
+      // Replace all <w:t> content in first run with newText
+      const newRun = runXml.replace(/<w:t[^>]*>[^<]*<\/w:t>/g, () => {
+        if (!firstReplaced) {
+          firstReplaced = true;
+          return `<w:t xml:space="preserve">${newText}</w:t>`;
+        }
+        return `<w:t xml:space="preserve"></w:t>`;
+      });
+      result = result.replace(runXml, newRun);
+    } else {
+      // Clear subsequent runs' text
+      const cleared = runXml.replace(/<w:t[^>]*>[^<]*<\/w:t>/g, '<w:t xml:space="preserve"></w:t>');
+      result = result.replace(runXml, cleared);
+    }
+  }
+  return result;
+}
+
 function extractLabel(trimmed: string): string | null {
   const m =
-    trimmed.match(/^(.+?)\s*:\s*$/) ||
-    trimmed.match(/^(.+?)\s+[._\u2026]{3,}\s*$/) ||
-    trimmed.match(/^(.+?)\s{2,}[._\u2026]{2,}\s*$/);
+    trimmed.match(/^(.+?)\s*:\s*$/) ||                        // "Label :"
+    trimmed.match(/^(.+?)\s*:\s+[._\u2026]{2,}\s*$/) ||      // "Label : .........."
+    trimmed.match(/^(.+?)\s+[._\u2026]{3,}\s*$/) ||           // "Label .........."
+    trimmed.match(/^(.+?)\s{2,}[._\u2026]{2,}\s*$/);          // "Label  ...."
   if (!m) return null;
   return m[1].replace(/\s+/g, " ").replace(/[._\u2026\s]+$/, "").trim();
 }
 
 function isNarrativeLine(trimmed: string): boolean {
-  return /^(yang\s|demikian\s|dengan\s|bahwa\s|benar\s|menerangkan\s|dikeluarkan\s|berdasarkan\s|sebagaimana\s|menimbang\s|mengingat\s|memperhatikan\s)/i.test(trimmed);
+  // Lines that start with narrative/legal keywords (common in kelurahan letters)
+  if (/^(yang\s|demikian\s|dengan\s|bahwa\s|benar\s|menerangkan\s|dikeluarkan\s|berdasarkan\s|sebagaimana\s|menimbang\s|mengingat\s|memperhatikan\s|adalah\s+benar|adapun\s|selanjutnya\s|sehubungan\s|bersama\s+ini\s|untuk\s+itu\s)/i.test(trimmed)) return true;
+  // Lines that are clearly paragraph-context labels (not personal data) —
+  // these are admin-editable narrative fields, not warga form fields
+  if (/^(surat\s+keterangan\s+ini\s+dipergunakan|dipergunakan\s+untuk|digunakan\s+untuk|guna\s+keperluan|untuk\s+keperluan|keperluan\s*:|kebutuhan\s*:|maksud\s+dan\s+tujuan|tujuan\s*:)/i.test(trimmed)) return true;
+  return false;
 }
+
+// Labels that look like data-entry fields (colon/dots) but are actually
+// paragraph-context content that should be edited by admin, not filled by warga.
+// Matched against the normalized key from extractLabel().
+const NARRATIVE_LABEL_KEYS = new Set([
+  "keperluan",
+  "kebutuhan",
+  "tujuan",
+  "dipergunakan_untuk",
+  "digunakan_untuk",
+  "guna_keperluan",
+  "untuk_keperluan",
+  "maksud_dan_tujuan",
+  "keterangan",
+  "bermaksud_untuk",
+  "dimaksudkan_untuk",
+  "surat_keterangan_ini_dipergunakan_untuk",
+  "surat_ini_dipergunakan_untuk",
+  "surat_ini_digunakan_untuk",
+]);
 
 function isHeaderOrTitle(trimmed: string): boolean {
   if (/^(an\.\s|a\.n\.\s|sekretaris|lurah\s|kepala\s|camat\s|plt\.\s|plh\.\s)/i.test(trimmed)) return true;
   if (/^nip[\s.:]/i.test(trimmed)) return true;
-  if (/^surat\s+(keterangan|pengantar)/i.test(trimmed) && !/[._]{3,}/.test(trimmed)) return true;
+  if (/^surat\s+(keterangan|pengantar|pernyataan|izin|rekomendasi|tugas|perintah|kuasa|undangan|pemberitahuan)/i.test(trimmed) && !/[._\u2026]{3,}/.test(trimmed)) return true;
   if (/^pemerintah\s/i.test(trimmed)) return true;
   if (/^(kecamatan|kelurahan|desa|kabupaten|kota|provinsi)\s/i.test(trimmed)) return true;
   if (/^(jl\.|jalan\s|telp|email|website|fax)/i.test(trimmed)) return true;
   if (/^(hormat\s+kami|tertanda|diketahui|mengetahui|tembusan)/i.test(trimmed)) return true;
+  // "DATA SUAMI", "DATA ISTRI", "I. SUAMI", "II. ISTRI" — section headers, not fields
+  if (/^(data\s+\w+|[IVX]+\.\s*[A-Z])/i.test(trimmed) && trimmed.length < 30 && !/[.:_\u2026]{3,}/.test(trimmed)) return true;
   const upper = trimmed.replace(/\s+/g, "");
-  if (upper.length > 4 && upper === upper.toUpperCase() && !/[.:_]/.test(upper)) return true;
+  if (upper.length > 4 && upper === upper.toUpperCase() && !/[.:_\u2026]/.test(upper)) return true;
   return false;
 }
 
@@ -246,7 +377,7 @@ function findSignerZoneStart(texts: string[]): number {
   const lastThird = Math.floor(texts.length * 0.65);
   for (let i = texts.length - 1; i >= lastThird; i--) {
     const t = texts[i].trim().toLowerCase();
-    if (/^(an\.\s|a\.n\.\s|sekretaris|lurah\s|kepala\s|camat\s|hormat|tertanda|mengetahui|diketahui)/i.test(t)) {
+    if (/^(an\.\s|a\.n\.\s|sekretaris|lurah\s|kepala\s|camat\s|plt[\s.]|plh[\s.]|hormat|tertanda|mengetahui|diketahui)/i.test(t)) {
       for (let j = i - 1; j >= lastThird; j--) {
         const prev = texts[j].trim();
         if (prev.length > 0) return j;
@@ -277,9 +408,22 @@ function findDuplicateLabelSections(texts: string[]): Map<string, Record<number,
   const sectionHeaders: Array<{ idx: number; name: string }> = [];
   for (let i = 0; i < texts.length; i++) {
     const t = texts[i].trim();
-    const m = t.match(/^nama\s+(.+?)\s*:?\s*$/i);
-    if (m && m[1].length <= 20) {
-      sectionHeaders.push({ idx: i, name: normalizeLabelToKey(m[1]) });
+    // "Nama Suami :", "Nama Istri :", "Nama Ayah :", etc.
+    const mNama = t.match(/^nama\s+(.+?)\s*:?\s*$/i);
+    if (mNama && mNama[1].length <= 20) {
+      sectionHeaders.push({ idx: i, name: normalizeLabelToKey(mNama[1]) });
+      continue;
+    }
+    // "DATA SUAMI", "DATA ISTRI", "DATA PEMOHON", "DATA ANAK", etc.
+    const mData = t.match(/^data\s+(.+?)\s*:?\s*$/i);
+    if (mData && mData[1].length <= 20) {
+      sectionHeaders.push({ idx: i, name: normalizeLabelToKey(mData[1]) });
+      continue;
+    }
+    // Roman numeral sections: "I. SUAMI", "II. ISTRI"
+    const mRoman = t.match(/^[IVX]+\.\s*(.+?)\s*$/i);
+    if (mRoman && mRoman[1].length <= 20 && /^[A-Z]/.test(mRoman[1])) {
+      sectionHeaders.push({ idx: i, name: normalizeLabelToKey(mRoman[1]) });
     }
   }
 
@@ -310,19 +454,21 @@ export function placeholdersToCustomFields(
   const existingMap = new Map(existing.map((f) => [f.key, f]));
   const injectedMap = new Map(injected.map((i) => [i.key, i]));
   return placeholders
-    .filter((p) => !ADMIN_ONLY_FIELDS.has(p.toLowerCase()))
+    .filter((p) => {
+      const k = p.toLowerCase();
+      return !ADMIN_ONLY_FIELDS.has(k) && !k.startsWith("paragraf_");
+    })
     .map((key) => {
       const prev = existingMap.get(key);
       const inj = injectedMap.get(key);
       const type = prev?.type ?? guessFieldType(key);
       const options = type === "select" ? (prev?.options ?? getDropdownOptions(key) ?? []) : undefined;
       const defaultValue = prev?.defaultValue ?? inj?.defaultValue;
-      const isParagraf = key.startsWith("paragraf_");
       return {
         key,
         label: prev?.label ?? inj?.label ?? prettifyKey(key),
-        type: isParagraf ? "textarea" as CustomFieldType : type,
-        required: prev?.required ?? !isParagraf,
+        type,
+        required: prev?.required ?? true,
         ...(options ? { options } : {}),
         ...(defaultValue ? { defaultValue } : {}),
       };
@@ -343,17 +489,36 @@ export function buildSampleData(
       data[key] = "27 Februari 2026";
     else if (k.includes("nama_suami")) data[key] = "CONTOH NAMA SUAMI";
     else if (k.includes("nama_istri")) data[key] = "CONTOH NAMA ISTRI";
+    else if (k.includes("nama_ayah")) data[key] = "CONTOH NAMA AYAH";
+    else if (k.includes("nama_ibu")) data[key] = "CONTOH NAMA IBU";
+    else if (k.includes("nama_anak")) data[key] = "CONTOH NAMA ANAK";
+    else if (k.includes("nama_pemohon")) data[key] = "CONTOH NAMA PEMOHON";
+    else if (k.includes("nama_jenazah") || k.includes("nama_almarhum")) data[key] = "CONTOH NAMA ALMARHUM";
     else if (k === "nama" || k === "nama_lengkap") data[key] = "CONTOH NAMA LENGKAP";
     else if (k.includes("nama_pejabat")) data[key] = "NAMA PEJABAT";
+    else if (k.includes("bin") || k.includes("binti")) data[key] = "NAMA ORANG TUA";
     else if (k.includes("nik")) data[key] = "3673050101010001";
+    else if (k.includes("no_kk") || k.includes("kk")) data[key] = "3673050101010002";
     else if (k.includes("tempat") && k.includes("lahir")) data[key] = "Serang, 12 Mei 1990";
     else if (k.includes("tgl") || k.includes("lahir") || k.includes("tanggal")) data[key] = "12 Mei 1990";
     else if (k.includes("kelamin")) data[key] = "Laki-laki";
     else if (k.includes("bangsa") || k.includes("agama")) data[key] = "Indonesia / Islam";
     else if (k.includes("pekerjaan")) data[key] = "Wiraswasta";
-    else if (k.includes("alamat")) data[key] = "Jl. Contoh RT 01 RW 02";
+    else if (k.includes("penghasilan") || k.includes("pendapatan") || k.includes("gaji")) data[key] = "Rp 2.500.000,-";
+    else if (k.includes("alamat_tujuan") || k.includes("tujuan_pindah")) data[key] = "Jl. Tujuan RT 03 RW 04, Kec. Baru, Kota Serang";
+    else if (k.includes("alamat")) data[key] = "Jl. Contoh RT 01 RW 02, Kel. Banjar Agung, Kec. Cipocok Jaya, Kota Serang";
     else if (k.includes("status")) data[key] = "Kawin";
+    else if (k.includes("kewarganegaraan") || k.includes("warganegara")) data[key] = "WNI";
+    else if (k.includes("pendidikan")) data[key] = "SMA/Sederajat";
     else if (k.includes("phone") || k.includes("hp") || k.includes("wa")) data[key] = "08123456789";
+    else if (k.includes("rt")) data[key] = "01";
+    else if (k.includes("rw")) data[key] = "02";
+    else if (k.includes("usaha") && k.includes("jenis")) data[key] = "Warung Sembako";
+    else if (k.includes("usaha") && k.includes("nama")) data[key] = "Toko Makmur";
+    else if (k.includes("usaha") && k.includes("alamat")) data[key] = "Jl. Usaha No. 12, Kel. Banjar Agung";
+    else if (k.includes("alasan")) data[key] = "Keperluan pekerjaan dan keluarga";
+    else if (k.includes("sebab") && k.includes("kematian")) data[key] = "Sakit";
+    else if (k.includes("tempat") && k.includes("meninggal")) data[key] = "Rumah Sakit Umum Daerah Serang";
     else if (k.includes("keperluan")) data[key] = "Keperluan administrasi";
     else if (k.includes("nip")) data[key] = "19780512 200501 1 004";
     else if (k.includes("jabatan")) data[key] = "Lurah";
@@ -425,10 +590,82 @@ export async function generateFilledDocx(
       .join(", ");
     throw new Error(details ? `Template error: ${details}` : "Gagal render template DOCX.");
   }
-  return doc.getZip().generate({
+
+  const renderedZip = doc.getZip();
+  patchSignerZone(renderedZip, data);
+
+  return renderedZip.generate({
     type: "blob",
     mimeType:
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+}
+
+function patchSignerZone(zip: PizZip, data: Record<string, string>) {
+  let docXml = zip.file("word/document.xml")?.asText() ?? "";
+  const paras = docXml.match(/<w:p\b[\s\S]*?<\/w:p>/g) || [];
+  const texts = paras.map((pa) => {
+    const runs = [...pa.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)].map((x) => x[1]);
+    return runs.join("");
+  });
+
+  const tanggal = data.tanggal_surat || data.tanggalSurat || data.tanggal || "";
+  const nipPejabat = data.nip_pejabat || "";
+  const namaPejabat = data.nama_pejabat || "";
+
+  let changed = false;
+
+  for (let i = 0; i < texts.length; i++) {
+    const t = texts[i].trim();
+    if (!t) continue;
+
+    // Patch date line: "NamaKota, ........" where dots/underscores remain unfilled
+    if (tanggal && /^[A-Za-z]+\s*,\s*[._\u2026\s]*$/i.test(t)) {
+      const commaIdx = t.indexOf(",");
+      const cityName = t.slice(0, commaIdx).trim();
+      const newText = `${cityName}, ${tanggal}`;
+      const patched = patchParaText(paras[i], newText);
+      if (patched !== paras[i]) {
+        docXml = docXml.replace(paras[i], patched);
+        changed = true;
+      }
+    }
+
+    // Patch NIP line that still has dots/underscores (unfilled)
+    if (nipPejabat && /^nip[\s.:]/i.test(t) && /[._\u2026]{3,}/.test(t)) {
+      const patched = patchParaText(paras[i], `NIP. ${nipPejabat}`);
+      if (patched !== paras[i]) {
+        docXml = docXml.replace(paras[i], patched);
+        changed = true;
+      }
+    }
+
+    // Patch signer name that still has dots/underscores (unfilled placeholder)
+    if (namaPejabat && /^[._\u2026\s]{4,}$/.test(t.replace(/\s/g, "")) && i > texts.length * 0.6) {
+      const patched = patchParaText(paras[i], namaPejabat);
+      if (patched !== paras[i]) {
+        docXml = docXml.replace(paras[i], patched);
+        changed = true;
+      }
+    }
+  }
+
+  if (changed) {
+    zip.file("word/document.xml", docXml);
+  }
+}
+
+function patchParaText(paraXml: string, newText: string): string {
+  const runs = [...paraXml.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)];
+  if (runs.length === 0) return paraXml;
+  // Put newText in the first <w:t>, clear the rest
+  let firstDone = false;
+  return paraXml.replace(/<w:t([^>]*)>[^<]*<\/w:t>/g, (_m, attrs) => {
+    if (!firstDone) {
+      firstDone = true;
+      return `<w:t${attrs}>${escapeXml(newText)}</w:t>`;
+    }
+    return `<w:t${attrs}></w:t>`;
   });
 }
 
@@ -461,20 +698,114 @@ export function extractNarrativesFromDocx(buf: ArrayBuffer): string[] {
   const zip = new PizZip(buf);
   const docXml = zip.file("word/document.xml")?.asText() ?? "";
   const texts = paragraphTexts(docXml);
-  const signerStart = findSignerZoneStart(texts);
+
+  // Signer-zone placeholders should not count as "last field"
+  const SIGNER_KEYS = new Set(["tanggal_surat", "tanggal", "nama_pejabat", "jabatan_pejabat", "nip_pejabat"]);
 
   let lastFieldIdx = -1;
-  for (let i = 0; i < texts.length && i < signerStart; i++) {
+  let lastSignerFieldIdx = -1;
+  for (let i = 0; i < texts.length; i++) {
     const t = texts[i].trim();
     if (!t) continue;
-    if (extractLabel(t) && t.length <= 80) lastFieldIdx = i;
-    if (/nomor\s*:/i.test(t) && /\d{3}/.test(t)) lastFieldIdx = i;
+    const placeholders = [...t.matchAll(/\{\{([a-zA-Z0-9_]+)\}\}/g)].map((m) => m[1]);
+    if (placeholders.length === 0) continue;
+    const allSigner = placeholders.every((p) => SIGNER_KEYS.has(p));
+    if (allSigner) {
+      lastSignerFieldIdx = i;
+    } else {
+      lastFieldIdx = i;
+    }
+  }
+
+  if (lastFieldIdx < 0) return [];
+
+  // Narrative end: last non-signer, non-empty, long text between body fields and signer zone
+  const searchEnd = lastSignerFieldIdx > lastFieldIdx ? lastSignerFieldIdx : texts.length;
+
+  let narrativeEnd = lastFieldIdx + 1;
+  for (let i = searchEnd - 1; i > lastFieldIdx; i--) {
+    const t = texts[i].trim();
+    if (!t) continue;
+    if (isSignerLine(t)) continue;
+    if (t.length < 5) continue;
+    narrativeEnd = i + 1;
+    break;
   }
 
   const narratives: string[] = [];
-  for (let i = lastFieldIdx + 1; i < signerStart; i++) {
+  for (let i = lastFieldIdx + 1; i < narrativeEnd; i++) {
     const t = texts[i].trim();
-    if (t.length > 20) narratives.push(t);
+    if (t.length > 5 && !isSignerLine(t)) narratives.push(t);
   }
   return narratives;
+}
+
+export function replaceNarrativesInDocx(
+  buf: ArrayBuffer,
+  originalNarratives: string[],
+  editedNarratives: string[]
+): ArrayBuffer {
+  if (originalNarratives.length === 0) return buf;
+  const zip = new PizZip(buf);
+  let docXml = zip.file("word/document.xml")?.asText() ?? "";
+
+  for (let i = 0; i < originalNarratives.length; i++) {
+    const orig = originalNarratives[i];
+    const edited = editedNarratives[i];
+    if (orig === edited || edited === undefined) continue;
+
+    const paraRe = new RegExp(`(<w:p\\b[\\s\\S]*?</w:p>)`, "g");
+    let match: RegExpExecArray | null;
+    while ((match = paraRe.exec(docXml)) !== null) {
+      const paraXml = match[1];
+      const runs = [...paraXml.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)].map((x) => x[1]);
+      const paraText = runs.join("").trim();
+      if (paraText === orig) {
+        const firstRunMatch = paraXml.match(/(<w:t[^>]*>)[^<]*?(<\/w:t>)/);
+        if (firstRunMatch) {
+          const newParaXml = paraXml
+            .replace(/<w:r>\s*<w:rPr>[\s\S]*?<\/w:rPr>\s*<w:t[^>]*>[^<]*?<\/w:t>\s*<\/w:r>/g, "")
+            .replace(/<w:r>\s*<w:t[^>]*>[^<]*?<\/w:t>\s*<\/w:r>/g, "");
+          const rprMatch = paraXml.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
+          const rprTag = rprMatch ? `<w:rPr>${rprMatch[1]}</w:rPr>` : "";
+          const newRun = `<w:r>${rprTag}<w:t xml:space="preserve">${escapeXml(edited)}</w:t></w:r>`;
+          const insertPoint = newParaXml.lastIndexOf("</w:p>");
+          const rebuilt = newParaXml.slice(0, insertPoint) + newRun + newParaXml.slice(insertPoint);
+          docXml = docXml.replace(paraXml, rebuilt);
+        }
+        break;
+      }
+    }
+  }
+
+  zip.file("word/document.xml", docXml);
+  const out = zip.generate({ type: "arraybuffer" });
+  return out;
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+function isSignerLine(t: string): boolean {
+  const s = t.trim();
+  if (/^nip[\s.:]/i.test(s)) return true;
+  if (/^(an\.\s|a\.n\.\s)/i.test(s)) return true;
+  if (/^(sekretaris|lurah\s|kepala\s|camat\s|plt\.\s|plh\.\s)/i.test(s)) return true;
+  if (/^(hormat\s+kami|tertanda|diketahui|mengetahui|tembusan)/i.test(s)) return true;
+  if (/^[A-Z][A-Z\s.,]+$/.test(s) && s.length < 40) return true;
+  if (s.length < 10 && /^[\s._\-,]+$/.test(s)) return true;
+  // "Kota, .........." or "Kota, {{tanggal_surat}}" — date-location line before signature
+  if (/^[A-Za-z]+\s*,\s*([._\u2026\s]*|\{\{[^}]+\}\})$/i.test(s)) return true;
+  // Short line that is mostly dots/underscores (date placeholder, location line)
+  if (s.length < 60 && /[._\u2026]{4,}/.test(s) && !/:\s*$/.test(s)) {
+    const textPart = s.replace(/[._\u2026\s,]+/g, "");
+    if (textPart.length < 15) return true;
+  }
+  // Name with title (mixed case, short, contains dots like "RAHMI. SKM.M.Si")
+  if (s.length < 40 && !s.includes(":") && /^[A-Z]/.test(s) && /[.,]/.test(s) && !/\s{2,}/.test(s)) {
+    const words = s.split(/\s+/);
+    if (words.length <= 5 && words.every(w => /^[A-Z]/.test(w))) return true;
+  }
+  return false;
 }

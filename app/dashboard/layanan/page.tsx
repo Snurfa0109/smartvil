@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { apiInsert, apiUpdate, apiDelete, apiList, apiUpload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,12 @@ import {
   ListChecks,
   FileCheck2,
   FileWarning,
+  Inbox,
+  PackageCheck,
+  Eye,
+  Hourglass,
+  Settings,
+  Send,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,9 +42,6 @@ import {
   stripPlaceholdersFromDocx,
   smartTemplateFromStaticDocx,
   placeholdersToCustomFields,
-  buildTemplateData,
-  generateFilledDocx,
-  downloadBlob,
   blobToDataUrl,
   dataUrlToBuffer,
   BUILTIN_FIELDS,
@@ -54,6 +57,8 @@ export default function LayananDashboardPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [reqSearch, setReqSearch] = useState("");
+  const [reqStatusFilter, setReqStatusFilter] = useState<"all" | "pending" | "processed" | "ready" | "completed">("all");
 
   const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -80,7 +85,6 @@ export default function LayananDashboardPage() {
   const [templateFileName, setTemplateFileName] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [templateError, setTemplateError] = useState("");
-  const [downloadingDocx, setDownloadingDocx] = useState(false);
 
   const [printRequest, setPrintRequest] = useState<any | null>(null);
   const [printConfig, setPrintConfig] = useState({
@@ -300,7 +304,9 @@ export default function LayananDashboardPage() {
         );
       }
 
-      const customFields = placeholdersToCustomFields(placeholders, typeForm.customFields, smart.injected);
+      // Always start fresh: pass [] instead of typeForm.customFields
+      // so old field labels/types from a previous template don't carry over
+      const customFields = placeholdersToCustomFields(placeholders, [], smart.injected);
       setTypeForm((prev) => ({
         ...prev,
         templatePlaceholders: placeholders,
@@ -482,36 +488,35 @@ export default function LayananDashboardPage() {
     setPrintRequest(req);
   };
 
-  const triggerBrowserPrint = () => {
-    window.print();
-  };
-
-  const handleDownloadFilledDocx = async (mergedRequest?: any) => {
-    const req = mergedRequest || printRequest;
-    if (!req) return;
-    const letterType = letterTypes.find((lt) => lt.code === req.type);
-    const templateSource = letterType?.templateFileUrl || letterType?.templateData;
-    if (!templateSource) {
-      warning("Jenis surat ini belum memiliki template .docx. Upload template dulu di tab Kelola Jenis Surat.");
-      return;
-    }
-    setDownloadingDocx(true);
-    try {
-      const res = await fetch(templateSource);
-      if (!res.ok) throw new Error("Gagal mengunduh template");
-      const buf = await res.arrayBuffer();
-      const data = buildTemplateData(req, printConfig);
-      const blob = await generateFilledDocx(buf, data);
-      downloadBlob(blob, `${req.typeName || "surat"}-${req.ticketCode || req.id}.docx`);
-    } catch (err) {
-      console.error("Gagal generate DOCX:", err);
-      showError("Gagal membuat file DOCX. Coba lagi.");
-    } finally {
-      setDownloadingDocx(false);
-    }
-  };
-
   const hasTemplate = (t: LetterType) => !!(t.templateFileUrl || t.templateData);
+
+  // Pipeline stats from real data
+  const reqStats = useMemo(() => {
+    const pending = requests.filter((r) => r.status === "pending").length;
+    const processed = requests.filter((r) => r.status === "processed").length;
+    const ready = requests.filter((r) => r.status === "ready").length;
+    const completed = requests.filter((r) => r.status === "completed").length;
+    return { total: requests.length, pending, processed, ready, completed };
+  }, [requests]);
+
+  // Filtered requests by status + search
+  const filteredRequests = useMemo(() => {
+    let result = requests;
+    if (reqStatusFilter !== "all") {
+      result = result.filter((r) => r.status === reqStatusFilter);
+    }
+    if (reqSearch.trim()) {
+      const q = reqSearch.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.nama?.toLowerCase().includes(q) ||
+          r.nik?.includes(reqSearch) ||
+          r.typeName?.toLowerCase().includes(q) ||
+          r.ticketCode?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [requests, reqStatusFilter, reqSearch]);
   const filteredTypes = letterTypes.filter((t) => {
     const q = typeSearch.trim().toLowerCase();
     const matchSearch =
@@ -533,178 +538,295 @@ export default function LayananDashboardPage() {
   const templateCount = letterTypes.filter(hasTemplate).length;
 
   if (loading && loadingTypes) {
-    return <div className="p-8 text-center text-muted-foreground">Memuat data layanan surat...</div>;
+    return (
+      <div className="px-6 py-16 text-center">
+        <div className="w-8 h-8 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-slate-500 mt-4">Memuat data layanan surat...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Pelayanan &amp; Administrasi Surat</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Kelola permohonan surat masuk warga, tambahkan jenis surat baru, dan cetak dokumen resmi kelurahan.
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1b365d] to-[#2a4a7f] flex items-center justify-center text-white shrink-0">
+              <FileText className="h-4 w-4" />
+            </span>
+            Pelayanan &amp; Administrasi Surat
+          </h1>
+          <p className="text-sm text-slate-500 mt-1 ml-10">
+            Kelola permohonan surat masuk warga, kelola jenis surat, dan cetak dokumen resmi.
           </p>
         </div>
 
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+        <div className="inline-flex rounded-xl bg-slate-100/80 p-1 border border-slate-200 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => setActiveTab("requests")}
-            className={`px-4 py-2 text-xs font-semibold rounded-md transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${
               activeTab === "requests"
-                ? "bg-white text-primary shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-[#1b365d] shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            <FileText className="h-4 w-4" /> Permohonan Masuk ({requests.length})
+            <FileText className="h-4 w-4" /> Permohonan Masuk
+            <span className={`tabular-nums px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+              activeTab === "requests" ? "bg-[#1b365d]/10 text-[#1b365d]" : "bg-slate-200/80 text-slate-500"
+            }`}>{requests.length}</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("letter_types")}
-            className={`px-4 py-2 text-xs font-semibold rounded-md transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${
               activeTab === "letter_types"
-                ? "bg-white text-primary shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-[#1b365d] shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            <FolderCog className="h-4 w-4" /> Kelola Jenis Surat ({letterTypes.length})
+            <FolderCog className="h-4 w-4" /> Kelola Jenis Surat
+            <span className={`tabular-nums px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+              activeTab === "letter_types" ? "bg-[#1b365d]/10 text-[#1b365d]" : "bg-slate-200/80 text-slate-500"
+            }`}>{letterTypes.length}</span>
           </button>
         </div>
       </div>
 
       {activeTab === "requests" ? (
-        /* Tab 1: Requests List */
-        <div className="space-y-4">
-          {requests.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="font-medium text-foreground">Belum ada permohonan surat masuk dari warga.</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Warga dapat mengajukan surat mandiri melalui portal publik <code>/layanan</code>.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            requests.map((item) => (
-              <Card key={item.id} className="hover:shadow-xs transition-shadow border-slate-200/80">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      {item.typeName}
-                    </CardTitle>
-                    {item.ticketCode && (
-                      <span className="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
-                        {item.ticketCode}
+        /* Tab 1: Requests — pipeline dashboard */
+        <div className="space-y-6">
+          {/* Pipeline stat cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {([
+              { key: "all" as const, label: "Total Masuk", value: reqStats.total, icon: <Layers className="h-5 w-5" />, gradient: "from-[#1b365d] to-[#264478]", iconBg: "bg-[#1b365d]/10", iconText: "text-[#1b365d]", numText: "text-[#1b365d]", borderHover: "hover:border-[#1b365d]/30" },
+              { key: "pending" as const, label: "Menunggu", value: reqStats.pending, icon: <Hourglass className="h-5 w-5" />, gradient: "from-amber-500 to-orange-500", iconBg: "bg-amber-100", iconText: "text-amber-600", numText: "text-amber-700", borderHover: "hover:border-amber-300" },
+              { key: "processed" as const, label: "Diproses", value: reqStats.processed, icon: <Settings className="h-5 w-5" />, gradient: "from-sky-500 to-blue-600", iconBg: "bg-sky-100", iconText: "text-sky-600", numText: "text-sky-700", borderHover: "hover:border-sky-300" },
+              { key: "ready" as const, label: "Siap Diambil", value: reqStats.ready, icon: <PackageCheck className="h-5 w-5" />, gradient: "from-emerald-500 to-teal-600", iconBg: "bg-emerald-100", iconText: "text-emerald-600", numText: "text-emerald-700", borderHover: "hover:border-emerald-300" },
+              { key: "completed" as const, label: "Selesai", value: reqStats.completed, icon: <CheckCircle className="h-5 w-5" />, gradient: "from-slate-500 to-slate-700", iconBg: "bg-slate-100", iconText: "text-slate-500", numText: "text-slate-700", borderHover: "hover:border-slate-300" },
+            ] as const).map((s, i) => {
+              const isActive = reqStatusFilter === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setReqStatusFilter(reqStatusFilter === s.key ? "all" : s.key)}
+                  style={{ animationDelay: `${i * 60}ms` }}
+                  className={`layanan-stat-card group relative overflow-hidden rounded-2xl text-left transition-all duration-300 ${
+                    isActive
+                      ? `bg-gradient-to-br ${s.gradient} text-white shadow-lg shadow-slate-900/10 ring-2 ring-white/20 scale-[1.02]`
+                      : `bg-white border border-slate-200 ${s.borderHover} hover:shadow-md`
+                  }`}
+                >
+                  {/* Top accent bar */}
+                  {!isActive && <div className={`h-1 ${s.iconBg}`} />}
+
+                  <div className="p-4 pt-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className={`text-[11px] font-bold uppercase tracking-wider ${isActive ? "text-white/70" : "text-slate-400"}`}>
+                          {s.label}
+                        </p>
+                        {loading ? (
+                          <div className={`h-9 w-14 rounded-lg mt-2 ${isActive ? "bg-white/20" : "bg-slate-100"} animate-pulse`} />
+                        ) : (
+                          <p className={`text-3xl font-extrabold mt-1.5 tabular-nums tracking-tight leading-none ${isActive ? "text-white" : s.numText}`}>
+                            {s.value}
+                          </p>
+                        )}
+                      </div>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+                        isActive ? "bg-white/15 text-white" : `${s.iconBg} ${s.iconText}`
+                      }`}>
+                        {s.icon}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isActive && (
+                    <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-white/40 rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search bar + active filter badge */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 max-w-md group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#1b365d] transition-colors" />
+              <Input
+                type="search"
+                placeholder="Cari nama, NIK, tiket, atau jenis surat..."
+                className="pl-9 h-10 border-slate-200 bg-white rounded-xl focus:border-[#1b365d] focus:ring-[#1b365d]/20 transition-shadow"
+                value={reqSearch}
+                onChange={(e) => setReqSearch(e.target.value)}
+              />
+            </div>
+            {reqStatusFilter !== "all" && (
+              <button
+                onClick={() => setReqStatusFilter("all")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#1b365d] bg-[#1b365d]/8 hover:bg-[#1b365d]/15 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" /> Hapus filter
+              </button>
+            )}
+          </div>
+
+          {/* Requests table card */}
+          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            {/* Table header bar */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                  <FileText className="h-4.5 w-4.5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Daftar Permohonan</h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {reqStatusFilter !== "all" && (
+                      <span className="inline-flex items-center gap-1 text-[#1b365d] font-semibold mr-1">
+                        {reqStatusFilter === "pending" ? "Menunggu" : reqStatusFilter === "processed" ? "Diproses" : reqStatusFilter === "ready" ? "Siap Diambil" : "Selesai"}
+                        ·
                       </span>
                     )}
-                  </div>
-                  <div
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      item.status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : item.status === "ready"
-                        ? "bg-emerald-100 text-emerald-700"
+                    <span className="tabular-nums font-semibold text-slate-500">{filteredRequests.length}</span> permohonan
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Table body */}
+            {loading ? (
+              <div className="px-6 py-20 text-center">
+                <div className="w-10 h-10 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
+                <p className="text-sm text-slate-500 mt-4 font-medium">Memuat permohonan...</p>
+              </div>
+            ) : filteredRequests.length === 0 ? (
+              <div className="px-6 py-20 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center mx-auto mb-4 border border-slate-200">
+                  <Inbox className="h-7 w-7 text-slate-300" />
+                </div>
+                <p className="text-sm font-bold text-slate-700">
+                  {requests.length === 0
+                    ? "Belum ada permohonan surat masuk"
+                    : reqSearch.trim()
+                    ? "Pencarian tidak menemukan hasil"
+                    : "Tidak ada permohonan dengan status ini"}
+                </p>
+                <p className="text-xs text-slate-400 mt-1.5 max-w-xs mx-auto">
+                  {requests.length === 0
+                    ? "Warga dapat mengajukan surat melalui portal publik /layanan."
+                    : reqSearch.trim()
+                    ? "Coba kata kunci lain atau hapus filter."
+                    : "Pilih status lain atau lihat semua permohonan."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50/60">
+                      <th className="text-left font-bold text-slate-400 px-6 py-3 text-[10px] uppercase tracking-widest">
+                        Pemohon
+                      </th>
+                      <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-widest hidden md:table-cell">
+                        Jenis Surat
+                      </th>
+                      <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-widest hidden lg:table-cell">
+                        Tanggal
+                      </th>
+                      <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-widest">
+                        Status
+                      </th>
+                      <th className="text-center font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-widest w-36">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100/80">
+                    {filteredRequests.map((item, idx) => {
+                      const statusConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+                        pending: { label: "Menunggu", bg: "bg-amber-50 border-amber-200/60", text: "text-amber-700", dot: "bg-amber-500" },
+                        processed: { label: "Diproses", bg: "bg-sky-50 border-sky-200/60", text: "text-sky-700", dot: "bg-sky-500" },
+                        ready: { label: "Siap Diambil", bg: "bg-emerald-50 border-emerald-200/60", text: "text-emerald-700", dot: "bg-emerald-500" },
+                        completed: { label: "Selesai", bg: "bg-slate-50 border-slate-200/60", text: "text-slate-500", dot: "bg-slate-400" },
+                      };
+                      const sc = statusConfig[item.status] || statusConfig.pending;
+                      const nextAction = item.status === "pending"
+                        ? { label: "Proses", next: "processed", cls: "bg-sky-500 hover:bg-sky-600 text-white" }
                         : item.status === "processed"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {item.status === "completed"
-                      ? "Selesai Diserahkan"
-                      : item.status === "ready"
-                      ? "Siap Diambil di Loket"
-                      : item.status === "processed"
-                      ? "Sedang Diproses"
-                      : "Menunggu Verifikasi"}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-3">
-                  <div className="grid md:grid-cols-3 gap-4 mb-4 text-sm bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                    <div>
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase">Pemohon</p>
-                      <p className="font-bold text-foreground">{item.nama}</p>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">NIK: {item.nik}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase">No. WhatsApp / HP</p>
-                      <p className="font-medium text-foreground">{item.phone || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase">Keperluan Surat</p>
-                      <p className="font-medium text-foreground line-clamp-2">{item.keperluan}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground pt-2 border-t gap-2">
-                    <span>
-                      Diajukan:{" "}
-                      {item.createdAt
-                        ? new Date(typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
-                        : "-"}
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => setSelectedRequest(item)}>
-                        Detail
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-primary hover:text-primary font-semibold border-primary/30"
-                        onClick={() => handleOpenPrint(item)}
-                      >
-                        <Printer className="mr-1.5 h-3.5 w-3.5" /> Cetak Surat Resmi
-                      </Button>
-                      {item.status === "pending" && (
-                        <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(item.id, "processed")}>
-                          <Clock className="mr-1.5 h-3.5 w-3.5" /> Proses
-                        </Button>
-                      )}
-                      {item.status === "processed" && (
-                        <Button
-                          size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => handleStatusUpdate(item.id, "ready")}
+                        ? { label: "Siap Ambil", next: "ready", cls: "bg-emerald-500 hover:bg-emerald-600 text-white" }
+                        : item.status === "ready"
+                        ? { label: "Selesai", next: "completed", cls: "bg-[#1b365d] hover:bg-[#152a48] text-white" }
+                        : null;
+                      return (
+                        <tr
+                          key={item.id}
+                          className="group hover:bg-[#1b365d]/[0.015] transition-colors duration-150 cursor-pointer"
+                          onClick={() => setSelectedRequest(item)}
                         >
-                          <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Siap Diambil
-                        </Button>
-                      )}
-                      {item.status === "ready" && (
-                        <Button size="sm" onClick={() => handleStatusUpdate(item.id, "completed")}>
-                          <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Tandai Selesai
-                        </Button>
-                      )}
-                      {item.phone && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-                          onClick={() => handleSendWhatsApp(item)}
-                          title="Kirim pesan status via WhatsApp ke warga"
-                        >
-                          <PhoneCall className="mr-1.5 h-3.5 w-3.5" /> WA Warga
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteRequest(item.id, item.nama)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                          <td className="px-6 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center text-xs font-bold text-white shrink-0">
+                                {(item.nama || "?").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-800 truncate text-[13px] group-hover:text-[#1b365d] transition-colors">{item.nama}</p>
+                                <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                                  {item.ticketCode || item.nik}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 hidden md:table-cell">
+                            <span className="text-slate-600 truncate block max-w-[180px] text-xs">{item.typeName}</span>
+                          </td>
+                          <td className="px-4 py-3 hidden lg:table-cell">
+                            <span className="text-[11px] text-slate-400">
+                              {item.createdAt
+                                ? new Date(
+                                    typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000
+                                  ).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                                : "-"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${sc.bg} ${sc.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} ${item.status === "pending" ? "animate-pulse" : ""}`} />
+                              {sc.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1.5">
+                              {nextAction ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleStatusUpdate(item.id, nextAction.next); }}
+                                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all duration-200 ${nextAction.cls}`}
+                                >
+                                  {nextAction.label}
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-slate-400 bg-slate-50">
+                                  <CheckCircle className="h-3 w-3" /> Tuntas
+                                </span>
+                              )}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setSelectedRequest(item); }}
+                                className="p-1.5 rounded-md text-slate-400 hover:text-[#1b365d] hover:bg-[#1b365d]/5 transition-all"
+                                title="Lihat detail"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         /* Tab 2: Manage Letter Types */
@@ -1239,57 +1361,115 @@ export default function LayananDashboardPage() {
       )}
 
       {selectedRequest && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg bg-white relative">
-            <CardHeader className="border-b">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">Detail Permohonan Surat</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedRequest(null)}>?</Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-6">
-              <div className="grid grid-cols-2 gap-3 text-sm bg-slate-50 p-3.5 rounded-xl border">
-                <div>
-                  <p className="text-xs text-muted-foreground">Pemohon</p>
-                  <p className="font-bold">{selectedRequest.nama}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">NIK</p>
-                  <p className="font-mono font-bold">{selectedRequest.nik}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Jenis Surat</p>
-                  <p className="font-semibold text-primary">{selectedRequest.typeName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">No. Telepon / WA</p>
-                  <p className="font-semibold">{selectedRequest.phone || "-"}</p>
-                </div>
-                {selectedRequest.ticketCode && (
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Nomor Tiket Pelacakan</p>
-                    <p className="font-mono font-bold text-primary">{selectedRequest.ticketCode}</p>
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedRequest(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Detail Permohonan Surat"
+        >
+          <div
+            className="layanan-modal w-full max-w-xl bg-white rounded-2xl shadow-2xl relative max-h-[92vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* ── Header ── */}
+            <div className="relative bg-gradient-to-r from-[#1b365d] to-[#264478] px-6 py-6 text-white overflow-hidden shrink-0">
+              <div className="absolute right-0 top-0 w-40 h-40 rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
+              <div className="absolute left-0 bottom-0 w-24 h-24 rounded-full bg-white/[0.04] translate-y-1/2 -translate-x-1/3" />
+
+              <div className="relative flex justify-between items-start gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center text-xl font-extrabold shrink-0 border border-white/10 shadow-inner shadow-white/5">
+                    {(selectedRequest.nama || "?").charAt(0).toUpperCase()}
                   </div>
-                )}
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-bold leading-tight truncate">{selectedRequest.nama}</h2>
+                    <p className="text-[13px] text-white/50 mt-1 font-mono">{selectedRequest.ticketCode || selectedRequest.nik}</p>
+                    <div className="mt-2.5">
+                      {(() => {
+                        const scMap: Record<string, { label: string; cls: string; dot: string }> = {
+                          pending: { label: "Menunggu Verifikasi", cls: "bg-amber-400/20 text-amber-200 border-amber-400/25", dot: "bg-amber-400 animate-pulse" },
+                          processed: { label: "Sedang Diproses", cls: "bg-sky-400/20 text-sky-200 border-sky-400/25", dot: "bg-sky-400" },
+                          ready: { label: "Siap Diambil", cls: "bg-emerald-400/20 text-emerald-200 border-emerald-400/25", dot: "bg-emerald-400" },
+                          completed: { label: "Selesai Diserahkan", cls: "bg-white/10 text-white/60 border-white/15", dot: "bg-white/40" },
+                        };
+                        const s = scMap[selectedRequest.status] || scMap.pending;
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${s.cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                            {s.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+                  title="Tutup"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* ── Content ── */}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+
+              {/* Info cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 rounded-xl bg-[#1b365d]/[0.04] border border-[#1b365d]/10 p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-[#1b365d]/50" />
+                    <span className="text-[10px] font-bold text-[#1b365d]/50 uppercase tracking-wider">Jenis Surat</span>
+                  </div>
+                  <p className="text-[15px] font-bold text-[#1b365d]">{selectedRequest.typeName}</p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">NIK</span>
+                  <p className="text-[13px] font-bold text-slate-800 font-mono tracking-wide mt-1">{selectedRequest.nik}</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">No. HP / WA</span>
+                  <p className="text-[13px] font-bold text-slate-800 mt-1">{selectedRequest.phone || "-"}</p>
+                </div>
+
+                <div className="col-span-2 rounded-xl bg-slate-50 border border-slate-200/80 p-3.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Pengajuan</span>
+                  </div>
+                  <p className="text-[13px] font-semibold text-slate-700">
+                    {selectedRequest.createdAt
+                      ? new Date(typeof selectedRequest.createdAt === "string" ? selectedRequest.createdAt : selectedRequest.createdAt.seconds * 1000).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+                      : "-"}
+                  </p>
+                </div>
               </div>
 
+              {/* Keperluan */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Keperluan Pengajuan</p>
-                <p className="text-sm bg-muted p-3 rounded-md">{selectedRequest.keperluan}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Keperluan Pengajuan</p>
+                <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200/80 leading-relaxed">
+                  {selectedRequest.keperluan || "-"}
+                </div>
               </div>
 
+              {/* Form data */}
               {selectedRequest.formData && Object.keys(selectedRequest.formData).length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-                    Data tambahan dari template ({Object.keys(selectedRequest.formData).length} field)
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Data Formulir · {Object.keys(selectedRequest.formData).length} field
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-slate-200/80 overflow-hidden divide-y divide-slate-100">
                     {Object.entries(selectedRequest.formData as Record<string, string>).map(([k, v]) => {
                       const def = (letterTypes.find((lt) => lt.code === selectedRequest.type)?.customFields || []).find((f) => f.key === k);
                       return (
-                        <div key={k} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-                          <p className="text-[11px] text-muted-foreground">{def?.label || k}</p>
-                          <p className="text-sm font-semibold">{String(v) || "-"}</p>
+                        <div key={k} className="flex items-baseline justify-between gap-4 px-4 py-2.5 hover:bg-slate-50/80 transition-colors">
+                          <span className="text-xs text-slate-500 shrink-0">{def?.label || k}</span>
+                          <span className="text-sm font-semibold text-slate-800 text-right">{String(v) || "-"}</span>
                         </div>
                       );
                     })}
@@ -1297,49 +1477,91 @@ export default function LayananDashboardPage() {
                 </div>
               )}
 
-              <div className="border-t pt-4">
-                <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase">Ubah Status Alur Pelayanan</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant={selectedRequest.status === "pending" ? "primary" : "outline"}
-                    onClick={() => handleStatusUpdate(selectedRequest.id, "pending")}
-                  >
-                    Menunggu
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={selectedRequest.status === "processed" ? "primary" : "outline"}
-                    onClick={() => handleStatusUpdate(selectedRequest.id, "processed")}
-                  >
-                    Diproses
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={selectedRequest.status === "ready" ? "primary" : "outline"}
-                    className={selectedRequest.status === "ready" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-                    onClick={() => handleStatusUpdate(selectedRequest.id, "ready")}
-                  >
-                    Siap Diambil
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={selectedRequest.status === "completed" ? "primary" : "outline"}
-                    onClick={() => handleStatusUpdate(selectedRequest.id, "completed")}
-                  >
-                    Selesai
-                  </Button>
+              {/* ── Workflow stepper ── */}
+              <div className="pt-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Alur Pelayanan</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {([
+                    { key: "pending", label: "Menunggu", icon: <Hourglass className="h-4 w-4" />, color: "amber" },
+                    { key: "processed", label: "Diproses", icon: <Settings className="h-4 w-4" />, color: "sky" },
+                    { key: "ready", label: "Siap Ambil", icon: <PackageCheck className="h-4 w-4" />, color: "emerald" },
+                    { key: "completed", label: "Selesai", icon: <CheckCircle className="h-4 w-4" />, color: "slate" },
+                  ] as const).map((s) => {
+                    const steps = ["pending", "processed", "ready", "completed"];
+                    const currentIdx = steps.indexOf(selectedRequest.status);
+                    const stepIdx = steps.indexOf(s.key);
+                    const isDone = stepIdx < currentIdx;
+                    const isCurrent = stepIdx === currentIdx;
+                    const isFuture = stepIdx > currentIdx;
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => handleStatusUpdate(selectedRequest.id, s.key)}
+                        className={`relative flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl transition-all duration-300 ${
+                          isCurrent
+                            ? "bg-gradient-to-b from-[#1b365d] to-[#264478] text-white shadow-lg shadow-[#1b365d]/20"
+                            : isDone
+                            ? "bg-[#1b365d]/8 text-[#1b365d] hover:bg-[#1b365d]/12"
+                            : "bg-slate-100/80 text-slate-400 hover:bg-slate-200/80 hover:text-slate-500"
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isCurrent ? "bg-white/20" : isDone ? "bg-[#1b365d]/10" : "bg-slate-200/60"
+                        }`}>
+                          {isDone ? <CheckCircle className="h-4 w-4" /> : s.icon}
+                        </div>
+                        <span className="text-[10px] font-bold leading-tight text-center">{s.label}</span>
+                        {isCurrent && (
+                          <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-1 bg-[#c9971c] rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Progress bar */}
+                <div className="mt-3 flex gap-1">
+                  {["pending", "processed", "ready", "completed"].map((step, i) => {
+                    const steps = ["pending", "processed", "ready", "completed"];
+                    const currentIdx = steps.indexOf(selectedRequest.status);
+                    return (
+                      <div
+                        key={step}
+                        className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                          i <= currentIdx ? "bg-[#1b365d]" : "bg-slate-200"
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-between items-center pt-4 border-t">
-                <Button variant="outline" onClick={() => handleOpenPrint(selectedRequest)}>
-                  <Printer className="mr-1.5 h-4 w-4" /> Cetak Surat Resmi
+            {/* ── Footer actions ── */}
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50/80 flex flex-wrap items-center gap-2.5 shrink-0">
+              <Button variant="outline" size="sm" onClick={() => handleOpenPrint(selectedRequest)} className="h-9 rounded-xl border-slate-200 hover:border-[#1b365d]/30 hover:text-[#1b365d] hover:bg-[#1b365d]/5">
+                <Printer className="mr-1.5 h-4 w-4" /> Cetak Surat
+              </Button>
+              {selectedRequest.phone && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 rounded-xl text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                  onClick={() => handleSendWhatsApp(selectedRequest)}
+                >
+                  <Send className="mr-1.5 h-4 w-4" /> WA Warga
                 </Button>
-                <Button variant="ghost" onClick={() => setSelectedRequest(null)}>Tutup</Button>
-              </div>
-            </CardContent>
-          </Card>
+              )}
+              <div className="flex-1" />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-9 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => { handleDeleteRequest(selectedRequest.id, selectedRequest.nama); }}
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" /> Hapus
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1350,9 +1572,6 @@ export default function LayananDashboardPage() {
           printConfig={printConfig}
           onPrintConfigChange={setPrintConfig}
           onClose={() => setPrintRequest(null)}
-          onPrint={triggerBrowserPrint}
-          onDownloadDocx={handleDownloadFilledDocx}
-          downloadingDocx={downloadingDocx}
         />
       )}
     </div>

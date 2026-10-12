@@ -12,8 +12,8 @@
   --color-muted: #f1f5f9;
   --color-muted-foreground: #64748b;
   --color-border: #e2e8f0;
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), 'Fira Code', ui-monospace, SFMono-Regular, monospace;
 }
 
 :root {
@@ -78,8 +78,99 @@ body {
 .lt-card {
   animation: lt-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* Stat cards stagger entrance */
+@keyframes stat-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layanan-stat-card {
+  animation: stat-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Modal slide-in */
+@keyframes modal-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layanan-modal {
+  animation: modal-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Dashboard metric cards stagger */
+.dash-card {
+  animation: stat-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Interactive icon animations ── */
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes icon-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+@keyframes count-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.dash-icon-box {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group:hover .dash-icon-box {
+  animation: icon-float 0.6s ease-in-out;
+  box-shadow: 0 4px 16px rgb(27 54 93 / 0.15);
+}
+.dash-icon-box.wiggle:hover,
+.group:hover .dash-icon-box.wiggle {
+  animation: icon-wiggle 0.4s ease-in-out;
+}
+.group:hover .dash-count {
+  animation: count-pop 0.35s ease-out;
+}
+
+/* Pipeline stage hover lift */
+.pipe-stage {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pipe-stage:hover {
+  transform: translateY(-1px);
+}
+
+/* Shine sweep on hover (cards) */
+.dash-shine {
+  position: relative;
+  overflow: hidden;
+}
+.dash-shine::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+.dash-shine:hover::after {
+  left: 120%;
+}
+
+/* Sidebar scrollbar — invisible but functional */
+.sidebar-scroll {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari/Opera */
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lt-card { animation: none; }
+  .lt-card, .layanan-stat-card, .layanan-modal, .dash-card { animation: none; }
+  .dash-icon-box, .pipe-stage { transition: none; }
+  .group:hover .dash-icon-box, .group:hover .dash-count { animation: none; }
+  .dash-shine::after { display: none; }
 }
 
 /* ── Print: cetak surat resmi ── */
