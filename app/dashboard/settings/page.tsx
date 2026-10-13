@@ -30,7 +30,9 @@ import {
   Shield,
   Mail,
   FileText,
+  Sparkles,
 } from "lucide-react";
+import { BannerManagement } from "@/components/dashboard/banner-management";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { getToken } from "@/lib/api";
@@ -314,6 +316,9 @@ function SettingsContent() {
           </TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
             <Database className="h-3.5 w-3.5" /> Sistem
+          </TabsTrigger>
+          <TabsTrigger value="banners" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Sparkles className="h-3.5 w-3.5" /> Banner
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-6">
@@ -1510,6 +1515,10 @@ function SettingsContent() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="banners" className="space-y-6">
+          <BannerManagement />
         </TabsContent>
 
       </Tabs>
