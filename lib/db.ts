@@ -6,7 +6,7 @@ const config = {
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: true } : false,
+  ssl: process.env.MYSQL_SSL === "true" ? { rejectUnauthorized: true } : false,
   connectionLimit: 5,
   enableKeepAlive: true,
 };
