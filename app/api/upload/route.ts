@@ -18,6 +18,11 @@ export async function POST(req: NextRequest) {
     if (file.size > MAX_BYTES) {
       return NextResponse.json({ error: "Ukuran file maksimal 5MB." }, { status: 400 });
     }
+    const ALLOWED_EXTENSIONS = [".docx", ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    const ext = (file.name.lastIndexOf(".") !== -1 ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase() : "");
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json({ error: "Tipe file tidak diizinkan. Hanya: " + ALLOWED_EXTENSIONS.join(", ") }, { status: 400 });
+    }
     if (folder !== "complaints") {
       const session = await getSessionProfile(req);
       if (!session) return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });

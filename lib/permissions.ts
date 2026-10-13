@@ -50,8 +50,6 @@ export const MANAGEABLE_FEATURES: FeaturePermission[] = [
   },
 ];
 
-export const ALL_MANAGEABLE_FEATURE_KEYS = MANAGEABLE_FEATURES.map((f) => f.key);
-
 export const DEFAULT_ADMIN_PERMISSIONS = [
   "dashboard",
   "berita",

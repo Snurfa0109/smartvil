@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiList, apiUpdate, apiDelete, getToken } from "@/lib/api";
+import { apiList, apiUpdate, getToken } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
 import {
   ShieldCheck,
@@ -21,11 +21,13 @@ import {
   RefreshCw,
   Info,
   Lock,
+  Users,
 } from "lucide-react";
 import {
   MANAGEABLE_FEATURES,
   DEFAULT_ADMIN_PERMISSIONS,
 } from "@/lib/permissions";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 
 interface AdminUser {
@@ -36,8 +38,8 @@ interface AdminUser {
   role: "superadmin" | "admin" | "operator";
   department?: string;
   active: boolean;
-  createdAt?: any;
-  lastLogin?: any;
+  createdAt?: string;
+  lastLogin?: string;
   permissions?: string[];
 }
 
@@ -51,7 +53,7 @@ const DEPARTMENTS = [
 
 export default function AdminsManagementPage() {
   const { user: currentUser, isSuperAdmin } = useAuth();
-  const { success, error: showError, warning, confirm: showConfirm } = useToast();
+  const { error: showError, warning, confirm: showConfirm } = useToast();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -83,11 +85,11 @@ export default function AdminsManagementPage() {
         uid: String(row.id),
         displayName: String(row.display_name || "Admin"),
         email: String(row.email || "-"),
-        role: (row.role as any) || "admin",
+        role: (row.role as AdminUser["role"]) || "admin",
         department: String(row.department || "Kelurahan"),
         active: Number(row.active) !== 0,
-        createdAt: row.created_at,
-        lastLogin: row.last_login,
+        createdAt: String(row.created_at ?? ""),
+        lastLogin: String(row.last_login ?? ""),
         permissions: Array.isArray(row.permissions)
           ? row.permissions
           : row.role === "superadmin"
@@ -192,9 +194,9 @@ export default function AdminsManagementPage() {
       setSuccessMsg(`Admin ${formData.displayName} berhasil didaftarkan!`);
       setIsCreateOpen(false);
       await fetchAdmins();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err.message || "Gagal membuat admin baru.");
+      setErrorMsg(err instanceof Error ? err.message : "Gagal membuat admin baru.");
     } finally {
       setSubmitting(false);
     }
@@ -228,9 +230,9 @@ export default function AdminsManagementPage() {
       setIsEditOpen(false);
       setEditingAdmin(null);
       await fetchAdmins();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err.message || "Gagal memperbarui admin.");
+      setErrorMsg(err instanceof Error ? err.message : "Gagal memperbarui admin.");
     } finally {
       setSubmitting(false);
     }
@@ -323,473 +325,494 @@ export default function AdminsManagementPage() {
       a.displayName.toLowerCase().includes(search.toLowerCase()) ||
       a.email.toLowerCase().includes(search.toLowerCase()) ||
       (a.department && a.department.toLowerCase().includes(search.toLowerCase()));
-
     const matchRole = roleFilter === "all" || a.role === roleFilter;
-
     return matchSearch && matchRole;
   });
 
+  const superadminCount = admins.filter((a) => a.role === "superadmin").length;
+  const adminCount = admins.filter((a) => a.role === "admin").length;
+  const operatorCount = admins.filter((a) => a.role === "operator").length;
+
+  const getRoleBadge = (role: string) => {
+    if (role === "superadmin") return { bg: "bg-violet-50", text: "text-violet-700", label: "Super Admin" };
+    if (role === "operator") return { bg: "bg-amber-50", text: "text-amber-700", label: "Operator" };
+    return { bg: "bg-[#1b365d]/[0.06]", text: "text-[#1b365d]", label: "Admin Seksi" };
+  };
+
   if (!isSuperAdmin) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-4 text-center">
+      <div className="py-20 text-center">
         <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
           <Shield className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-slate-800">Akses Terbatas: Khusus Super Admin</h2>
-        <p className="text-slate-600 text-sm mt-2 max-w-md mx-auto">
-          Halaman Pengaturan Admin dan Penugasan Seksi Kelurahan hanya dapat dikelola oleh Super Administrator (Lurah / Seklur).
+        <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">
+          Halaman ini hanya dapat dikelola oleh Super Administrator (Lurah / Seklur).
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  const PermissionsSection = () => (
+    formData.role === "superadmin" ? (
+      <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl text-xs text-violet-900 flex items-start gap-2.5">
+        <ShieldCheck className="h-4 w-4 text-violet-600 mt-0.5 shrink-0" />
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-800">Pengaturan Admin & Hak Akses</h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
-              Super Admin Only
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Kelola petugas, operator, dan admin seksi di lingkungan Kelurahan Banjar Agung.
+          <p className="font-bold">Akses Penuh Super Admin</p>
+          <p className="text-violet-700/90 text-[10px] mt-0.5">
+            Super Admin memiliki akses tak terbatas ke seluruh fitur dan <strong>Log Aktivitas (Sistem Audit)</strong>.
           </p>
         </div>
+      </div>
+    ) : (
+      <div className="space-y-2.5 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hak Akses Fitur</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Pilih menu yang boleh diakses admin ini</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, permissions: MANAGEABLE_FEATURES.map((f) => f.key) })}
+              className="text-[10px] text-[#1b365d] hover:underline font-bold"
+            >
+              Pilih Semua
+            </button>
+            <span className="text-slate-300">·</span>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, permissions: [] })}
+              className="text-[10px] text-slate-500 hover:underline font-bold"
+            >
+              Kosongkan
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+          {MANAGEABLE_FEATURES.map((feat) => {
+            const isChecked = formData.permissions.includes(feat.key);
+            return (
+              <label
+                key={feat.key}
+                className={`flex items-start gap-2.5 p-2 rounded-lg border text-[11px] cursor-pointer transition-all ${
+                  isChecked
+                    ? "bg-[#1b365d]/[0.04] border-[#1b365d]/20 text-slate-900"
+                    : "bg-slate-50/40 border-slate-200 text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData({ ...formData, permissions: [...formData.permissions, feat.key] });
+                    } else {
+                      setFormData({ ...formData, permissions: formData.permissions.filter((k) => k !== feat.key) });
+                    }
+                  }}
+                  className="mt-0.5 rounded text-[#1b365d] focus:ring-[#1b365d]"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-slate-800 leading-tight">{feat.label}</p>
+                  <p className="text-[9px] text-slate-400 truncate mt-0.5">{feat.description}</p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-[10px] text-amber-800">
+          <Lock size={12} className="shrink-0 text-amber-600" />
+          <span>Fitur <strong>Sistem Audit & Kelola Admin</strong> terkunci khusus Super Admin.</span>
+        </div>
+      </div>
+    )
+  );
 
+  return (
+    <div className="space-y-5 pb-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
+            <ShieldCheck className="h-[18px] w-[18px] text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Pengaturan Admin</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">Kelola petugas, operator, dan hak akses dashboard</p>
+          </div>
+        </div>
         <button
           onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1b365d] hover:bg-[#152a48] text-white rounded-lg font-medium text-sm transition-colors shadow-sm"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1b365d] hover:bg-[#152a48] text-white rounded-lg text-xs font-bold transition-colors shadow-sm h-9"
         >
-          <UserPlus size={16} />
-          <span>Tambah Petugas / Admin</span>
+          <UserPlus className="h-3.5 w-3.5" /> Tambah Admin
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/60">
-          <div className="flex items-center gap-2 text-purple-800 font-semibold text-sm mb-1">
-            <ShieldCheck size={16} />
-            <span>Super Admin</span>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-3 gap-3">
+        {([
+          { label: "Super Admin", value: superadminCount, iconBg: "bg-violet-100", iconText: "text-violet-600", numText: "text-violet-700", accentBar: "bg-violet-500", icon: <ShieldCheck className="h-[18px] w-[18px]" /> },
+          { label: "Admin Seksi", value: adminCount, iconBg: "bg-[#1b365d]/10", iconText: "text-[#1b365d]", numText: "text-[#1b365d]", accentBar: "bg-[#1b365d]", icon: <Building2 className="h-[18px] w-[18px]" /> },
+          { label: "Operator", value: operatorCount, iconBg: "bg-amber-100", iconText: "text-amber-600", numText: "text-amber-700", accentBar: "bg-amber-500", icon: <Users className="h-[18px] w-[18px]" /> },
+        ] as const).map((stat, i) => (
+          <div
+            key={i}
+            className="dash-card group relative overflow-hidden rounded-xl border border-slate-200/70 bg-white transition-all duration-300 hover:shadow-md hover:border-slate-300/80"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className={`h-[3px] ${stat.accentBar}`} />
+            <div className="p-4 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                {loading ? (
+                  <div className="h-7 w-12 bg-slate-100 rounded-lg mt-1.5 animate-pulse" />
+                ) : (
+                  <p className={`text-2xl font-extrabold mt-1 tabular-nums tracking-tight ${stat.numText}`}>
+                    {stat.value}
+                  </p>
+                )}
+              </div>
+              <div className={`w-9 h-9 rounded-xl ${stat.iconBg} ${stat.iconText} flex items-center justify-center shrink-0 dash-icon-box`}>
+                {stat.icon}
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-purple-950/70 leading-relaxed">
-            Lurah / Sekretaris Kelurahan. Akses penuh mengelola sistem, menambah/menonaktifkan staf admin, dan audit log.
+        ))}
+      </div>
+
+      {/* Role info cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="p-4 rounded-xl border border-violet-200/70 bg-violet-50/40">
+          <div className="flex items-center gap-2 text-violet-700 font-bold text-[12px] mb-1">
+            <ShieldCheck size={14} /> Super Admin
+          </div>
+          <p className="text-[10px] text-violet-900/60 leading-relaxed">
+            Lurah / Seklur. Akses penuh ke seluruh sistem, audit log, dan kelola admin.
           </p>
         </div>
-
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60">
-          <div className="flex items-center gap-2 text-[#1b365d] font-semibold text-sm mb-1">
-            <Building2 size={16} />
-            <span>Admin Seksi (Kasi)</span>
+        <div className="p-4 rounded-xl border border-[#1b365d]/10 bg-[#1b365d]/[0.02]">
+          <div className="flex items-center gap-2 text-[#1b365d] font-bold text-[12px] mb-1">
+            <Building2 size={14} /> Admin Seksi (Kasi)
           </div>
-          <p className="text-xs text-blue-950/70 leading-relaxed">
-            Kepala Seksi Tapem, Ekbang, & Trantibum. Kelola pengaduan warga, pemrosesan permohonan surat, dan berita kegiatan.
+          <p className="text-[10px] text-slate-500 leading-relaxed">
+            Kepala Seksi Tapem, Ekbang, & Trantibum. Kelola pengaduan, surat, dan berita.
           </p>
         </div>
-
-        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60">
-          <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-1">
-            <Info size={16} />
-            <span>Operator Pelayanan</span>
+        <div className="p-4 rounded-xl border border-amber-200/70 bg-amber-50/40">
+          <div className="flex items-center gap-2 text-amber-700 font-bold text-[12px] mb-1">
+            <Info size={14} /> Operator Pelayanan
           </div>
-          <p className="text-xs text-amber-950/70 leading-relaxed">
-            Staf Front Office / Loket. Membantu verifikasi berkas surat, input data kependudukan dan agenda warga.
+          <p className="text-[10px] text-amber-900/60 leading-relaxed">
+            Staf Front Office / Loket. Verifikasi berkas, input data kependudukan.
           </p>
         </div>
       </div>
 
+      {/* Success banner */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="text-emerald-600" />
+            <CheckCircle2 size={14} className="text-emerald-600" />
             <span>{successMsg}</span>
           </div>
           <button onClick={() => setSuccessMsg("")} className="text-emerald-600 hover:text-emerald-800">
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
       )}
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
+      {/* Search + filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="relative flex-1 max-w-xs w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+          <Input
+            type="search"
             placeholder="Cari nama, email, atau bidang..."
+            className="pl-9 h-9 text-sm rounded-xl border-slate-200 bg-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
           />
         </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-2">
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
+            className="h-9 text-[11px] font-bold border border-slate-200 rounded-xl px-3 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
           >
             <option value="all">Semua Peran</option>
             <option value="superadmin">Super Admin</option>
             <option value="admin">Admin Seksi</option>
             <option value="operator">Operator</option>
           </select>
-
           <button
             onClick={fetchAdmins}
             disabled={loading}
-            className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600"
+            className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-[#1b365d] hover:border-[#1b365d]/30 flex items-center justify-center transition-all"
             title="Muat ulang data"
           >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-3.5">Nama & Kontak</th>
-                <th className="px-6 py-3.5">Peran / Hak Akses</th>
-                <th className="px-6 py-3.5">Seksi / Penugasan</th>
-                <th className="px-6 py-3.5">Status Akun</th>
-                <th className="px-6 py-3.5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    <div className="w-6 h-6 border-2 border-[#1b365d] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                    Memuat daftar admin...
-                  </td>
+      {/* Table */}
+      <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+              <Users className="h-4 w-4 text-[#1b365d]" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-slate-800">Daftar Admin</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                <span className="tabular-nums font-semibold text-slate-500">{filteredAdmins.length}</span> petugas terdaftar
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="py-20 text-center">
+            <div className="w-8 h-8 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
+            <p className="text-xs text-slate-400 mt-3 font-medium">Memuat daftar admin...</p>
+          </div>
+        ) : filteredAdmins.length === 0 ? (
+          <div className="py-20 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <Users className="h-6 w-6 text-slate-300" />
+            </div>
+            <p className="text-sm font-bold text-slate-700">Tidak ada admin yang cocok</p>
+            <p className="text-xs text-slate-400 mt-1">Coba ubah filter atau kata kunci pencarian.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/60">
+                  <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-5 py-3">Nama & Kontak</th>
+                  <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">Peran</th>
+                  <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Seksi</th>
+                  <th className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Status</th>
+                  <th className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider px-5 py-3">Aksi</th>
                 </tr>
-              ) : filteredAdmins.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    Tidak ada admin yang cocok dengan kriteria pencarian.
-                  </td>
-                </tr>
-              ) : (
-                filteredAdmins.map((admin) => {
+              </thead>
+              <tbody>
+                {filteredAdmins.map((admin) => {
                   const isCurrent = admin.uid === currentUser?.uid;
+                  const roleBadge = getRoleBadge(admin.role);
 
                   return (
-                    <tr key={admin.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-6 py-4">
+                    <tr key={admin.id} className="border-b border-slate-100/80 last:border-0 hover:bg-[#1b365d]/[0.015] transition-colors group">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-[#1b365d] text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                             {admin.displayName.charAt(0) || "A"}
                           </div>
-                          <div>
-                            <div className="font-semibold text-slate-900 flex items-center gap-2">
-                              {admin.displayName}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[13px] font-semibold text-slate-800 truncate group-hover:text-[#1b365d] transition-colors">
+                                {admin.displayName}
+                              </p>
                               {isCurrent && (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">
+                                <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-md font-bold">
                                   Anda
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                              <Mail size={12} className="text-slate-400" />
-                              <span>{admin.email}</span>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                              <Mail size={10} />
+                              <span className="truncate">{admin.email}</span>
+                            </div>
+                            {/* Mobile: show role + status inline */}
+                            <div className="flex items-center gap-1.5 mt-1 sm:hidden">
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${roleBadge.bg} ${roleBadge.text}`}>
+                                <Shield size={9} /> {roleBadge.label}
+                              </span>
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold ${admin.active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                {admin.active ? "Aktif" : "Nonaktif"}
+                              </span>
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3.5 hidden sm:table-cell">
                         <div className="space-y-1">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                              admin.role === "superadmin"
-                                ? "bg-purple-100 text-purple-700 border border-purple-200"
-                                : admin.role === "operator"
-                                ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                : "bg-blue-100 text-[#1b365d] border border-blue-200"
-                            }`}
-                          >
-                            <Shield size={12} />
-                            {admin.role === "superadmin"
-                              ? "Super Admin"
-                              : admin.role === "operator"
-                              ? "Operator"
-                              : "Admin Seksi"}
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold ${roleBadge.bg} ${roleBadge.text}`}>
+                            <Shield size={10} /> {roleBadge.label}
                           </span>
-                          <div>
-                            {admin.role === "superadmin" ? (
-                              <span className="text-[11px] text-purple-700 font-medium">Akses Penuh + Audit</span>
-                            ) : (
-                              <span className="text-[11px] text-slate-500 font-medium">
-                                {admin.permissions?.length ?? MANAGEABLE_FEATURES.length} dari {MANAGEABLE_FEATURES.length} Fitur
-                              </span>
-                            )}
-                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            {admin.role === "superadmin"
+                              ? "Akses Penuh"
+                              : `${admin.permissions?.length ?? MANAGEABLE_FEATURES.length}/${MANAGEABLE_FEATURES.length} Fitur`}
+                          </p>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-                          <Building2 size={13} className="text-slate-400 shrink-0" />
-                          <span>{admin.department || "Kelurahan Banjar Agung"}</span>
+                      <td className="px-4 py-3.5 hidden md:table-cell">
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium">
+                          <Building2 size={12} className="text-slate-400 shrink-0" />
+                          <span className="truncate max-w-[160px]">{admin.department || "Kelurahan"}</span>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3.5 hidden lg:table-cell">
                         <button
                           onClick={() => handleToggleStatus(admin)}
                           disabled={isCurrent}
-                          title={isCurrent ? "Tidak dapat menonaktifkan akun sendiri" : "Klik untuk toggle status"}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          title={isCurrent ? "Tidak dapat menonaktifkan akun sendiri" : "Toggle status"}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-colors ${
                             admin.active
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                              : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                          } ${isCurrent ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+                              ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          } ${isCurrent ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                         >
-                          {admin.active ? (
-                            <>
-                              <CheckCircle2 size={12} />
-                              <span>Aktif</span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle size={12} />
-                              <span>Nonaktif</span>
-                            </>
-                          )}
+                          {admin.active ? <><CheckCircle2 size={10} /> Aktif</> : <><XCircle size={10} /> Nonaktif</>}
                         </button>
                       </td>
 
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => handleOpenEdit(admin)}
-                            className="p-1.5 text-slate-500 hover:text-[#1b365d] hover:bg-slate-100 rounded-lg transition-colors"
-                            title="Edit data admin"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-[#1b365d] hover:bg-[#1b365d]/[0.06] transition-all"
+                            title="Edit"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 className="h-3.5 w-3.5" />
                           </button>
                           {!isCurrent && (
                             <button
                               onClick={() => handleDeleteAdmin(admin)}
-                              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Hapus akses admin"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                              title="Hapus"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           )}
                         </div>
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
+      {/* Create Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
-            <div className="bg-[#1b365d] px-6 py-4 text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <UserPlus size={18} />
-                <h3 className="font-bold text-base">Tambah Admin / Petugas</h3>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setIsCreateOpen(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-[#1b365d] to-[#264478] px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                  <UserPlus className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-bold text-base text-white">Tambah Admin</h3>
               </div>
-              <button onClick={() => setIsCreateOpen(false)} className="text-white/70 hover:text-white">
-                <X size={18} />
+              <button onClick={() => setIsCreateOpen(false)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                <X size={16} />
               </button>
             </div>
 
             <form onSubmit={handleCreateAdmin} className="p-6 space-y-4 overflow-y-auto">
               {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
-                  <AlertTriangle size={15} className="shrink-0" />
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] rounded-xl flex items-center gap-2">
+                  <AlertTriangle size={14} className="shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nama Lengkap & Gelar
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Budi Santoso, S.Sos"
-                  value={formData.displayName}
-                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email Login
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <fieldset className="space-y-3">
+                <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Identitas</legend>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="nama@banjaragung.go.id"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
+                    placeholder="Contoh: Budi Santoso, S.Sos"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kata Sandi Awal
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                  <input
-                    type="password"
-                    required
-                    placeholder="Minimal 6 karakter"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Tingkat Peran
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
-                  >
-                    <option value="superadmin">Super Admin</option>
-                    <option value="admin">Admin Seksi</option>
-                    <option value="operator">Operator</option>
-                  </select>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Email Login</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="nama@banjaragung.go.id"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
+                    />
+                  </div>
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Seksi / Bidang
-                  </label>
-                  <select
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
-                  >
-                    {DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Awal</label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="Minimal 6 karakter"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
+                    />
+                  </div>
                 </div>
-              </div>
+              </fieldset>
 
-              {formData.role === "superadmin" ? (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 flex items-start gap-2.5">
-                  <ShieldCheck className="h-4 w-4 text-purple-600 mt-0.5 shrink-0" />
+              <fieldset className="space-y-3">
+                <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Penugasan</legend>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="font-semibold">Akses Penuh Super Admin</p>
-                    <p className="text-purple-700/90 text-[11px] mt-0.5">
-                      Super Admin memiliki akses tak terbatas ke seluruh fitur dan <strong>Log Aktivitas (Sistem Audit)</strong>.
-                    </p>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Tingkat Peran</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as "superadmin" | "admin" | "operator" })}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
+                    >
+                      <option value="superadmin">Super Admin</option>
+                      <option value="admin">Admin Seksi</option>
+                      <option value="operator">Operator</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Seksi / Bidang</label>
+                    <select
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
+                    >
+                      {DEPARTMENTS.map((dept) => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700">
-                        Hak Akses Fitur / Menu
-                      </label>
-                      <p className="text-[11px] text-slate-400">Pilih menu mana saja yang boleh dilihat oleh admin ini</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, permissions: MANAGEABLE_FEATURES.map((f) => f.key) })}
-                        className="text-[11px] text-[#1b365d] hover:underline font-semibold"
-                      >
-                        Pilih Semua
-                      </button>
-                      <span className="text-slate-300">•</span>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, permissions: [] })}
-                        className="text-[11px] text-slate-500 hover:underline"
-                      >
-                        Kosongkan
-                      </button>
-                    </div>
-                  </div>
+              </fieldset>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {MANAGEABLE_FEATURES.map((feat) => {
-                      const isChecked = formData.permissions.includes(feat.key);
-                      return (
-                        <label
-                          key={feat.key}
-                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
-                            isChecked
-                              ? "bg-blue-50/70 border-blue-200 text-slate-900"
-                              : "bg-slate-50/40 border-slate-200 text-slate-500 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  permissions: [...formData.permissions, feat.key],
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  permissions: formData.permissions.filter((k) => k !== feat.key),
-                                });
-                              }
-                            }}
-                            className="mt-0.5 rounded text-[#1b365d] focus:ring-[#1b365d]"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-800 leading-tight">{feat.label}</p>
-                            <p className="text-[10px] text-slate-500 truncate mt-0.5">{feat.description}</p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
+              <PermissionsSection />
 
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800">
-                    <Lock size={13} className="shrink-0 text-amber-600" />
-                    <span>Fitur <strong>Sistem Audit & Kelola Admin</strong> terkunci otomatis khusus Super Admin.</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm hover:bg-slate-50"
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-[#1b365d] text-white rounded-lg text-sm font-semibold hover:bg-[#152a48] disabled:bg-slate-300 flex items-center gap-2"
+                  className="px-4 py-2 bg-[#1b365d] text-white rounded-xl text-xs font-bold hover:bg-[#152a48] disabled:bg-slate-300 transition-colors"
                 >
                   {submitting ? "Mendaftarkan..." : "Daftarkan Akun"}
                 </button>
@@ -799,90 +822,80 @@ export default function AdminsManagementPage() {
         </div>
       )}
 
+      {/* Edit Modal */}
       {isEditOpen && editingAdmin && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
-            <div className="bg-[#1b365d] px-6 py-4 text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Edit2 size={18} />
-                <h3 className="font-bold text-base">Ubah Data Admin</h3>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setIsEditOpen(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-[#1b365d] to-[#264478] px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                  <Edit2 className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-bold text-base text-white">Ubah Data Admin</h3>
               </div>
-              <button onClick={() => setIsEditOpen(false)} className="text-white/70 hover:text-white">
-                <X size={18} />
+              <button onClick={() => setIsEditOpen(false)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                <X size={16} />
               </button>
             </div>
 
             <form onSubmit={handleUpdateAdmin} className="p-6 space-y-4 overflow-y-auto">
               {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
-                  <AlertTriangle size={15} className="shrink-0" />
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-[11px] rounded-xl flex items-center gap-2">
+                  <AlertTriangle size={14} className="shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email (Tidak dapat diubah)
-                </label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Email (Tidak dapat diubah)</label>
                 <input
                   type="email"
                   disabled
                   value={editingAdmin.email}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-100 text-slate-500 rounded-lg"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-400 rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nama Lengkap & Gelar
-                </label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Nama Lengkap & Gelar</label>
                 <input
                   type="text"
                   required
                   value={formData.displayName}
                   onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Tingkat Peran
-                  </label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Tingkat Peran</label>
                   <select
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as "superadmin" | "admin" | "operator" })}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
                   >
                     <option value="superadmin">Super Admin</option>
                     <option value="admin">Admin Seksi</option>
                     <option value="operator">Operator</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Seksi / Bidang
-                  </label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Seksi / Bidang</label>
                   <select
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b365d]"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"
                   >
                     {DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
+                      <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Status Akses
-                </label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Status Akses</label>
                 <div className="flex items-center gap-4 pt-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -892,7 +905,7 @@ export default function AdminsManagementPage() {
                       onChange={() => setFormData({ ...formData, active: true })}
                       className="text-[#1b365d]"
                     />
-                    <span className="text-sm font-medium text-emerald-700">Aktif</span>
+                    <span className="text-[12px] font-bold text-emerald-700">Aktif</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -902,107 +915,25 @@ export default function AdminsManagementPage() {
                       onChange={() => setFormData({ ...formData, active: false })}
                       className="text-red-600"
                     />
-                    <span className="text-sm font-medium text-red-700">Nonaktif</span>
+                    <span className="text-[12px] font-bold text-red-700">Nonaktif</span>
                   </label>
                 </div>
               </div>
 
-              {formData.role === "superadmin" ? (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-900 flex items-start gap-2.5">
-                  <ShieldCheck className="h-4 w-4 text-purple-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-semibold">Akses Penuh Super Admin</p>
-                    <p className="text-purple-700/90 text-[11px] mt-0.5">
-                      Super Admin memiliki akses tak terbatas ke seluruh fitur dan <strong>Log Aktivitas (Sistem Audit)</strong>.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700">
-                        Hak Akses Fitur / Menu
-                      </label>
-                      <p className="text-[11px] text-slate-400">Pilih menu mana saja yang boleh dilihat oleh admin ini</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, permissions: MANAGEABLE_FEATURES.map((f) => f.key) })}
-                        className="text-[11px] text-[#1b365d] hover:underline font-semibold"
-                      >
-                        Pilih Semua
-                      </button>
-                      <span className="text-slate-300">•</span>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, permissions: [] })}
-                        className="text-[11px] text-slate-500 hover:underline"
-                      >
-                        Kosongkan
-                      </button>
-                    </div>
-                  </div>
+              <PermissionsSection />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {MANAGEABLE_FEATURES.map((feat) => {
-                      const isChecked = formData.permissions.includes(feat.key);
-                      return (
-                        <label
-                          key={feat.key}
-                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
-                            isChecked
-                              ? "bg-blue-50/70 border-blue-200 text-slate-900"
-                              : "bg-slate-50/40 border-slate-200 text-slate-500 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  permissions: [...formData.permissions, feat.key],
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  permissions: formData.permissions.filter((k) => k !== feat.key),
-                                });
-                              }
-                            }}
-                            className="mt-0.5 rounded text-[#1b365d] focus:ring-[#1b365d]"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-800 leading-tight">{feat.label}</p>
-                            <p className="text-[10px] text-slate-500 truncate mt-0.5">{feat.description}</p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800">
-                    <Lock size={13} className="shrink-0 text-amber-600" />
-                    <span>Fitur <strong>Sistem Audit & Kelola Admin</strong> terkunci otomatis khusus Super Admin.</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm hover:bg-slate-50"
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-[#1b365d] text-white rounded-lg text-sm font-semibold hover:bg-[#152a48] disabled:bg-slate-300 flex items-center gap-2"
+                  className="px-4 py-2 bg-[#1b365d] text-white rounded-xl text-xs font-bold hover:bg-[#152a48] disabled:bg-slate-300 transition-colors"
                 >
                   {submitting ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>

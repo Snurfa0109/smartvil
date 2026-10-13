@@ -48,6 +48,11 @@ type AgendaItem = {
   schedule: string;
   description: string;
   timeLocation: string;
+  dateStart: string;
+  dateEnd: string;
+  timeStart: string;
+  timeEnd: string;
+  location: string;
   active: boolean;
   order: number;
 };
@@ -69,6 +74,11 @@ const DEFAULT_AGENDA: Omit<AgendaItem, "id">[] = [
     description:
       "Kerja bakti kebersihan drainase, penghijauan lingkungan, dan penataan pemukiman bersama RT/RW se-Kelurahan Banjar Agung.",
     timeLocation: "07:30 WIB - Selesai \u2022 Seluruh Lingkungan RW",
+    dateStart: "",
+    dateEnd: "",
+    timeStart: "07:30",
+    timeEnd: "",
+    location: "Seluruh Lingkungan RW",
     active: true,
     order: 0,
   },
@@ -80,6 +90,11 @@ const DEFAULT_AGENDA: Omit<AgendaItem, "id">[] = [
     description:
       "Penyaluran Cadangan Beras Pangan Pemerintah (CPP) bagi Keluarga Penerima Manfaat (KPM) warga Kelurahan Banjar Agung.",
     timeLocation: "Aula Kantor Kelurahan Banjar Agung",
+    dateStart: "",
+    dateEnd: "",
+    timeStart: "",
+    timeEnd: "",
+    location: "Aula Kantor Kelurahan Banjar Agung",
     active: true,
     order: 1,
   },
@@ -91,6 +106,11 @@ const DEFAULT_AGENDA: Omit<AgendaItem, "id">[] = [
     description:
       "Pemeriksaan kesehatan tumbuh kembang balita, imunisasi dasar, penimbangan, dan pemeriksaan tekanan darah lansia.",
     timeLocation: "08:30 - 11:30 WIB \u2022 Posyandu BAP & Lingkungan RW",
+    dateStart: "",
+    dateEnd: "",
+    timeStart: "08:30",
+    timeEnd: "11:30",
+    location: "Posyandu BAP & Lingkungan RW",
     active: true,
     order: 2,
   },
@@ -131,10 +151,15 @@ export default function Home() {
             id: String(row.id),
             title: String(row.title || ""),
             category: String(row.category || ""),
-            categoryColor: (row.category_color as any) || "blue",
+            categoryColor: (row.category_color as AgendaItem["categoryColor"]) || "blue",
             schedule: String(row.schedule || ""),
             description: String(row.description || ""),
             timeLocation: String(row.time_location || ""),
+            dateStart: String(row.date_start || ""),
+            dateEnd: String(row.date_end || ""),
+            timeStart: String(row.time_start || ""),
+            timeEnd: String(row.time_end || ""),
+            location: String(row.location || ""),
             active: Number(row.active) !== 0,
             order: Number(row.sort_order ?? 0),
           }))
@@ -527,7 +552,7 @@ export default function Home() {
                 <div className="h-44 bg-slate-100 w-full overflow-hidden relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={(item as any).imageUrl || "/images/default-news.jpg"}
+                    src={(item as LandingNewsItem & { imageUrl?: string }).imageUrl || "/images/default-news.jpg"}
                     alt={item.title || "Berita Kelurahan"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
@@ -602,7 +627,22 @@ export default function Home() {
                     <div className="h-3 w-5/6 bg-slate-100 rounded" />
                   </div>
                 ))
-              : agendaItems.map((item, idx) => (
+              : agendaItems.map((item, idx) => {
+                  const hasDate = !!(item.dateStart);
+                  const dateLabel = hasDate
+                    ? (() => {
+                        try {
+                          const fmt = (d: string) => new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d));
+                          const start = fmt(item.dateStart);
+                          if (item.dateEnd && item.dateEnd !== item.dateStart) return `${start} - ${fmt(item.dateEnd)}`;
+                          return start;
+                        } catch { return item.dateStart; }
+                      })()
+                    : null;
+                  const timeLabel = item.timeStart
+                    ? (item.timeEnd ? `${item.timeStart} - ${item.timeEnd} WIB` : `${item.timeStart} WIB`)
+                    : null;
+                  return (
                   <div key={(item as AgendaItem).id || idx} className="bg-white p-5 rounded-xl border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <span
@@ -615,14 +655,20 @@ export default function Home() {
                       <span className="text-xs text-slate-500 font-medium">{item.schedule}</span>
                     </div>
                     <h3 className="font-bold text-sm text-slate-900">{item.title}</h3>
+                    {dateLabel && (
+                      <div className="text-[11px] text-slate-600 flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5 text-slate-400" /> {dateLabel}
+                      </div>
+                    )}
                     <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
-                    {item.timeLocation && (
+                    {(timeLabel || item.location || item.timeLocation) && (
                       <div className="text-[11px] text-slate-500 flex items-center gap-1 pt-1">
-                        <Clock className="h-3.5 w-3.5 text-slate-400" /> {item.timeLocation}
+                        <Clock className="h-3.5 w-3.5 text-slate-400" /> {timeLabel || ""}{timeLabel && item.location ? " \u2022 " : ""}{item.location || (!timeLabel ? item.timeLocation : "")}
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
           </div>
         </div>
       </section>

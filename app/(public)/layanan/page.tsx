@@ -18,13 +18,12 @@ import {
   FileCheck,
   History,
   MessageSquare,
-  ExternalLink,
-  RotateCcw
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
 import { LetterType, getLetterTypes } from "@/lib/letters";
+import { ADMIN_ONLY_FIELDS } from "@/lib/letter-constants";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 
 interface StoredTicket {
@@ -35,8 +34,24 @@ interface StoredTicket {
   date: string;
 }
 
+interface TrackedRequest {
+  id: string;
+  ticketCode: string;
+  nama: string;
+  nik: string;
+  phone: string;
+  type: string;
+  typeName: string;
+  keperluan: string;
+  formData: Record<string, unknown>;
+  templateNarrative: string;
+  status: string;
+  adminNotes: string;
+  createdAt: unknown;
+}
+
 export default function ServicesPage() {
-  const { success, error: showError, warning } = useToast();
+  const { error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
@@ -59,7 +74,7 @@ export default function ServicesPage() {
 
   const [trackInput, setTrackInput] = useState("");
   const [trackLoading, setTrackLoading] = useState(false);
-  const [trackedRequests, setTrackedRequests] = useState<any[] | null>(null);
+  const [trackedRequests, setTrackedRequests] = useState<TrackedRequest[] | null>(null);
   const [recentTickets, setRecentTickets] = useState<StoredTicket[]>([]);
   const [copied, setCopied] = useState(false);
   const [villagePhone, setVillagePhone] = useState(DEFAULT_SITE_SETTINGS.villagePhone);
@@ -125,18 +140,8 @@ export default function ServicesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLetter) return;
-    const WARGA_HIDDEN_KEYS = new Set([
-      "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
-      "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
-      "keperluan", "kebutuhan", "tujuan", "keterangan",
-      "dipergunakan_untuk", "digunakan_untuk",
-      "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
-      "bermaksud_untuk", "dimaksudkan_untuk",
-      "surat_keterangan_ini_dipergunakan_untuk",
-      "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
-    ]);
     const requiredMissing = (activeLetterObj?.customFields || []).filter(
-      (f) => !WARGA_HIDDEN_KEYS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_") && f.required && !(customFormData[f.key] || "").trim()
+      (f) => !ADMIN_ONLY_FIELDS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_") && f.required && !(customFormData[f.key] || "").trim()
     );
     if (requiredMissing.length > 0) {
       warning(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
@@ -204,22 +209,22 @@ export default function ServicesPage() {
 
     setTrackLoading(true);
     try {
-      const toItem = (row: Record<string, any>) => ({
-        id: row.id,
-        ticketCode: row.ticket_code,
-        nama: row.nama,
-        nik: row.nik,
-        phone: row.phone,
-        type: row.type,
-        typeName: row.type_name,
-        keperluan: row.keperluan,
-        formData: row.form_data || {},
-        templateNarrative: row.template_narrative,
-        status: row.status,
-        adminNotes: row.admin_notes,
-        createdAt: row.created_at,
+      const toItem = (row: Record<string, unknown>): TrackedRequest => ({
+        id: String(row.id ?? ""),
+        ticketCode: String(row.ticket_code ?? ""),
+        nama: String(row.nama ?? ""),
+        nik: String(row.nik ?? ""),
+        phone: String(row.phone ?? ""),
+        type: String(row.type ?? ""),
+        typeName: String(row.type_name ?? ""),
+        keperluan: String(row.keperluan ?? ""),
+        formData: (row.form_data as Record<string, string>) || {},
+        templateNarrative: String(row.template_narrative ?? ""),
+        status: String(row.status ?? ""),
+        adminNotes: String(row.admin_notes ?? ""),
+        createdAt: String(row.created_at ?? ""),
       });
-      let results: any[] = [];
+      const results: TrackedRequest[] = [];
       const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
       const cleanedDigits = rawSearch.replace(/\D/g, "");
 
@@ -236,7 +241,7 @@ export default function ServicesPage() {
       }
 
       if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
-        let phoneVariations = [cleanedDigits];
+        const phoneVariations = [cleanedDigits];
         if (cleanedDigits.startsWith("0")) {
           phoneVariations.push("62" + cleanedDigits.substring(1));
           phoneVariations.push("+62" + cleanedDigits.substring(1));
@@ -635,18 +640,8 @@ export default function ServicesPage() {
                     </div>
 
                     {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (() => {
-                      const WARGA_HIDDEN = new Set([
-                        "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
-                        "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
-                        "keperluan", "kebutuhan", "tujuan", "keterangan",
-                        "dipergunakan_untuk", "digunakan_untuk",
-                        "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
-                        "bermaksud_untuk", "dimaksudkan_untuk",
-                        "surat_keterangan_ini_dipergunakan_untuk",
-                        "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
-                      ]);
                       const visibleFields = activeLetterObj.customFields.filter(
-                        (f) => !WARGA_HIDDEN.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
+                        (f) => !ADMIN_ONLY_FIELDS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
                       );
                       return visibleFields.length > 0 ? (
                       <div className="space-y-3 pt-2 border-t">

@@ -134,7 +134,7 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
 
         {letterType?.templateFileUrl && (
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "4px", padding: "6px 10px", marginBottom: "12px", fontSize: "9pt", fontFamily: "Arial, sans-serif", color: "#1e40af" }}>
-            Surat ini memiliki template DOCX resmi. Gunakan tombol "Unduh DOCX Presisi" untuk hasil cetak 100% sesuai template.
+            Surat ini memiliki template DOCX resmi. Gunakan tombol &quot;Unduh DOCX Presisi&quot; untuk hasil cetak 100% sesuai template.
           </div>
         )}
 

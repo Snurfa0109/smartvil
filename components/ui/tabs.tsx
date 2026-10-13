@@ -27,7 +27,7 @@ const Tabs = React.forwardRef<
     <div ref={ref} className={cn("", className)} {...props}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, { activeTab, setActiveTab } as any)
+          return React.cloneElement(child, { activeTab, setActiveTab } as Record<string, unknown>)
         }
         return child
       })}
@@ -40,7 +40,7 @@ const TabsList = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
-  const { activeTab, setActiveTab, ...domProps } = props as any
+  const { activeTab, setActiveTab, ...domProps } = props as Record<string, unknown>
   return (
     <div
       ref={ref}
@@ -52,7 +52,7 @@ const TabsList = React.forwardRef<
     >
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, { activeTab, setActiveTab } as any)
+          return React.cloneElement(child, { activeTab, setActiveTab } as Record<string, unknown>)
         }
         return child
       })}
@@ -92,7 +92,8 @@ const TabsContent = React.forwardRef<
 >(({ className, value, activeTab, ...props }, ref) => {
   if (activeTab !== value) return null
 
-  const { setActiveTab, ...domProps } = props as any
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { setActiveTab: _, ...domProps } = props as Record<string, unknown>
 
   return (
     <div

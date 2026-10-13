@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserCheck, Baby, Briefcase, GraduationCap, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, LayoutGrid, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiCount, apiList } from "@/lib/api";
+import { apiList } from "@/lib/api";
 
 const EXTERNAL_LINKS = [
   {
@@ -152,7 +152,7 @@ export default function DataPage() {
     const fetchStats = async () => {
       try {
         const data = await apiList("residents");
-        const residents = (data || []).map((row: Record<string, any>) => ({
+        const residents = (data || []).map((row: Record<string, unknown>) => ({
           gender: row.gender,
           birthDate: row.birth_date,
           occupation: row.occupation,

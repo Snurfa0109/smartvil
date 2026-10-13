@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle } from "lucide-react";
+import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
@@ -23,8 +23,25 @@ interface StoredPhone {
   lastDate: string;
 }
 
+interface TrackedComplaint {
+  id: string;
+  ticketCode: string;
+  nama: string;
+  email: string;
+  phone: string;
+  category: string;
+  title: string;
+  judul: string;
+  message: string;
+  isi: string;
+  photoUrl: string;
+  status: string;
+  adminResponse: string;
+  createdAt: string | number | null;
+}
+
 export default function ComplaintsPage() {
-  const { success, error: showError, warning } = useToast();
+  const { error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -48,7 +65,7 @@ export default function ComplaintsPage() {
 
   const [trackPhone, setTrackPhone] = useState("");
   const [trackingLoading, setTrackingLoading] = useState(false);
-  const [trackedComplaints, setTrackedComplaints] = useState<any[] | null>(null);
+  const [trackedComplaints, setTrackedComplaints] = useState<TrackedComplaint[] | null>(null);
   const [recentPhones, setRecentPhones] = useState<StoredPhone[]>([]);
 
   useEffect(() => {
@@ -162,21 +179,21 @@ export default function ComplaintsPage() {
 
     setTrackingLoading(true);
     try {
-      const toItem = (row: Record<string, any>) => ({
-        id: row.id,
-        ticketCode: row.ticket_code,
-        nama: row.nama,
-        email: row.email,
-        phone: row.phone,
-        category: row.category,
-        title: row.title,
-        judul: row.title,
-        message: row.message,
-        isi: row.message,
-        photoUrl: row.photo_url,
-        status: row.status,
-        adminResponse: row.admin_response,
-        createdAt: row.created_at,
+      const toItem = (row: Record<string, unknown>): TrackedComplaint => ({
+        id: String(row.id ?? ""),
+        ticketCode: String(row.ticket_code ?? ""),
+        nama: String(row.nama ?? ""),
+        email: String(row.email ?? ""),
+        phone: String(row.phone ?? ""),
+        category: String(row.category ?? ""),
+        title: String(row.title ?? ""),
+        judul: String(row.title ?? ""),
+        message: String(row.message ?? ""),
+        isi: String(row.message ?? ""),
+        photoUrl: String(row.photo_url ?? ""),
+        status: String(row.status ?? ""),
+        adminResponse: String(row.admin_response ?? ""),
+        createdAt: String(row.created_at ?? ""),
       });
       const digitsOnly = rawSearch.replace(/\D/g, "");
 
@@ -194,7 +211,7 @@ export default function ComplaintsPage() {
       }
 
       // Also support legacy search by exact ticketCode if user happens to enter one
-      let results: any[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
+      const results: TrackedComplaint[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
 
       for (const phoneVal of Array.from(new Set(phoneCandidates))) {
         const phoneRows = await apiFind("complaints", { column: "phone", value: phoneVal }).catch(() => []);

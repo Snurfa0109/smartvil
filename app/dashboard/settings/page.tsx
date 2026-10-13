@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Settings as SettingsIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,15 +19,17 @@ import {
   Home,
   PhoneCall,
   MapPin,
-  Shield,
-  Clock,
-  Sparkles,
-  HeartPulse,
-  ShieldAlert,
   Tag,
   Plus,
   Trash2,
   GripVertical,
+  BookOpen,
+  Landmark,
+  Globe,
+  Clock,
+  Shield,
+  Mail,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadImageToStorage } from "@/lib/uploadImage";
@@ -120,6 +122,7 @@ function SettingsContent() {
     if (authUser?.displayName) {
       setAccountName(authUser.displayName);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveSite = async (sectionName = "Pengaturan") => {
@@ -133,11 +136,11 @@ function SettingsContent() {
         text: `Berhasil! ${sectionName} telah diperbarui dan otomatis tampil di halaman website.`,
       });
       setTimeout(() => setSiteMsg(null), 6000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving site settings:", err);
       setSiteMsg({
         type: "error",
-        text: err.message || "Gagal menyimpan perubahan ke database.",
+        text: err instanceof Error ? err.message : "Gagal menyimpan perubahan ke database.",
       });
     } finally {
       setSavingSite(false);
@@ -225,9 +228,9 @@ function SettingsContent() {
       }
 
       setAccountMsg({ type: "success", text: "Informasi profil akun & kata sandi berhasil diperbarui!" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating account:", err);
-      setAccountMsg({ type: "error", text: err.message || "Gagal memperbarui akun." });
+      setAccountMsg({ type: "error", text: err instanceof Error ? err.message : "Gagal memperbarui akun." });
     } finally {
       setSavingAccount(false);
     }
@@ -251,9 +254,9 @@ function SettingsContent() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal mengisi database.");
         success("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Seed error:", err);
-        showError("Gagal mengisi database: " + (err.message || "Unknown error"));
+        showError("Gagal mengisi database: " + (err instanceof Error ? err.message : "Unknown error"));
       } finally {
         setSeeding(false);
       }
@@ -261,62 +264,72 @@ function SettingsContent() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Pengaturan & Kelola Konten</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Ubah seluruh teks profil kelurahan, beranda, kontak, nomor darurat, dan chatbot tanpa ubah kode HTML.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
+            <SettingsIcon className="h-[18px] w-[18px] text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Pengaturan & Konten</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">
+              Kelola profil kelurahan, beranda, kontak, dan chatbot
+            </p>
+          </div>
         </div>
       </div>
 
       {siteMsg && (
         <div
-          className={`p-4 rounded-xl text-sm flex items-center gap-3 border shadow-xs ${
+          className={`p-3 rounded-xl text-[11px] font-bold flex items-center gap-2 border ${
             siteMsg.type === "success"
-              ? "bg-emerald-50 text-emerald-900 border-emerald-200"
-              : "bg-rose-50 text-rose-900 border-rose-200"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
           }`}
         >
-          <CheckCircle className={`h-5 w-5 shrink-0 ${siteMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
-          <span className="font-medium">{siteMsg.text}</span>
+          <CheckCircle className={`h-4 w-4 shrink-0 ${siteMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
+          <span>{siteMsg.text}</span>
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-slate-100 p-1 flex flex-wrap h-auto gap-1 border border-slate-200 rounded-xl">
-          <TabsTrigger value="profile" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <Building className="h-4 w-4" /> Profil Kelurahan
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+        <TabsList className="bg-slate-100 p-0.5 flex flex-wrap h-auto gap-0.5 border border-slate-200/70 rounded-xl">
+          <TabsTrigger value="profile" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Building className="h-3.5 w-3.5" /> Profil
           </TabsTrigger>
-          <TabsTrigger value="home" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <Home className="h-4 w-4" /> Beranda & Loket
+          <TabsTrigger value="home" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Home className="h-3.5 w-3.5" /> Beranda
           </TabsTrigger>
-          <TabsTrigger value="contact" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <PhoneCall className="h-4 w-4" /> Kontak & Medsos
+          <TabsTrigger value="contact" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <PhoneCall className="h-3.5 w-3.5" /> Kontak
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <Tag className="h-4 w-4" /> Kategori Berita
+          <TabsTrigger value="categories" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Tag className="h-3.5 w-3.5" /> Kategori
           </TabsTrigger>
-          <TabsTrigger value="chatbot" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <Bot className="h-4 w-4" /> Chatbot AI
+          <TabsTrigger value="chatbot" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Bot className="h-3.5 w-3.5" /> Chatbot
           </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <User className="h-4 w-4" /> Akun Admin
+          <TabsTrigger value="account" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <User className="h-3.5 w-3.5" /> Akun
           </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2 py-2 px-3.5 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-xs font-semibold text-xs sm:text-sm">
-            <Database className="h-4 w-4" /> Sistem
+          <TabsTrigger value="system" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Database className="h-3.5 w-3.5" /> Sistem
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Judul Halaman Profil</CardTitle>
-              <CardDescription>
-                Teks judul utama dan subjudul yang muncul di bagian paling atas halaman <code>/profil</code>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <FileText className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Judul Halaman Profil</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Teks judul utama dan subjudul yang muncul di bagian paling atas halaman <code>/profil</code>.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="prof-title">Judul Halaman Profil</Label>
                 <Input
@@ -337,16 +350,21 @@ function SettingsContent() {
                   placeholder="Deskripsi wilayah kecamatan & kota"
                 />
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Sejarah, Visi & Misi Kelurahan</CardTitle>
-              <CardDescription>
-                Ubah narasi sejarah desa, visi jangka panjang, dan poin-poin misi kelurahan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Sejarah, Visi & Misi Kelurahan</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Ubah narasi sejarah desa, visi jangka panjang, dan poin-poin misi kelurahan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="prof-history">Narasi Sejarah Kelurahan</Label>
                 <Textarea
@@ -384,16 +402,21 @@ function SettingsContent() {
                 />
                 <p className="text-xs text-slate-500">Tuliskan setiap poin misi pada baris baru (enter). Otomatis diformat sebagai daftar berpoin di web.</p>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Struktur Organisasi & Aparatur Kelurahan</CardTitle>
-              <CardDescription>
-                Atur nama, jabatan, dan <strong>foto resmi</strong> pejabat yang tampil pada bagan struktur organisasi <code>/profil</code>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Landmark className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Struktur Organisasi & Aparatur Kelurahan</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Atur nama, jabatan, dan <strong>foto resmi</strong> pejabat yang tampil pada bagan struktur organisasi <code>/profil</code>.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-6">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="font-semibold text-sm text-[#1b365d] flex items-center gap-2">
                   <User className="h-4 w-4" /> Pimpinan / Kepala Kelurahan (Lurah)
@@ -526,16 +549,21 @@ function SettingsContent() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Fasilitas & Pemukiman Utama</CardTitle>
-              <CardDescription>
-                Atur 3 fasilitas dan kawasan pemukiman utama yang disorot pada halaman <code>/profil</code>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Building className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Fasilitas & Pemukiman Utama</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Atur 3 fasilitas dan kawasan pemukiman utama yang disorot pada halaman <code>/profil</code>.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                   <Label className="font-bold text-slate-800">Fasilitas / Wilayah 1</Label>
@@ -588,16 +616,21 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Geografis & Batas Wilayah</CardTitle>
-              <CardDescription>
-                Informasi luas wilayah, titik koordinat, dan batas administratif kelurahan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Globe className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Geografis & Batas Wilayah</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Informasi luas wilayah, titik koordinat, dan batas administratif kelurahan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="geo-area">Luas Wilayah</Label>
@@ -683,18 +716,21 @@ function SettingsContent() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-[#1b365d]" /> Identitas & Kode Wilayah
-              </CardTitle>
-              <CardDescription>
-                Kode resmi Kemendagri, kode pos, dan tautan Google Maps yang tampil di halaman profil &amp; footer.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Identitas & Kode Wilayah</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Kode resmi Kemendagri, kode pos, dan tautan Google Maps yang tampil di halaman profil &amp; footer.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="kemendagri-code">Kode Wilayah Kemendagri</Label>
@@ -746,8 +782,8 @@ function SettingsContent() {
                   Buka Google Maps â†’ Bagikan â†’ Sematkan Peta â†’ Salin URL dari atribut <code>src</code> pada kode iframe.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           <div className="flex justify-end">
             <Button
@@ -761,14 +797,19 @@ function SettingsContent() {
           </div>
         </TabsContent>
         <TabsContent value="home" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Teks Hero Beranda Utama</CardTitle>
-              <CardDescription>
-                Teks yang dilihat pertama kali oleh warga saat membuka halaman depan website.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Home className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Teks Hero Beranda Utama</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Teks yang dilihat pertama kali oleh warga saat membuka halaman depan website.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="hero-badge">Badge Label Atas</Label>
                 <Input
@@ -800,16 +841,21 @@ function SettingsContent() {
                   disabled={siteLoading}
                 />
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Status & Jadwal Loket Pelayanan</CardTitle>
-              <CardDescription>
-                Atur status buka/tutup loket serta jam kerja pelayanan administrasi di kantor kelurahan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Clock className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Status & Jadwal Loket Pelayanan</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Atur status buka/tutup loket serta jam kerja pelayanan administrasi di kantor kelurahan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="counter-status">Status Loket Saat Ini</Label>
@@ -847,16 +893,21 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Kontak Darurat Wilayah Terpadu</CardTitle>
-              <CardDescription>
-                Nomor hotline medis dan keamanan darurat yang tampil di kartu biru beranda serta footer website.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-red-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Kontak Darurat Wilayah Terpadu</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Nomor hotline medis dan keamanan darurat yang tampil di kartu biru beranda serta footer website.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="em-hotline" className="text-red-700 font-semibold">Hotline Bebas Pulsa (112)</Label>
@@ -908,8 +959,8 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           <div className="flex justify-end">
             <Button
@@ -923,14 +974,19 @@ function SettingsContent() {
           </div>
         </TabsContent>
         <TabsContent value="contact" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Kontak Resmi & Media Sosial</CardTitle>
-              <CardDescription>
-                Informasi ini otomatis tampil di footer seluruh halaman, navigasi, dan informasi kontak publik.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Mail className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Kontak Resmi & Media Sosial</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Informasi ini otomatis tampil di footer seluruh halaman, navigasi, dan informasi kontak publik.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="vil-name">Nama Instansi / Kelurahan</Label>
@@ -1001,8 +1057,8 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           <div className="flex justify-end">
             <Button
@@ -1016,29 +1072,30 @@ function SettingsContent() {
           </div>
         </TabsContent>
         <TabsContent value="chatbot" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Bot className="h-5 w-5 text-[#1b365d]" /> Pengaturan Asisten AI (Gemini)
-                  </CardTitle>
-                  <CardDescription>
-                    Atur perilaku, instruksi, dan batas ruang lingkup chatbot berbasis Google Gemini untuk warga Banjar Agung.
-                  </CardDescription>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-[#1b365d]" />
                 </div>
-                <span
-                  className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
-                    chatbotForm.enabled
-                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                      : "bg-slate-100 text-slate-600 border-slate-200"
-                  }`}
-                >
-                  {chatbotForm.enabled ? "Aktif" : "Non-Aktif"}
-                </span>
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">Pengaturan Asisten AI (Gemini)</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Atur perilaku, instruksi, dan batas ruang lingkup chatbot berbasis Google Gemini untuk warga Banjar Agung.
+                  </p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
+              <span
+                className={`text-[10px] px-2.5 py-1 rounded-lg font-bold border ${
+                  chatbotForm.enabled
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                    : "bg-slate-100 text-slate-500 border-slate-200"
+                }`}
+              >
+                {chatbotForm.enabled ? "Aktif" : "Non-Aktif"}
+              </span>
+            </div>
+            <div className="p-5 pt-3 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-xl bg-slate-50/50">
                 <div className="space-y-2">
                   <Label htmlFor="bot-enabled">Status Chatbot</Label>
@@ -1170,20 +1227,23 @@ function SettingsContent() {
                   {savingChatbot ? "Menyimpan..." : "Simpan Pengaturan Chatbot"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="account" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5 text-[#1b365d]" /> Profil Akun & Kata Sandi Administrator
-              </CardTitle>
-              <CardDescription>
-                Ubah nama tampilan login admin dan perbarui kata sandi akun keamanan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <User className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Profil Akun & Kata Sandi Administrator</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Ubah nama tampilan login admin dan perbarui kata sandi akun keamanan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3">
               <form onSubmit={handleUpdateAccount} className="space-y-6 max-w-xl">
                 {accountMsg && (
                   <div
@@ -1260,18 +1320,23 @@ function SettingsContent() {
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="system" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Pengaturan Sistem & Database</CardTitle>
-              <CardDescription>
-                Utilitas pengisian data contoh ke Firestore.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Database className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Pengaturan Sistem & Database</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Utilitas pengisian data contoh ke Firestore.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
                 <div>
                   <h3 className="font-semibold text-slate-900 text-sm">Isi Database Dummy</h3>
@@ -1284,20 +1349,23 @@ function SettingsContent() {
                   {seeding ? "Memproses..." : "Isi Data Dummy"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="categories" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Tag className="h-5 w-5 text-[#1b365d]" /> Manajemen Kategori Berita
-              </CardTitle>
-              <CardDescription>
-                Kelola daftar kategori yang tersedia saat membuat atau mengedit berita. Perubahan langsung berlaku di form tambah/edit berita.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Tag className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Manajemen Kategori Berita</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Kelola daftar kategori yang tersedia saat membuat atau mengedit berita. Perubahan langsung berlaku di form tambah/edit berita.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
               {categoryMsg && (
                 <div className={`p-3 rounded-lg text-sm flex items-center gap-2 border ${
                   categoryMsg.type === "success"
@@ -1440,8 +1508,8 @@ function SettingsContent() {
                   {savingCategories ? "Menyimpan..." : "Simpan Kategori"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
       </Tabs>

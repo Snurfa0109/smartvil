@@ -25,14 +25,14 @@ export interface LetterType {
   customFields?: LetterCustomFieldDef[];
 }
 
-export const DEFAULT_LETTER_TYPES: LetterType[] = [];
+const DEFAULT_LETTER_TYPES: LetterType[] = [];
 
 const ROW_STRIP_KEYS = new Set([
   "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
   "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
 ]);
 
-export function rowToLetterType(row: Record<string, unknown>): LetterType {
+function rowToLetterType(row: Record<string, unknown>): LetterType {
   const rawFields = (row.custom_fields as LetterCustomFieldDef[]) || [];
   const cleanFields = rawFields.filter(
     (f) => !ROW_STRIP_KEYS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
@@ -54,7 +54,7 @@ export function rowToLetterType(row: Record<string, unknown>): LetterType {
   };
 }
 
-export function letterTypeToRow(lt: LetterType): Record<string, unknown> {
+function letterTypeToRow(lt: LetterType): Record<string, unknown> {
   return {
     code: lt.code,
     name: lt.name,

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import type { ComponentType } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, FileText, Newspaper, UserCheck, MapPin, Phone, ArrowRight, Building2, HelpCircle } from "lucide-react";
+import { Search, X, FileText, Newspaper, ArrowRight, Building2, HelpCircle } from "lucide-react";
 import { stripHtml } from "@/lib/utils";
 import { apiList } from "@/lib/api";
 import { getLetterTypes } from "@/lib/letters";
@@ -127,12 +128,12 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
     const fetchNewsForSearch = async () => {
       try {
         const data = await apiList("news", { orderBy: "date", order: "desc", limit: 50 });
-        const mapped: SearchResultItem[] = (data || []).map((row: any) => {
+        const mapped: SearchResultItem[] = (data || []).map((row: Record<string, unknown>) => {
           return {
             id: `news-${row.id}`,
-            title: row.title || "Berita",
-            category: "berita",
-            subtitle: `${row.category || "Berita"} • ${row.content ? stripHtml(row.content).substring(0, 90) + "..." : ""}`,
+            title: String(row.title || "Berita"),
+            category: "berita" as const,
+            subtitle: `${String(row.category || "Berita")} • ${row.content ? stripHtml(String(row.content)).substring(0, 90) + "..." : ""}`,
             url: `/berita/${row.id}`,
           };
         });
@@ -190,7 +191,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
 
   if (!isOpen) return null;
 
-  const categoryIcons: Record<string, any> = {
+  const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     layanan: FileText,
     berita: Newspaper,
     profil: Building2,

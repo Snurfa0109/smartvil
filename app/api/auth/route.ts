@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { hashPassword, verifyPassword, signToken, requireSuperAdmin } from "@/lib/auth-server";
-import { randomUUID } from "crypto";
+import { verifyPassword, signToken } from "@/lib/auth-server";
 
 function toProfile(row: Record<string, unknown>) {
   return {
@@ -38,38 +37,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ token, profile: toProfile(row) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Login gagal." }, { status: 500 });
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    const admin = await requireSuperAdmin(req);
-    if (!admin) return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
-    const { email, password, displayName, role, department, permissions } = await req.json();
-    if (!email || !password || String(password).length < 6) {
-      return NextResponse.json({ error: "Email dan kata sandi (min. 6 karakter) wajib diisi." }, { status: 400 });
-    }
-    const exists = await query<Record<string, unknown>[]>("SELECT id FROM profiles WHERE email = ? LIMIT 1", [
-      String(email).trim(),
-    ]);
-    if (exists.length > 0) {
-      return NextResponse.json({ error: "Email sudah terdaftar. Gunakan email lain." }, { status: 400 });
-    }
-    const id = randomUUID();
-    await query(
-      "INSERT INTO profiles (id, email, display_name, role, active, department, permissions, password_hash) VALUES (?, ?, ?, ?, 1, ?, ?, ?)",
-      [
-        id,
-        String(email).trim(),
-        String(displayName || "").trim() || "Admin",
-        role || "admin",
-        department || "",
-        JSON.stringify(role === "superadmin" ? [] : permissions ?? []),
-        await hashPassword(String(password)),
-      ]
-    );
-    return NextResponse.json({ uid: id });
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal membuat admin." }, { status: 500 });
   }
 }

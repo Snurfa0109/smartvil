@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS news (
   content MEDIUMTEXT,
   date DATE NULL,
   image_url TEXT,
+  views INT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_news_date (date)
 );
@@ -106,6 +107,11 @@ CREATE TABLE IF NOT EXISTS agenda (
   schedule VARCHAR(255) NOT NULL DEFAULT '',
   description TEXT,
   time_location VARCHAR(500) DEFAULT '',
+  date_start DATE NULL,
+  date_end DATE NULL,
+  time_start VARCHAR(10) DEFAULT '',
+  time_end VARCHAR(10) DEFAULT '',
+  location VARCHAR(500) DEFAULT '',
   active TINYINT(1) NOT NULL DEFAULT 1,
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -47,6 +47,11 @@ export default function BeritaDetailPage() {
           category: String(data.category || ""),
           imageUrl: String(data.image_url || ""),
         });
+        fetch("/api/news/views", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        }).catch(() => {});
       } catch (error) {
         console.error("Error fetching berita:", error);
         setNotFound(true);
