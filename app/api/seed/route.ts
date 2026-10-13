@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionProfile } from "@/lib/auth-server";
+import { requireSuperAdmin } from "@/lib/auth-server";
 import { query } from "@/lib/db";
 import { countRecords, TableName } from "@/lib/records";
 import { randomUUID } from "crypto";
@@ -21,8 +21,14 @@ async function seedIfEmpty(table: string, insert: () => Promise<void>) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSessionProfile(req);
-    if (!session) return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    const session = await requireSuperAdmin(req);
+    if (!session) {
+      const hasToken = req.headers.get("authorization");
+      return NextResponse.json(
+        { error: hasToken ? "Hanya superadmin yang dapat melakukan seed." : "Autentikasi diperlukan." },
+        { status: hasToken ? 403 : 401 }
+      );
+    }
     const logs: string[] = [];
 
     try {

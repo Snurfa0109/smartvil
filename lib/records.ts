@@ -38,6 +38,13 @@ const TABLE_KEYS: Record<string, string[]> = {
   audit_logs: ["id", "uid", "email", "display_name", "role", "action", "module", "detail"],
 };
 
+function selectColumns(table: string): string {
+  if (table === "profiles") {
+    return "id, email, display_name, role, active, department, permissions, last_login, created_at";
+  }
+  return "*";
+}
+
 function toDbValue(v: unknown): unknown {
   if (v === undefined) return null;
   if (v !== null && typeof v === "object") return JSON.stringify(v);
@@ -52,7 +59,7 @@ export async function listRecords(
   table: TableName,
   opts: { select?: string[]; orderBy?: string; order?: "asc" | "desc"; limit?: number } = {}
 ): Promise<Record<string, unknown>[]> {
-  const cols = opts.select && opts.select.length > 0 ? opts.select.map((c) => `\`${c}\``).join(", ") : "*";
+  const cols = opts.select && opts.select.length > 0 ? opts.select.map((c) => `\`${c}\``).join(", ") : selectColumns(table);
   let sql = `SELECT ${cols} FROM \`${table}\``;
   const allowed = TABLE_KEYS[table];
   if (opts.orderBy) {
@@ -84,7 +91,7 @@ export async function findRecords(
   const allowed = TABLE_KEYS[table];
   if (!allowed || !allowed.includes(where.column)) return [];
   return query<Record<string, unknown>[]>(
-    `SELECT * FROM \`${table}\` WHERE \`${where.column}\` = ? LIMIT ${Math.min(limit, 1000)}`,
+    `SELECT ${selectColumns(table)} FROM \`${table}\` WHERE \`${where.column}\` = ? LIMIT ${Math.min(limit, 1000)}`,
     [toDbValue(where.value)]
   );
 }

@@ -1,0 +1,13 @@
+services:
+  smartvil:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    volumes:
+      - uploads:/app/public/uploads
+
+volumes:
+  uploads:

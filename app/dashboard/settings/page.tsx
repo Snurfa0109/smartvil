@@ -212,9 +212,13 @@ function SettingsContent() {
       }
 
       if (Object.keys(updates).length > 0) {
+        const token = getToken();
         const res = await fetch(`/api/admins`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({ uid: authUser.uid, ...updates }),
         });
         

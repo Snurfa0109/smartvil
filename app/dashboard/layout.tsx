@@ -16,7 +16,6 @@ import {
   History,
   ShieldAlert,
   ArrowLeft,
-  Sparkles,
   Inbox,
   Newspaper,
 } from "lucide-react";
@@ -85,7 +84,6 @@ export default function DashboardLayout({
     { key: "penduduk", href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
     { key: "pengaduan", href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
     { key: "settings", href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe, exact: true },
-    { key: "settings", href: "/dashboard/settings?tab=banners", label: "Kelola Banner Web", icon: Sparkles },
   ];
 
   const baseNavItems = allBaseNavItems.filter((item) => canAccess(item.key));

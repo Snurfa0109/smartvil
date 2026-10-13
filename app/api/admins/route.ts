@@ -3,6 +3,20 @@ import { query } from "@/lib/db";
 import { requireSuperAdmin, hashPassword, getSessionProfile } from "@/lib/auth-server";
 import { randomUUID } from "crypto";
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getSessionProfile(req);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const rows = await query<Record<string, unknown>[]>(
+      "SELECT id, email, display_name, role, active, department, permissions, last_login, created_at FROM profiles ORDER BY created_at DESC"
+    );
+    return NextResponse.json(rows);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const admin = await requireSuperAdmin(req);
@@ -93,6 +107,19 @@ export async function DELETE(req: NextRequest) {
     if (!uid) {
       return NextResponse.json({ error: "UID wajib diisi." }, { status: 400 });
     }
+
+    if (uid === admin.uid) {
+      return NextResponse.json({ error: "Tidak dapat menghapus akun sendiri" }, { status: 400 });
+    }
+
+    const targetRow = await query<Record<string, unknown>[]>("SELECT role FROM profiles WHERE id = ?", [uid]);
+    if (targetRow[0]?.role === "superadmin") {
+      const remaining = await query<{ cnt: number }[]>("SELECT COUNT(*) as cnt FROM profiles WHERE role = 'superadmin' AND id != ?", [uid]);
+      if (remaining[0]?.cnt === 0) {
+        return NextResponse.json({ error: "Harus ada minimal 1 superadmin" }, { status: 400 });
+      }
+    }
+
     await query("DELETE FROM profiles WHERE id = ?", [uid]);
     return NextResponse.json({ ok: true });
   } catch (err) {
