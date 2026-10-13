@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, UserCheck, Baby, Briefcase, GraduationCap, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, LayoutGrid, MapPin, Calendar, ArrowRight, BarChart3, PieChart, TrendingUp } from "lucide-react";
+import { Users, UserCheck, Briefcase, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, MapPin, Calendar, ArrowRight, BarChart3, PieChart, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { stripHtml } from "@/lib/utils";
 import { PageBanner } from "@/components/layout/page-banner";

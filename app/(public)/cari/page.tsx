@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import type { ComponentType } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
+import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw, Calendar } from "lucide-react";
 import { apiList } from "@/lib/api";
 import { stripHtml } from "@/lib/utils";
 import { getLetterTypes } from "@/lib/letters";
@@ -12,7 +12,7 @@ import { getLetterTypes } from "@/lib/letters";
 interface SearchItem {
   id: string;
   title: string;
-  category: "layanan" | "berita" | "profil" | "informasi";
+  category: "layanan" | "berita" | "profil" | "informasi" | "agenda";
   subtitle: string;
   url: string;
   date?: string;
@@ -88,6 +88,7 @@ function SearchContent() {
   const [inputVal, setInputVal] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState<string>("semua");
   const [newsItems, setNewsItems] = useState<SearchItem[]>([]);
+  const [agendaItems, setAgendaItems] = useState<SearchItem[]>([]);
   const [letterServices, setLetterServices] = useState<SearchItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -114,33 +115,45 @@ function SearchContent() {
   }, []);
 
   useEffect(() => {
-    const fetchAllNews = async () => {
+    const fetchDynamicData = async () => {
       try {
-        const rows = await apiList("news", { orderBy: "date", order: "desc" });
-        const mapped: SearchItem[] = (rows || []).map((row) => {
-          return {
-            id: `news-${row.id}`,
-            title: String(row.title || "Berita Kelurahan"),
-            category: "berita" as const,
-            subtitle: row.content ? stripHtml(String(row.content)).substring(0, 140) + "..." : "",
-            url: `/berita/${row.id}`,
-            date: String(row.date || ""),
-          };
-        });
-        setNewsItems(mapped);
+        const [newsRows, agendaRows] = await Promise.all([
+          apiList("news", { orderBy: "date", order: "desc" }).catch(() => []),
+          apiList("agenda", { orderBy: "date_start", order: "desc" }).catch(() => []),
+        ]);
+
+        const mappedNews: SearchItem[] = (newsRows || []).map((row: any) => ({
+          id: `news-${row.id}`,
+          title: String(row.title || "Berita Kelurahan"),
+          category: "berita" as const,
+          subtitle: row.content ? stripHtml(String(row.content)).substring(0, 140) + "..." : "",
+          url: `/berita/${row.id}`,
+          date: String(row.date || ""),
+        }));
+        setNewsItems(mappedNews);
+
+        const mappedAgenda: SearchItem[] = (agendaRows || []).map((row: any) => ({
+          id: `agenda-${row.id}`,
+          title: String(row.title || "Agenda Kelurahan"),
+          category: "agenda" as const,
+          subtitle: row.description ? stripHtml(String(row.description)).slice(0, 120) : "",
+          url: `/#agenda`,
+          date: String(row.date_start || ""),
+        }));
+        setAgendaItems(mappedAgenda);
       } catch (err) {
-        console.error("Error fetching news for search page:", err);
+        console.error("Error fetching data for search page:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllNews();
+    fetchDynamicData();
   }, []);
 
   const allItems = useMemo(() => {
-    return [...STATIC_SERVICES, ...letterServices, ...STATIC_PAGES, ...newsItems];
-  }, [newsItems, letterServices]);
+    return [...STATIC_SERVICES, ...letterServices, ...STATIC_PAGES, ...newsItems, ...agendaItems];
+  }, [newsItems, agendaItems, letterServices]);
 
   const filteredResults = useMemo(() => {
     let list = allItems;
@@ -167,6 +180,7 @@ function SearchContent() {
     berita: Newspaper,
     profil: Building2,
     informasi: HelpCircle,
+    agenda: Calendar,
   };
 
   return (
@@ -217,6 +231,7 @@ function SearchContent() {
             { key: "berita", label: "Berita & Pengumuman" },
             { key: "profil", label: "Profil & Wilayah" },
             { key: "informasi", label: "Informasi Publik" },
+            { key: "agenda", label: "Agenda" },
           ].map((cat) => (
             <button
               key={cat.key}

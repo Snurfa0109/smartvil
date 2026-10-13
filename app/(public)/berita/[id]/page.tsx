@@ -7,6 +7,14 @@ import { Calendar, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/\son\w+\s*=\s*\S+/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:');
+}
+
 type BeritaItem = {
   id: string;
   title?: string;
@@ -149,10 +157,11 @@ export default function BeritaDetailPage() {
           <div
             className="prose prose-orange max-w-none berita-detail-content text-muted-foreground"
             dangerouslySetInnerHTML={{
-              __html:
+              __html: sanitizeHtml(
                 typeof item.content === "string" && item.content
                   ? item.content
-                  : "<p>Belum ada konten untuk berita ini.</p>",
+                  : "<p>Belum ada konten untuk berita ini.</p>"
+              ),
             }}
           />
         </article>

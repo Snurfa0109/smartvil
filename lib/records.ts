@@ -22,6 +22,7 @@ const PUBLIC_READ = new Set<TableName>([
   "letter_types",
   "agenda",
   "settings",
+  "residents",
 ]);
 
 const ANON_INSERT = new Set<TableName>(["complaints", "requests"]);

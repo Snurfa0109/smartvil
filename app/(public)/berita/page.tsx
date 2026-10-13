@@ -13,7 +13,6 @@ interface NewsItem {
   date?: string;
   category?: string;
   imageUrl?: string;
-  author?: string;
 }
 
 const ITEMS_PER_PAGE = 9;
@@ -42,7 +41,6 @@ export default function NewsPage() {
               date: String(row.date || ""),
               category: String(row.category || ""),
               imageUrl: String(row.image_url || ""),
-              author: String(row.author || ""),
             }));
           }
         } catch {

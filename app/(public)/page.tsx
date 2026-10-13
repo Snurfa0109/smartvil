@@ -11,9 +11,6 @@ import {
   Building,
   Phone,
   Calendar,
-  PhoneCall,
-  ShieldAlert,
-  HeartPulse,
   Clock,
   CheckCircle2,
   FileCheck2,
@@ -26,8 +23,7 @@ import {
   ExternalLink,
   MessageSquare,
   Loader2,
-  X,
-  BadgeAlert
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
@@ -306,12 +302,12 @@ export default function Home() {
       const mapped: TrackedRequestItem[] = foundRows.map((r) => ({
         id: String(r.id),
         ticketCode: String(r.ticket_code || r.ticketCode || "SRT-000"),
-        letterName: String(r.letter_name || r.letterName || "Surat Keterangan"),
+        letterName: String(r.type_name || r.typeName || "Surat Keterangan"),
         nama: String(r.nama || r.applicantName || "Pemohon"),
         phone: String(r.phone || ""),
         status: (r.status as any) || "pending",
         createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString("id-ID") : undefined,
-        rejectionReason: r.rejection_reason || undefined,
+        rejectionReason: r.admin_notes || undefined,
       }));
 
       setTrackResult(mapped);
