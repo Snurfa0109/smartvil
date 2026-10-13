@@ -19,7 +19,15 @@ import {
   History,
   MessageSquare,
   ExternalLink,
-  RotateCcw
+  RotateCcw,
+  User,
+  CreditCard,
+  Phone,
+  PenLine,
+  ClipboardList,
+  ChevronRight,
+  Scroll,
+  Info,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
@@ -487,86 +495,133 @@ export default function ServicesPage() {
       )}
 
       {activeTab === "apply" ? (
-        <div className="grid md:grid-cols-12 gap-8">
-          <div className="md:col-span-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-xs flex items-center justify-center font-bold">1</span>
-                Pilih Jenis Surat
-              </h2>
-              <span className="text-xs text-slate-500">{filteredLetterTypes.length} Jenis Tersedia</span>
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari surat (misal: domisili, usaha, sktm)..."
-                value={letterSearch}
-                onChange={(e) => setLetterSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
-              />
-            </div>
-
-            <div className="space-y-2.5 max-h-[560px] overflow-y-auto pr-1">
-              {filteredLetterTypes.map((letter) => {
-                const letterKey = letter.id || letter.code;
-                const isSelected = selectedLetter === letterKey || selectedLetter === letter.code;
-                return (
-                  <div
-                    key={letterKey}
-                    onClick={() => { setSelectedLetter(letterKey); setCustomFormData({}); }}
-                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-[#1b365d] bg-blue-50/50 ring-1 ring-[#1b365d] shadow-2xs"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg mt-0.5 shrink-0 ${isSelected ? "bg-[#1b365d] text-white" : "bg-slate-100 text-[#1b365d]"}`}>
-                        <FileText className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className={`font-bold text-sm ${isSelected ? "text-[#1b365d]" : "text-slate-900"}`}>
-                          {letter.name}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{letter.desc}</p>
-                        {Array.isArray(letter.requirements) && letter.requirements.length > 0 && (
-                          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#1b365d] font-semibold">
-                            <CheckSquare className="h-3 w-3" /> {letter.requirements.length} Dokumen Syarat
-                          </div>
-                        )}
-                      </div>
+        <div className="grid md:grid-cols-12 gap-6">
+          {/* ===== PANEL KIRI: Pilih Jenis Surat ===== */}
+          <div className="md:col-span-5 space-y-3">
+            <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
+              {/* Header Panel */}
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                      <Scroll className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-[13px] font-bold text-slate-800">Pilih Jenis Surat</h2>
+                      <p className="text-[10px] text-slate-400">{filteredLetterTypes.length} jenis tersedia</p>
                     </div>
                   </div>
-                );
-              })}
-              {filteredLetterTypes.length === 0 && (
-                <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-200 p-4 text-xs">
-                  Tidak ditemukan jenis surat dengan kata kunci tersebut.
                 </div>
-              )}
+              </div>
+
+              {/* Search */}
+              <div className="px-4 py-3 border-b border-slate-100">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari jenis surat..."
+                    value={letterSearch}
+                    onChange={(e) => setLetterSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Letter List */}
+              <div className="max-h-[520px] overflow-y-auto">
+                <div className="p-2 space-y-1">
+                  {filteredLetterTypes.map((letter) => {
+                    const letterKey = letter.id || letter.code;
+                    const isSelected = selectedLetter === letterKey || selectedLetter === letter.code;
+                    return (
+                      <button
+                        type="button"
+                        key={letterKey}
+                        onClick={() => { setSelectedLetter(letterKey); setCustomFormData({}); }}
+                        className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer group ${
+                          isSelected
+                            ? "bg-[#1b365d] text-white shadow-md shadow-[#1b365d]/20"
+                            : "hover:bg-slate-50 text-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected
+                              ? "bg-white/20"
+                              : "bg-[#1b365d]/[0.06] group-hover:bg-[#1b365d]/10"
+                          }`}>
+                            <FileText className={`h-4 w-4 ${isSelected ? "text-white" : "text-[#1b365d]"}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className={`font-bold text-[12px] leading-tight truncate ${
+                              isSelected ? "text-white" : "text-slate-800"
+                            }`}>
+                              {letter.name}
+                            </h3>
+                            <p className={`text-[10px] mt-0.5 line-clamp-1 ${
+                              isSelected ? "text-white/70" : "text-slate-400"
+                            }`}>
+                              {letter.desc}
+                            </p>
+                          </div>
+                          <ChevronRight className={`h-4 w-4 shrink-0 transition-transform ${
+                            isSelected ? "text-white/60 translate-x-0" : "text-slate-300 -translate-x-1 group-hover:translate-x-0 group-hover:text-slate-400"
+                          }`} />
+                        </div>
+                        {isSelected && Array.isArray(letter.requirements) && letter.requirements.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-white/20 flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
+                            <ClipboardList className="h-3 w-3" /> {letter.requirements.length} dokumen syarat pengambilan
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {filteredLetterTypes.length === 0 && (
+                    <div className="text-center py-10 px-4 space-y-2">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto">
+                        <Search className="h-4 w-4 text-slate-300" />
+                      </div>
+                      <p className="text-[11px] text-slate-400">Tidak ditemukan jenis surat</p>
+                      <button
+                        type="button"
+                        onClick={() => setLetterSearch("")}
+                        className="text-[10px] text-[#1b365d] font-bold hover:underline cursor-pointer"
+                      >
+                        Reset pencarian
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="md:col-span-7 space-y-4">
-            <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
+          <div className="md:col-span-7">
+            <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm sticky top-6">
               {/* Form Header */}
-              <div className="bg-gradient-to-r from-[#1b365d] to-[#264478] px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
-                    {activeLetterObj
-                      ? <FileCheck className="h-[18px] w-[18px] text-white" />
-                      : <FileText className="h-[18px] w-[18px] text-white/60" />
-                    }
-                  </div>
-                  <div>
-                    <h3 className="text-[14px] font-bold text-white leading-tight">
-                      {activeLetterObj ? activeLetterObj.name : "Formulir Permohonan Surat"}
-                    </h3>
-                    <p className="text-[11px] text-slate-300 mt-0.5 line-clamp-1">
-                      {activeLetterObj ? activeLetterObj.desc : "Pilih jenis surat di sebelah kiri untuk memulai"}
-                    </p>
+              <div className="relative overflow-hidden">
+                <div className="bg-gradient-to-r from-[#1b365d] via-[#1f3d6a] to-[#264478] px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/10">
+                      {activeLetterObj
+                        ? <FileCheck className="h-5 w-5 text-white" />
+                        : <PenLine className="h-5 w-5 text-white/40" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14px] font-bold text-white leading-tight truncate">
+                        {activeLetterObj ? activeLetterObj.name : "Formulir Permohonan"}
+                      </h3>
+                      <p className="text-[11px] text-slate-300/90 mt-0.5 line-clamp-1">
+                        {activeLetterObj ? activeLetterObj.desc : "Pilih jenis surat di panel kiri"}
+                      </p>
+                    </div>
+                    {activeLetterObj && (
+                      <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-[10px] text-white/80 font-bold shrink-0 border border-white/10">
+                        <Clock className="h-3 w-3" /> 1-2 Hari Kerja
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -576,18 +631,18 @@ export default function ServicesPage() {
                   <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Syarat Berkas */}
                     {Array.isArray(activeLetterObj.requirements) && activeLetterObj.requirements.length > 0 && (
-                      <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-4 space-y-2">
-                        <div className="flex items-center gap-2 text-amber-800">
-                          <CheckSquare className="h-4 w-4 shrink-0" />
-                          <span className="text-xs font-bold">Syarat Berkas saat Pengambilan</span>
+                      <div className="rounded-xl overflow-hidden border border-amber-200/60">
+                        <div className="bg-amber-50 px-4 py-2.5 flex items-center gap-2 border-b border-amber-200/60">
+                          <ClipboardList className="h-3.5 w-3.5 text-amber-700" />
+                          <span className="text-[11px] font-bold text-amber-800">Syarat Berkas Pengambilan</span>
                         </div>
-                        <div className="grid gap-1.5 pl-0.5">
+                        <div className="p-3 bg-amber-50/30 space-y-1.5">
                           {activeLetterObj.requirements.map((req, idx) => (
-                            <div key={idx} className="flex items-start gap-2 text-[12px] text-amber-900/80">
-                              <div className="w-4 h-4 rounded bg-amber-200/60 flex items-center justify-center shrink-0 mt-0.5">
+                            <div key={idx} className="flex items-center gap-2.5 text-[11px] text-amber-900/80">
+                              <div className="w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
                                 <span className="text-[9px] font-bold text-amber-700">{idx + 1}</span>
                               </div>
-                              {req}
+                              <span>{req}</span>
                             </div>
                           ))}
                         </div>
@@ -595,61 +650,55 @@ export default function ServicesPage() {
                     )}
 
                     {/* Identitas Pemohon */}
-                    <fieldset className="space-y-3">
-                      <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d] flex items-center gap-2 pb-1">
-                        <ShieldCheck className="h-3.5 w-3.5" /> Identitas Pemohon
+                    <fieldset className="space-y-3.5">
+                      <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d]/70 flex items-center gap-2 pb-1.5 border-b border-slate-100 w-full">
+                        <User className="h-3.5 w-3.5" /> Identitas Pemohon
                       </legend>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="nik" className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5">
+                          <CreditCard className="h-3 w-3 text-slate-400" />
+                          NIK <span className="text-[10px] text-slate-400 font-normal">(16 Digit)</span> <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          id="nik"
+                          type="text"
+                          required
+                          maxLength={16}
+                          className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-all"
+                          placeholder="367305xxxxxxxxxx"
+                          value={formData.nik}
+                          onChange={(e) => setFormData({ ...formData, nik: e.target.value.replace(/\D/g, "") })}
+                        />
+                      </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <label htmlFor="nik" className="text-[11px] font-semibold text-slate-600">
-                            NIK (16 Digit) <span className="text-red-400">*</span>
+                          <label htmlFor="nama" className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5">
+                            <User className="h-3 w-3 text-slate-400" />
+                            Nama Lengkap <span className="text-red-400">*</span>
                           </label>
-                          <div className="relative">
-                            <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                            <input
-                              id="nik"
-                              type="text"
-                              required
-                              maxLength={16}
-                              className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
-                              placeholder="367305xxxxxxxxxx"
-                              value={formData.nik}
-                              onChange={(e) => setFormData({ ...formData, nik: e.target.value.replace(/\D/g, "") })}
-                            />
-                          </div>
+                          <input
+                            id="nama"
+                            type="text"
+                            required
+                            className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-all"
+                            placeholder="Sesuai KTP"
+                            value={formData.nama}
+                            onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                          />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label htmlFor="nama" className="text-[11px] font-semibold text-slate-600">
-                            Nama Lengkap (KTP) <span className="text-red-400">*</span>
+                          <label htmlFor="phone" className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5">
+                            <Phone className="h-3 w-3 text-slate-400" />
+                            No. WhatsApp <span className="text-red-400">*</span>
                           </label>
-                          <div className="relative">
-                            <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                            <input
-                              id="nama"
-                              type="text"
-                              required
-                              className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
-                              placeholder="Nama lengkap sesuai KTP"
-                              value={formData.nama}
-                              onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label htmlFor="phone" className="text-[11px] font-semibold text-slate-600">
-                          Nomor WhatsApp Aktif <span className="text-red-400">*</span>
-                        </label>
-                        <div className="relative">
-                          <PhoneCall className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                           <input
                             id="phone"
                             type="tel"
                             required
-                            className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                            className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-all"
                             placeholder="0813xxxxxxxx"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -660,19 +709,20 @@ export default function ServicesPage() {
 
                     {/* Keperluan */}
                     <fieldset className="space-y-3">
-                      <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d] flex items-center gap-2 pb-1">
-                        <FileText className="h-3.5 w-3.5" /> Keperluan Surat
+                      <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d]/70 flex items-center gap-2 pb-1.5 border-b border-slate-100 w-full">
+                        <PenLine className="h-3.5 w-3.5" /> Keperluan
                       </legend>
                       <div className="space-y-1.5">
-                        <label htmlFor="keperluan" className="text-[11px] font-semibold text-slate-600">
-                          Jelaskan keperluan pembuatan surat <span className="text-red-400">*</span>
+                        <label htmlFor="keperluan" className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5">
+                          <FileText className="h-3 w-3 text-slate-400" />
+                          Alasan / keperluan surat <span className="text-red-400">*</span>
                         </label>
                         <textarea
                           id="keperluan"
                           required
                           rows={3}
-                          className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
-                          placeholder="Misal: syarat pendaftaran beasiswa, izin usaha warung sembako..."
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-all resize-none"
+                          placeholder="Misal: syarat pendaftaran beasiswa, izin usaha warung..."
                           value={formData.keperluan}
                           onChange={(e) => setFormData({ ...formData, keperluan: e.target.value })}
                         />
@@ -696,8 +746,8 @@ export default function ServicesPage() {
                       );
                       return visibleFields.length > 0 ? (
                       <fieldset className="space-y-3">
-                        <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d] flex items-center gap-2 pb-1">
-                          <FileCheck className="h-3.5 w-3.5" /> Data Tambahan Template
+                        <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d]/70 flex items-center gap-2 pb-1.5 border-b border-slate-100 w-full">
+                          <ClipboardList className="h-3.5 w-3.5" /> Data Tambahan
                         </legend>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {visibleFields.map((f) => (
@@ -746,51 +796,46 @@ export default function ServicesPage() {
                     ) : null; })()}
 
                     {/* Ketentuan */}
-                    <div className="bg-[#1b365d]/[0.04] border border-[#1b365d]/10 p-4 rounded-xl text-xs space-y-1.5">
-                      <p className="font-bold text-[#1b365d] flex items-center gap-1.5">
-                        <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Ketentuan Pengambilan Berkas
-                      </p>
-                      <ul className="space-y-1 text-slate-600 pl-5">
-                        <li className="flex items-start gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5 shrink-0" />
-                          Pengambilan dokumen di loket kelurahan pada jam kerja resmi.
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5 shrink-0" />
-                          Harap membawa KTP asli dan Kartu Keluarga asli saat pengambilan.
-                        </li>
-                      </ul>
+                    <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#1b365d]/[0.03] border border-[#1b365d]/[0.08]">
+                      <Info className="h-4 w-4 text-[#1b365d]/50 shrink-0 mt-0.5" />
+                      <div className="text-[11px] text-slate-500 leading-relaxed">
+                        Pengambilan dokumen di <strong className="text-slate-600">loket kelurahan pada jam kerja</strong>. Bawa KTP asli dan KK asli.
+                      </div>
                     </div>
 
                     {/* Submit */}
-                    <div className="flex justify-end pt-1">
-                      <Button
-                        type="submit"
-                        size="lg"
-                        disabled={loading}
-                        className="w-full sm:w-auto bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 px-6 h-11 text-sm cursor-pointer transition-all"
-                      >
-                        {loading ? "Mengirim Permohonan..." : (
-                          <>
-                            <Send className="mr-2 h-4 w-4" /> Kirim Permohonan Surat
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm cursor-pointer transition-all"
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Mengirim Permohonan...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Send className="h-4 w-4" /> Kirim Permohonan Surat
+                        </span>
+                      )}
+                    </Button>
                   </form>
                 ) : (
-                  <div className="h-72 flex flex-col items-center justify-center p-6 text-center space-y-3">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center">
-                      <FileText className="h-7 w-7 text-slate-300" />
+                  <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center">
+                        <FileText className="h-8 w-8 text-slate-300" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#1b365d]/10 flex items-center justify-center border border-[#1b365d]/10">
+                        <ArrowRight className="h-3.5 w-3.5 text-[#1b365d]/40 rotate-180" />
+                      </div>
                     </div>
                     <div>
                       <p className="font-bold text-slate-700 text-sm">Pilih Jenis Surat</p>
-                      <p className="text-[11px] text-slate-400 mt-1 max-w-[220px] mx-auto leading-relaxed">
-                        Klik salah satu jenis surat di panel kiri untuk membuka formulir permohonan.
+                      <p className="text-[11px] text-slate-400 mt-1.5 max-w-[200px] mx-auto leading-relaxed">
+                        Klik salah satu jenis surat di panel kiri untuk membuka formulir
                       </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
-                      <ArrowRight className="h-3 w-3 rotate-180" /> Panel kiri
                     </div>
                   </div>
                 )}
