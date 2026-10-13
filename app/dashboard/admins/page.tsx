@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiList, apiUpdate, getToken } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/permissions";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { usePolling } from "@/hooks/use-polling";
 
 interface AdminUser {
   id: string;
@@ -76,7 +77,7 @@ export default function AdminsManagementPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     setLoading(true);
     try {
       const rows = await apiList("profiles");
@@ -107,11 +108,13 @@ export default function AdminsManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchAdmins();
-  }, []);
+  }, [fetchAdmins]);
+
+  usePolling(fetchAdmins, 30_000);
 
   const handleOpenCreate = () => {
     setErrorMsg("");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { usePolling } from "@/hooks/use-polling";
 import { apiList, apiDelete } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,8 @@ export default function BeritaDashboardPage() {
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
+
+  usePolling(fetchNews, 30_000);
 
   const handleDelete = async (id: string, title: string) => {
     const confirmed = await showConfirm({

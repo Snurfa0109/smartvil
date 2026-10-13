@@ -1,9 +1,10 @@
 ﻿"use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { apiList, apiUpdate, apiDelete } from "@/lib/api";
 import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User, AlertTriangle, Inbox } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { usePolling } from "@/hooks/use-polling";
 
 interface ComplaintItem {
   id: string;
@@ -33,7 +34,7 @@ export default function PengaduanDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPhone, setFilterPhone] = useState<string | null>(null);
 
-  const fetchComplaints = async () => {
+  const fetchComplaints = useCallback(async () => {
     try {
       const rows = await apiList("complaints", { orderBy: "created_at", order: "desc" });
       setComplaints(
@@ -57,11 +58,13 @@ export default function PengaduanDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchComplaints();
-  }, []);
+  }, [fetchComplaints]);
+
+  usePolling(fetchComplaints, 15_000);
 
   const phoneCountMap = useMemo(() => {
     const counts: Record<string, number> = {};

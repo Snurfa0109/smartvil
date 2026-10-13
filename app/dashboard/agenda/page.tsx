@@ -24,6 +24,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { usePolling } from "@/hooks/use-polling";
 
 type AgendaItem = {
   id: string;
@@ -145,6 +146,8 @@ export default function AgendaDashboardPage() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  usePolling(fetchItems, 30_000);
 
   const activeCount = useMemo(() => items.filter((i) => i.active).length, [items]);
   const inactiveCount = useMemo(() => items.filter((i) => !i.active).length, [items]);

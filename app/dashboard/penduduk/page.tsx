@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { usePolling } from "@/hooks/use-polling";
 
 type Resident = {
   id: string;
@@ -137,6 +138,8 @@ export default function PendudukDashboardPage() {
   useEffect(() => {
     fetchResidents();
   }, [fetchResidents]);
+
+  usePolling(fetchResidents, 30_000);
 
   const stats = useMemo(() => {
     const total = residents.length;

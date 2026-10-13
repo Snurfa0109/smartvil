@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon } from "lucide-react";
@@ -48,6 +48,7 @@ import {
   DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
 import { useToast } from "@/components/ui/toast";
+import { usePolling } from "@/hooks/use-polling";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -88,37 +89,37 @@ function SettingsContent() {
     }
   }, [searchParams]);
 
+  const loadData = useCallback(async () => {
+    try {
+      const config = await getSiteSettings();
+
+      setSiteForm(config);
+    } catch (err) {
+      console.error("Error loading site settings:", err);
+    } finally {
+      setSiteLoading(false);
+    }
+
+    try {
+      const config = await getChatbotSettings();
+      setChatbotForm((prev) => ({ ...prev, ...config }));
+    } catch (err) {
+      console.error("Error loading chatbot settings:", err);
+    } finally {
+      setChatbotLoading(false);
+    }
+
+    try {
+      const cats = await getBeritaCategories();
+      if (cats && cats.length > 0) {
+        setBeritaCategories(cats);
+      }
+    } catch (err) {
+      console.error("Error loading berita categories:", err);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const config = await getSiteSettings();
-
-        setSiteForm(config);
-      } catch (err) {
-        console.error("Error loading site settings:", err);
-      } finally {
-        setSiteLoading(false);
-      }
-
-      try {
-        const config = await getChatbotSettings();
-        setChatbotForm((prev) => ({ ...prev, ...config }));
-      } catch (err) {
-        console.error("Error loading chatbot settings:", err);
-      } finally {
-        setChatbotLoading(false);
-      }
-
-      try {
-        const cats = await getBeritaCategories();
-        if (cats && cats.length > 0) {
-          setBeritaCategories(cats);
-        }
-      } catch (err) {
-        console.error("Error loading berita categories:", err);
-      }
-    };
-
     loadData();
 
     if (authUser?.displayName) {
@@ -126,6 +127,8 @@ function SettingsContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  usePolling(loadData, 30_000);
 
   const handleSaveSite = async (sectionName = "Pengaturan") => {
     setSavingSite(true);

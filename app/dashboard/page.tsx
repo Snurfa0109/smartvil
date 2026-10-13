@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { usePolling } from "@/hooks/use-polling";
 import Link from "next/link";
 import {
   FileText,
@@ -67,6 +68,80 @@ export default function DashboardPage() {
   const [dateLabel, setDateLabel] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const fetchData = useCallback(async () => {
+    try {
+      const [
+        pendingComplaints,
+        residentsTotal,
+        newsTotal,
+        reqPending,
+        reqProcessed,
+        reqReady,
+        reqCompleted,
+        recentComplaintRows,
+        recentRequestRows,
+      ] = await Promise.all([
+        apiCount("complaints", { column: "status", value: "pending" }),
+        apiCount("residents"),
+        apiCount("news"),
+        apiCount("requests", { column: "status", value: "pending" }),
+        apiCount("requests", { column: "status", value: "processed" }),
+        apiCount("requests", { column: "status", value: "ready" }),
+        apiCount("requests", { column: "status", value: "completed" }),
+        apiList("complaints", { orderBy: "created_at", order: "desc", limit: 6 }),
+        apiList("requests", { orderBy: "created_at", order: "desc", limit: 6 }),
+      ]);
+
+      setStats({
+        residents: residentsTotal,
+        news: newsTotal,
+        complaints: pendingComplaints,
+        requests: reqPending,
+      });
+
+      setRequestBreakdown({
+        pending: reqPending,
+        processed: reqProcessed,
+        ready: reqReady,
+        completed: reqCompleted,
+      });
+
+      const complaintsList: ActivityItem[] = (recentComplaintRows || []).map((row) => ({
+        id: String(row.id),
+        kind: "complaint",
+        title: String(row.title || row.category || "Pengaduan Warga"),
+        detail: String(row.message || ""),
+        nama: String(row.nama || "Warga"),
+        status: String(row.status || "pending"),
+        category: String(row.category || "Umum"),
+        createdAt: (row.created_at as string | number | Date) || undefined,
+      }));
+
+      const requestsList: ActivityItem[] = (recentRequestRows || []).map((row) => ({
+        id: String(row.id),
+        kind: "request",
+        title: String(row.type_name || "Permohonan Surat"),
+        detail: String(row.keperluan || "Keperluan administrasi kependudukan"),
+        nama: String(row.nama || "Warga"),
+        status: String(row.status || "pending"),
+        category: String(row.ticket_code || "Surat"),
+        createdAt: (row.created_at as string | number | Date) || undefined,
+      }));
+
+      const merged = [...complaintsList, ...requestsList].sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
+
+      setActivities(merged);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     try {
       const formatted = new Intl.DateTimeFormat("id-ID", {
@@ -80,82 +155,10 @@ export default function DashboardPage() {
       setDateLabel("Pelayanan Aktif");
     }
 
-    const fetchData = async () => {
-      try {
-        const [
-          pendingComplaints,
-          residentsTotal,
-          newsTotal,
-          reqPending,
-          reqProcessed,
-          reqReady,
-          reqCompleted,
-          recentComplaintRows,
-          recentRequestRows,
-        ] = await Promise.all([
-          apiCount("complaints", { column: "status", value: "pending" }),
-          apiCount("residents"),
-          apiCount("news"),
-          apiCount("requests", { column: "status", value: "pending" }),
-          apiCount("requests", { column: "status", value: "processed" }),
-          apiCount("requests", { column: "status", value: "ready" }),
-          apiCount("requests", { column: "status", value: "completed" }),
-          apiList("complaints", { orderBy: "created_at", order: "desc", limit: 6 }),
-          apiList("requests", { orderBy: "created_at", order: "desc", limit: 6 }),
-        ]);
-
-        setStats({
-          residents: residentsTotal,
-          news: newsTotal,
-          complaints: pendingComplaints,
-          requests: reqPending,
-        });
-
-        setRequestBreakdown({
-          pending: reqPending,
-          processed: reqProcessed,
-          ready: reqReady,
-          completed: reqCompleted,
-        });
-
-        const complaintsList: ActivityItem[] = (recentComplaintRows || []).map((row) => ({
-          id: String(row.id),
-          kind: "complaint",
-          title: String(row.title || row.category || "Pengaduan Warga"),
-          detail: String(row.message || ""),
-          nama: String(row.nama || "Warga"),
-          status: String(row.status || "pending"),
-          category: String(row.category || "Umum"),
-          createdAt: (row.created_at as string | number | Date) || undefined,
-        }));
-
-        const requestsList: ActivityItem[] = (recentRequestRows || []).map((row) => ({
-          id: String(row.id),
-          kind: "request",
-          title: String(row.type_name || "Permohonan Surat"),
-          detail: String(row.keperluan || "Keperluan administrasi kependudukan"),
-          nama: String(row.nama || "Warga"),
-          status: String(row.status || "pending"),
-          category: String(row.ticket_code || "Surat"),
-          createdAt: (row.created_at as string | number | Date) || undefined,
-        }));
-
-        const merged = [...complaintsList, ...requestsList].sort((a, b) => {
-          const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return tb - ta;
-        });
-
-        setActivities(merged);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  usePolling(fetchData, 30_000);
 
   const totalReq =
     requestBreakdown.pending +

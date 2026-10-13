@@ -1,7 +1,8 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { usePolling } from "@/hooks/use-polling";
 import { apiInsert, apiUpdate, apiDelete, apiList, apiUpload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -117,7 +118,7 @@ export default function LayananDashboardPage() {
     pejabatNip: DEFAULT_SITE_SETTINGS.headNip,
   });
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const rows = await apiList("requests", { orderBy: "created_at", order: "desc" });
       setRequests(
@@ -143,9 +144,9 @@ export default function LayananDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchLetterTypes = async () => {
+  const fetchLetterTypes = useCallback(async () => {
     setLoadingTypes(true);
     try {
       const types = await getLetterTypes();
@@ -156,7 +157,7 @@ export default function LayananDashboardPage() {
     } finally {
       setLoadingTypes(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRequests();
@@ -166,7 +167,14 @@ export default function LayananDashboardPage() {
         setSignerDefaults({ pejabatNama: s.headName, pejabatJabatan: s.headTitle, pejabatNip: s.headNip })
       )
       .catch(() => undefined);
-  }, []);
+  }, [fetchRequests, fetchLetterTypes]);
+
+  const refreshAll = useCallback(() => {
+    fetchRequests();
+    fetchLetterTypes();
+  }, [fetchRequests, fetchLetterTypes]);
+
+  usePolling(refreshAll, 15_000);
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {

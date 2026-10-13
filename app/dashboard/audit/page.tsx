@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { apiList } from "@/lib/api";
 import { AuditEntry, AuditAction, AuditModule } from "@/lib/audit";
 import {
@@ -17,6 +17,7 @@ import {
   Activity,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { usePolling } from "@/hooks/use-polling";
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<(AuditEntry & { id: string })[]>([]);
@@ -25,7 +26,7 @@ export default function AuditLogsPage() {
   const [selectedAction, setSelectedAction] = useState<string>("all");
   const [selectedModule, setSelectedModule] = useState<string>("all");
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const rows = await apiList("audit_logs", { orderBy: "timestamp", order: "desc", limit: 100 });
@@ -46,11 +47,13 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [fetchLogs]);
+
+  usePolling(fetchLogs, 30_000);
 
   const formatTimestamp = (ts: unknown) => {
     if (!ts) return "-";
