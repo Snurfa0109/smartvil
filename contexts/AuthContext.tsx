@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.push("/login");
   };
 
-  const isSuperAdmin = role === "superadmin";
+  const isSuperAdmin = role === "superadmin" || role === "admin";
 
   const canAccess = (featureKey: string) => {
     if (isSuperAdmin) return true;

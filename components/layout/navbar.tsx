@@ -10,7 +10,6 @@ import { GlobalSearchModal } from "@/components/search/global-search-modal";
 const navLinks = [
   { href: "/", label: "Beranda" },
   { href: "/profil", label: "Profil" },
-  { href: "/berita", label: "Berita" },
   { href: "/data", label: "Informasi" },
   { href: "/layanan", label: "Layanan Surat" },
   { href: "/pengaduan", label: "Pengaduan" },
@@ -58,13 +57,16 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                    className={`relative px-3.5 py-2 text-sm font-semibold transition-colors ${
                       isActive
-                        ? "text-primary font-semibold bg-secondary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "text-[#1b365d]"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     {link.label}
+                    {isActive && (
+                      <span className="absolute -bottom-1.5 left-2.5 right-2.5 h-0.5 bg-amber-500 rounded-full" />
+                    )}
                   </Link>
                 );
               })}

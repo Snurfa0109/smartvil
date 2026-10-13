@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle } from "lucide-react";
+import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, Search, ArrowRight, History, MessageSquare, AlertCircle, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
+import { PageBanner } from "@/components/layout/page-banner";
 
 const complaintCategories = [
   "Infrastruktur & Jalan",
@@ -23,25 +24,8 @@ interface StoredPhone {
   lastDate: string;
 }
 
-interface TrackedComplaint {
-  id: string;
-  ticketCode: string;
-  nama: string;
-  email: string;
-  phone: string;
-  category: string;
-  title: string;
-  judul: string;
-  message: string;
-  isi: string;
-  photoUrl: string;
-  status: string;
-  adminResponse: string;
-  createdAt: string | number | null;
-}
-
 export default function ComplaintsPage() {
-  const { error: showError, warning } = useToast();
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -65,7 +49,7 @@ export default function ComplaintsPage() {
 
   const [trackPhone, setTrackPhone] = useState("");
   const [trackingLoading, setTrackingLoading] = useState(false);
-  const [trackedComplaints, setTrackedComplaints] = useState<TrackedComplaint[] | null>(null);
+  const [trackedComplaints, setTrackedComplaints] = useState<any[] | null>(null);
   const [recentPhones, setRecentPhones] = useState<StoredPhone[]>([]);
 
   useEffect(() => {
@@ -179,21 +163,21 @@ export default function ComplaintsPage() {
 
     setTrackingLoading(true);
     try {
-      const toItem = (row: Record<string, unknown>): TrackedComplaint => ({
-        id: String(row.id ?? ""),
-        ticketCode: String(row.ticket_code ?? ""),
-        nama: String(row.nama ?? ""),
-        email: String(row.email ?? ""),
-        phone: String(row.phone ?? ""),
-        category: String(row.category ?? ""),
-        title: String(row.title ?? ""),
-        judul: String(row.title ?? ""),
-        message: String(row.message ?? ""),
-        isi: String(row.message ?? ""),
-        photoUrl: String(row.photo_url ?? ""),
-        status: String(row.status ?? ""),
-        adminResponse: String(row.admin_response ?? ""),
-        createdAt: String(row.created_at ?? ""),
+      const toItem = (row: Record<string, any>) => ({
+        id: row.id,
+        ticketCode: row.ticket_code,
+        nama: row.nama,
+        email: row.email,
+        phone: row.phone,
+        category: row.category,
+        title: row.title,
+        judul: row.title,
+        message: row.message,
+        isi: row.message,
+        photoUrl: row.photo_url,
+        status: row.status,
+        adminResponse: row.admin_response,
+        createdAt: row.created_at,
       });
       const digitsOnly = rawSearch.replace(/\D/g, "");
 
@@ -211,7 +195,7 @@ export default function ComplaintsPage() {
       }
 
       // Also support legacy search by exact ticketCode if user happens to enter one
-      const results: TrackedComplaint[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
+      let results: any[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
 
       for (const phoneVal of Array.from(new Set(phoneCandidates))) {
         const phoneRows = await apiFind("complaints", { column: "phone", value: phoneVal }).catch(() => []);
@@ -253,39 +237,36 @@ export default function ComplaintsPage() {
     : null;
 
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-          Kanal Aspirasi & Pengaduan Resmi
-        </span>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-          Layanan Pengaduan Masyarakat
-        </h1>
-        <p className="text-slate-600 text-sm leading-relaxed">
-          Sampaikan keluhan fasilitas lingkungan, pelayanan publik, atau aspirasi warga. Semua laporan diverifikasi secara transparan melalui nomor telepon Anda.
-        </p>
-
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-2">
+    <div className="space-y-10 pb-16">
+      <PageBanner pageKey="pengaduan">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setActiveTab("form")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
-              activeTab === "form" ? "bg-white text-[#1b365d] shadow-xs" : "text-slate-600 hover:text-slate-900"
+            className={`px-6 py-3 rounded-lg text-sm inline-flex items-center gap-2 shadow-md transition-all cursor-pointer ${
+              activeTab === "form"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Formulir Pengaduan Baru
+            <span>Tulis Pengaduan Baru</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("track")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
-              activeTab === "track" ? "bg-white text-[#1b365d] shadow-xs" : "text-slate-600 hover:text-slate-900"
+            className={`px-6 py-3 rounded-lg text-sm transition-all cursor-pointer backdrop-blur-sm ${
+              activeTab === "track"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Cek Riwayat via No. Telepon
+            Lacak Status Pengaduan
           </button>
         </div>
-      </div>
+      </PageBanner>
+
+      <div className="container mx-auto px-6 md:px-12 space-y-10">
 
       {submittedInfo && (
         <div className="max-w-2xl mx-auto bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-950 space-y-4 shadow-xs">
@@ -525,6 +506,16 @@ export default function ComplaintsPage() {
                     )}
                   </div>
 
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-2.5 text-xs text-slate-600">
+                    <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-800 block">Jaminan Kerahasiaan Data Pelapor:</span>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        Identitas dan nomor kontak Anda dijamin kerahasiaannya, tidak dipublikasikan secara terbuka, dan hanya diakses oleh petugas verifikator kelurahan untuk tindak lanjut penanganan masalah.
+                      </p>
+                    </div>
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold text-sm py-2.5 rounded-xl shadow-xs"
@@ -723,5 +714,6 @@ export default function ComplaintsPage() {
         </div>
       )}
     </div>
+  </div>
   );
 }

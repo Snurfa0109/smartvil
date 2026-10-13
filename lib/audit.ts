@@ -23,6 +23,17 @@ export type AuditModule =
   | "auth"
   | "sistem";
 
+export interface AuditEntry {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: string;
+  action: AuditAction;
+  module: AuditModule;
+  detail: string;
+  timestamp?: any;
+}
+
 export async function writeAuditLog(
   action: AuditAction,
   module: AuditModule,

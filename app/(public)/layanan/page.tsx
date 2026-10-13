@@ -18,13 +18,15 @@ import {
   FileCheck,
   History,
   MessageSquare,
+  ExternalLink,
+  RotateCcw
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
-import { LetterType, getLetterTypes } from "@/lib/letters";
-import { ADMIN_ONLY_FIELDS } from "@/lib/letter-constants";
+import { LetterType, getLetterTypes, DEFAULT_LETTER_TYPES } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
+import { PageBanner } from "@/components/layout/page-banner";
 
 interface StoredTicket {
   ticketCode: string;
@@ -34,24 +36,8 @@ interface StoredTicket {
   date: string;
 }
 
-interface TrackedRequest {
-  id: string;
-  ticketCode: string;
-  nama: string;
-  nik: string;
-  phone: string;
-  type: string;
-  typeName: string;
-  keperluan: string;
-  formData: Record<string, unknown>;
-  templateNarrative: string;
-  status: string;
-  adminNotes: string;
-  createdAt: unknown;
-}
-
 export default function ServicesPage() {
-  const { error: showError, warning } = useToast();
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
@@ -74,7 +60,7 @@ export default function ServicesPage() {
 
   const [trackInput, setTrackInput] = useState("");
   const [trackLoading, setTrackLoading] = useState(false);
-  const [trackedRequests, setTrackedRequests] = useState<TrackedRequest[] | null>(null);
+  const [trackedRequests, setTrackedRequests] = useState<any[] | null>(null);
   const [recentTickets, setRecentTickets] = useState<StoredTicket[]>([]);
   const [copied, setCopied] = useState(false);
   const [villagePhone, setVillagePhone] = useState(DEFAULT_SITE_SETTINGS.villagePhone);
@@ -140,8 +126,18 @@ export default function ServicesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLetter) return;
+    const WARGA_HIDDEN_KEYS = new Set([
+      "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+      "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+      "keperluan", "kebutuhan", "tujuan", "keterangan",
+      "dipergunakan_untuk", "digunakan_untuk",
+      "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+      "bermaksud_untuk", "dimaksudkan_untuk",
+      "surat_keterangan_ini_dipergunakan_untuk",
+      "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+    ]);
     const requiredMissing = (activeLetterObj?.customFields || []).filter(
-      (f) => !ADMIN_ONLY_FIELDS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_") && f.required && !(customFormData[f.key] || "").trim()
+      (f) => !WARGA_HIDDEN_KEYS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_") && f.required && !(customFormData[f.key] || "").trim()
     );
     if (requiredMissing.length > 0) {
       warning(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
@@ -209,22 +205,22 @@ export default function ServicesPage() {
 
     setTrackLoading(true);
     try {
-      const toItem = (row: Record<string, unknown>): TrackedRequest => ({
-        id: String(row.id ?? ""),
-        ticketCode: String(row.ticket_code ?? ""),
-        nama: String(row.nama ?? ""),
-        nik: String(row.nik ?? ""),
-        phone: String(row.phone ?? ""),
-        type: String(row.type ?? ""),
-        typeName: String(row.type_name ?? ""),
-        keperluan: String(row.keperluan ?? ""),
-        formData: (row.form_data as Record<string, string>) || {},
-        templateNarrative: String(row.template_narrative ?? ""),
-        status: String(row.status ?? ""),
-        adminNotes: String(row.admin_notes ?? ""),
-        createdAt: String(row.created_at ?? ""),
+      const toItem = (row: Record<string, any>) => ({
+        id: row.id,
+        ticketCode: row.ticket_code,
+        nama: row.nama,
+        nik: row.nik,
+        phone: row.phone,
+        type: row.type,
+        typeName: row.type_name,
+        keperluan: row.keperluan,
+        formData: row.form_data || {},
+        templateNarrative: row.template_narrative,
+        status: row.status,
+        adminNotes: row.admin_notes,
+        createdAt: row.created_at,
       });
-      const results: TrackedRequest[] = [];
+      let results: any[] = [];
       const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
       const cleanedDigits = rawSearch.replace(/\D/g, "");
 
@@ -241,7 +237,7 @@ export default function ServicesPage() {
       }
 
       if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
-        const phoneVariations = [cleanedDigits];
+        let phoneVariations = [cleanedDigits];
         if (cleanedDigits.startsWith("0")) {
           phoneVariations.push("62" + cleanedDigits.substring(1));
           phoneVariations.push("+62" + cleanedDigits.substring(1));
@@ -295,43 +291,36 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="container mx-auto px-6 md:px-12 py-12 space-y-10">
-      <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20">
-          <FileCheck className="h-3.5 w-3.5" /> Pelayanan Administrasi Terpadu Kelurahan (PATEN)
-        </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-          Layanan Administrasi Surat Kelurahan
-        </h1>
-        <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-          Pengajuan surat pengantar dan keterangan resmi Kelurahan Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang. Cepat, transparan, dan 100% bebas biaya retribusi (Gratis).
-        </p>
-
-        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 mt-4 shadow-2xs">
+    <div className="space-y-10 pb-16">
+      <PageBanner pageKey="layanan">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => setActiveTab("apply")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            className={`px-6 py-3 rounded-lg text-sm inline-flex items-center gap-2 shadow-md transition-all cursor-pointer ${
               activeTab === "apply"
-                ? "bg-white text-[#1b365d] shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Buat Permohonan Surat
+            <span>Buat Surat Mandiri</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("track")}
-            className={`px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+            className={`px-6 py-3 rounded-lg text-sm transition-all cursor-pointer backdrop-blur-sm ${
               activeTab === "track"
-                ? "bg-white text-[#1b365d] shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-[#f59e0b] hover:bg-[#d97706] text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                : "border border-slate-700 hover:border-slate-500 bg-[#0F2236]/90 hover:bg-[#142d47] text-white font-medium"
             }`}
           >
-            Lacak Status Permohonan
+            Lacak Permohonan
           </button>
         </div>
-      </div>
+      </PageBanner>
+
+      <div className="container mx-auto px-6 md:px-12 space-y-10">
 
       <section id="alur" className="scroll-mt-24">
         <div className="rounded-2xl bg-gradient-to-br from-[#1b365d]/5 to-blue-50 border border-[#1b365d]/10 p-6 md:p-8 space-y-5">
@@ -454,6 +443,16 @@ export default function ServicesPage() {
               <Copy className="h-3.5 w-3.5" />
               <span>{copied ? "Tersalin!" : "Salin"}</span>
             </button>
+          </div>
+
+          <div className="bg-emerald-100/60 border border-emerald-300/80 rounded-xl p-3 text-xs text-emerald-950 text-left space-y-1 max-w-lg mx-auto">
+            <div className="font-semibold flex items-center gap-1.5 text-emerald-950">
+              <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              Standar Waktu Verifikasi &amp; Cetak Berkas:
+            </div>
+            <p className="text-[11px] text-emerald-800 leading-relaxed">
+              Permohonan diproses dalam <strong>1–2 hari kerja (Senin–Jumat, 08:00–15:30)</strong>. Anda dapat memantau status secara berkala melalui menu <strong>Lacak Permohonan</strong> atau konfirmasi melalui WhatsApp loket kelurahan.
+            </p>
           </div>
 
           <div className="pt-2 space-y-2 max-w-md mx-auto">
@@ -640,8 +639,18 @@ export default function ServicesPage() {
                     </div>
 
                     {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (() => {
+                      const WARGA_HIDDEN = new Set([
+                        "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
+                        "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
+                        "keperluan", "kebutuhan", "tujuan", "keterangan",
+                        "dipergunakan_untuk", "digunakan_untuk",
+                        "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
+                        "bermaksud_untuk", "dimaksudkan_untuk",
+                        "surat_keterangan_ini_dipergunakan_untuk",
+                        "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
+                      ]);
                       const visibleFields = activeLetterObj.customFields.filter(
-                        (f) => !ADMIN_ONLY_FIELDS.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
+                        (f) => !WARGA_HIDDEN.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
                       );
                       return visibleFields.length > 0 ? (
                       <div className="space-y-3 pt-2 border-t">
@@ -957,5 +966,6 @@ export default function ServicesPage() {
         </div>
       )}
     </div>
+  </div>
   );
 }

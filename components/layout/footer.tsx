@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Users, Building, Newspaper, MessageSquareWarning, PhoneCall, MapPin, Mail, Clock, Instagram } from "lucide-react";
+import { FileText, Users, Building, Newspaper, MessageSquareWarning, PhoneCall, MapPin, Mail, Clock, Instagram, ExternalLink, Navigation } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
 
@@ -131,8 +131,8 @@ export function Footer() {
           </div>
 
           <div className="space-y-4">
-            <h4 className="text-white font-semibold text-sm">Kontak Kantor</h4>
-            <ul className="space-y-3 text-sm text-slate-400">
+            <h4 className="text-white font-semibold text-sm">Kontak & Lokasi Kantor</h4>
+            <ul className="space-y-2.5 text-xs text-slate-400">
               <li className="flex items-start gap-2">
                 <MapPin className="h-3.5 w-3.5 text-[#c9971c] mt-0.5 shrink-0" />
                 <span>{config.villageAddress}</span>
@@ -150,6 +150,33 @@ export function Footer() {
                 </a>
               </li>
             </ul>
+
+            {/* Peta Interaktif Lokasi Kantor Kelurahan */}
+            {config.googleMapsEmbed && (
+              <div className="pt-1">
+                <div className="rounded-xl overflow-hidden border border-white/15 h-32 w-full bg-slate-900 shadow-inner relative group">
+                  <iframe
+                    src={config.googleMapsEmbed}
+                    title="Peta Lokasi Kantor Kelurahan Banjar Agung"
+                    className="w-full h-full border-0 grayscale contrast-125 opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  {config.googleMapsUrl && (
+                    <a
+                      href={config.googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute bottom-2 right-2 bg-[#0F2236]/95 hover:bg-[#1b365d] text-white text-[10px] font-semibold px-2 py-1 rounded shadow-md border border-white/20 flex items-center gap-1.5 transition-all hover:scale-105 backdrop-blur-sm"
+                    >
+                      <Navigation className="w-3 h-3 text-[#c9971c]" />
+                      <span>Petunjuk Arah</span>
+                      <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">

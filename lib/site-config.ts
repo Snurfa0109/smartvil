@@ -1,5 +1,44 @@
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
+export type OfficialItem = {
+  id: string;
+  name: string;
+  title: string;
+  nip?: string;
+  photo?: string;
+  roleBadge?: string; // "LURAH" | "SEKRETARIAT" | "KASI" | "STAF" | "MITRA"
+  division?: string;
+  duties?: string;
+};
+
+export type FacilityItem = {
+  id: string;
+  title: string;
+  desc: string;
+  category?: string;
+};
+
+export type ExternalLinkItem = {
+  id: string;
+  name: string;
+  desc: string;
+  url: string;
+  badge: string;
+  category: string;
+};
+
+export type DemographySettings = {
+  total: number;
+  male: number;
+  female: number;
+  kk: number;
+  ageChildren: number; // 0 - 17 tahun
+  ageAdults: number;   // 18 - 59 tahun
+  ageSeniors: number;  // 60+ tahun
+  updatedPeriod: string; // e.g. "Semester II Tahun 2026"
+  source: string; // e.g. "Rekapitulasi Monografi BPS & Kelurahan"
+};
+
 export type SiteSettings = {
   // Identitas & Kontak Kelurahan
   villageName: string;
@@ -32,28 +71,37 @@ export type SiteSettings = {
   googleMapsEmbed: string;
   googleMapsUrl: string;
 
-  // Struktur Aparatur Kelurahan
+  // Struktur Aparatur Kelurahan (Legacy Single + Dynamic List)
   headName: string;
   headTitle: string;
   headNip: string;
   headPhoto?: string;
   secretaryName: string;
   secretaryTitle: string;
+  secretaryNip?: string;
   secretaryPhoto?: string;
   kasiPemerintahanName: string;
   kasiPemerintahanTitle: string;
+  kasiPemerintahanNip?: string;
   kasiPemerintahanPhoto?: string;
   kasiPelayananName: string;
   kasiPelayananTitle: string;
+  kasiPelayananNip?: string;
   kasiPelayananPhoto?: string;
+  officials?: OfficialItem[];
 
-  // Fasilitas & Kawasan Pemukiman Utama (/profil)
+  // Fasilitas & Kawasan Pemukiman Utama (/profil - Dynamic List)
   facility1Title: string;
   facility1Desc: string;
   facility2Title: string;
   facility2Desc: string;
   facility3Title: string;
   facility3Desc: string;
+  facilities?: FacilityItem[];
+
+  // Informasi & Statistik Publik (/data)
+  demography?: DemographySettings;
+  externalLinks?: ExternalLinkItem[];
 
   // Beranda / Landing Page (/)
   heroBadge: string;
@@ -119,21 +167,88 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   headPhoto: "",
   secretaryName: "Hj. Siti Rohmah, S.AP",
   secretaryTitle: "Sekretaris Kelurahan",
+  secretaryNip: "19820315 200801 2 007",
   secretaryPhoto: "",
   kasiPemerintahanName: "Rizki Pratama, S.IP",
   kasiPemerintahanTitle: "Kasi Ketenteraman & Ketertiban",
+  kasiPemerintahanNip: "19850920 201001 1 012",
   kasiPemerintahanPhoto: "",
   kasiPelayananName: "Dewi Sartika, S.E",
   kasiPelayananTitle: "Kasi Pelayanan Umum",
+  kasiPelayananNip: "19871104 201202 2 005",
   kasiPelayananPhoto: "",
 
-  // Fasilitas & Kawasan Pemukiman Utama
+  // Fasilitas & Kawasan Pemukiman Utama (Default List)
   facility1Title: "Perumahan BAP (Bumi Agung Permai)",
   facility1Desc: "Kawasan pemukiman terpadu BAP I dan BAP II dengan sarana warga yang tertata dan kebersamaan RT/RW yang aktif.",
   facility2Title: "Puskesmas Banjar Agung",
   facility2Desc: "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
   facility3Title: "Perumahan Bumi Mutiara Serang",
   facility3Desc: "Kawasan hunian keluarga yang asri dan strategis, mendukung dinamika pertumbuhan wilayah Cipocok Jaya.",
+  facilities: [
+    {
+      id: "fac-1",
+      title: "Perumahan BAP (Bumi Agung Permai)",
+      desc: "Kawasan pemukiman terpadu BAP I dan BAP II dengan sarana warga yang tertata dan kebersamaan RT/RW yang aktif.",
+      category: "Hunian / Pemukiman",
+    },
+    {
+      id: "fac-2",
+      title: "Puskesmas Banjar Agung",
+      desc: "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
+      category: "Kesehatan",
+    },
+    {
+      id: "fac-3",
+      title: "Perumahan Bumi Mutiara Serang",
+      desc: "Kawasan hunian keluarga yang asri dan strategis, mendukung dinamika pertumbuhan wilayah Cipocok Jaya.",
+      category: "Hunian / Pemukiman",
+    },
+  ],
+
+  // Struktur Aparatur Kelurahan (Default List)
+  officials: [
+    {
+      id: "off-1",
+      name: "Ahmad Suhendar, S.Sos",
+      title: "Lurah Banjar Agung",
+      nip: "19780512 200501 1 004",
+      photo: "",
+      roleBadge: "LURAH",
+      division: "Pimpinan Wilayah",
+      duties: "Penanggung jawab kebijakan wilayah, pembinaan kemasyarakatan, dan penandatanganan legalitas surat resmi warga.",
+    },
+    {
+      id: "off-2",
+      name: "Hj. Siti Rohmah, S.AP",
+      title: "Sekretaris Kelurahan",
+      nip: "19820315 200801 2 007",
+      photo: "",
+      roleBadge: "SEKRETARIAT",
+      division: "Sekretariat Kelurahan",
+      duties: "Koordinator tata usaha, pengelolaan anggaran, dan administrasi kepegawaian internal kelurahan.",
+    },
+    {
+      id: "off-3",
+      name: "Rizki Pratama, S.IP",
+      title: "Kasi Ketenteraman & Ketertiban",
+      nip: "19850920 201001 1 012",
+      photo: "",
+      roleBadge: "KASI",
+      division: "Wilayah & Ketertiban Umum",
+      duties: "Pembinaan ketertiban umum, penanganan sengketa warga, dan koordinasi dengan ketua 8 RW & 32 RT.",
+    },
+    {
+      id: "off-4",
+      name: "Dewi Sartika, S.E",
+      title: "Kasi Pelayanan Umum",
+      nip: "19871104 201202 2 005",
+      photo: "",
+      roleBadge: "KASI",
+      division: "Administrasi & Pelayanan",
+      duties: "Verifikasi berkas persyaratan surat keterangan, legalisasi dokumen kependudukan, dan loket PATEN.",
+    },
+  ],
 
   // Beranda / Landing Page
   heroBadge: "Portal Resmi Pelayanan Kelurahan Banjar Agung",
@@ -149,6 +264,85 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   emergencyPolsek: "0254-210110",
   emergencyKoramil: "0254-210220",
   emergencyDamkar: "0254-201113",
+
+  // Informasi & Statistik Publik (/data)
+  demography: {
+    total: 3840,
+    male: 1948,
+    female: 1892,
+    kk: 1185,
+    ageChildren: 998,
+    ageAdults: 2496,
+    ageSeniors: 346,
+    updatedPeriod: "Semester II Tahun 2026",
+    source: "Rekapitulasi Monografi BPS & Kelurahan Banjar Agung",
+  },
+  externalLinks: [
+    {
+      id: "link-1",
+      name: "Kecamatan Cipocok Jaya",
+      desc: "Portal resmi Kecamatan Cipocok Jaya — informasi kegiatan, layanan, dan pengumuman wilayah kecamatan.",
+      url: "https://cipocokjaya.serangkota.go.id",
+      badge: "Kecamatan",
+      category: "Pemerintah Wilayah",
+    },
+    {
+      id: "link-2",
+      name: "Pemerintah Kota Serang",
+      desc: "Portal utama Pemerintah Kota Serang — berita resmi, agenda pemerintahan, dan layanan publik kota.",
+      url: "https://serangkota.go.id",
+      badge: "Kota Serang",
+      category: "Pemerintah Wilayah",
+    },
+    {
+      id: "link-3",
+      name: "Cek Bansos Kemensos RI",
+      desc: "Cek status penerima program bantuan sosial PKH, BPNT, dan program perlindungan sosial lainnya dari Kemensos.",
+      url: "https://cekbansos.kemensos.go.id",
+      badge: "Bansos",
+      category: "Bantuan Sosial & Kesejahteraan",
+    },
+    {
+      id: "link-4",
+      name: "DTKS Online — Data Terpadu Kessos",
+      desc: "Portal pendataan keluarga miskin dan rentan untuk keperluan program perlindungan sosial pemerintah pusat.",
+      url: "https://dtks.kemensos.go.id",
+      badge: "Kesejahteraan",
+      category: "Bantuan Sosial & Kesejahteraan",
+    },
+    {
+      id: "link-5",
+      name: "Dukcapil Kemendagri",
+      desc: "Layanan kependudukan nasional: e-KTP, KK, akta kelahiran, dan dokumen administrasi kependudukan online.",
+      url: "https://dukcapil.kemendagri.go.id",
+      badge: "Adminduk",
+      category: "Kependudukan & Administrasi",
+    },
+    {
+      id: "link-6",
+      name: "Disdukcapil Kota Serang",
+      desc: "Dinas Kependudukan dan Pencatatan Sipil Kota Serang — layanan cetak dokumen dan informasi administrasi lokal.",
+      url: "https://disdukcapil.serangkota.go.id",
+      badge: "Dukcapil Lokal",
+      category: "Kependudukan & Administrasi",
+    },
+    {
+      id: "link-7",
+      name: "BPJS Kesehatan",
+      desc: "Portal resmi BPJS Kesehatan — cek kepesertaan JKN, cetak kartu digital, dan informasi fasilitas kesehatan terdekat.",
+      url: "https://bpjs-kesehatan.go.id",
+      badge: "JKN/BPJS",
+      category: "Kesehatan",
+    },
+    {
+      id: "link-8",
+      name: "LAPOR! — Layanan Aspirasi & Pengaduan",
+      desc: "Platform pengaduan online nasional terintegrasi lintas instansi pemerintah pusat dan daerah.",
+      url: "https://lapor.go.id",
+      badge: "Aspirasi",
+      category: "Layanan Digital Nasional",
+    },
+  ],
 };
 
 let cachedSettings: { data: SiteSettings; at: number } | null = null;
@@ -164,7 +358,73 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const stored = await getSetting<Partial<SiteSettings>>("profile", {});
     if (stored && Object.keys(stored).length > 0) {
-      const merged = { ...DEFAULT_SITE_SETTINGS, ...stored };
+      const merged: SiteSettings = { ...DEFAULT_SITE_SETTINGS, ...stored };
+      
+      // Pastikan facilities terisi
+      if (!Array.isArray(merged.facilities) || merged.facilities.length === 0) {
+        merged.facilities = [
+          { id: "fac-1", title: merged.facility1Title || DEFAULT_SITE_SETTINGS.facility1Title, desc: merged.facility1Desc || DEFAULT_SITE_SETTINGS.facility1Desc, category: "Hunian / Pemukiman" },
+          { id: "fac-2", title: merged.facility2Title || DEFAULT_SITE_SETTINGS.facility2Title, desc: merged.facility2Desc || DEFAULT_SITE_SETTINGS.facility2Desc, category: "Kesehatan" },
+          { id: "fac-3", title: merged.facility3Title || DEFAULT_SITE_SETTINGS.facility3Title, desc: merged.facility3Desc || DEFAULT_SITE_SETTINGS.facility3Desc, category: "Hunian / Pemukiman" },
+        ];
+      }
+
+      // Pastikan officials terisi
+      if (!Array.isArray(merged.officials) || merged.officials.length === 0) {
+        merged.officials = [
+          {
+            id: "off-1",
+            name: merged.headName || DEFAULT_SITE_SETTINGS.headName,
+            title: merged.headTitle || DEFAULT_SITE_SETTINGS.headTitle,
+            nip: merged.headNip || DEFAULT_SITE_SETTINGS.headNip,
+            photo: merged.headPhoto || "",
+            roleBadge: "LURAH",
+            division: "Pimpinan Wilayah",
+            duties: "Penanggung jawab kebijakan wilayah, pembinaan kemasyarakatan, dan penandatanganan legalitas surat resmi warga.",
+          },
+          {
+            id: "off-2",
+            name: merged.secretaryName || DEFAULT_SITE_SETTINGS.secretaryName,
+            title: merged.secretaryTitle || DEFAULT_SITE_SETTINGS.secretaryTitle,
+            nip: merged.secretaryNip || DEFAULT_SITE_SETTINGS.secretaryNip,
+            photo: merged.secretaryPhoto || "",
+            roleBadge: "SEKRETARIAT",
+            division: "Sekretariat Kelurahan",
+            duties: "Koordinator tata usaha, pengelolaan anggaran, dan administrasi kepegawaian internal kelurahan.",
+          },
+          {
+            id: "off-3",
+            name: merged.kasiPemerintahanName || DEFAULT_SITE_SETTINGS.kasiPemerintahanName,
+            title: merged.kasiPemerintahanTitle || DEFAULT_SITE_SETTINGS.kasiPemerintahanTitle,
+            nip: merged.kasiPemerintahanNip || DEFAULT_SITE_SETTINGS.kasiPemerintahanNip,
+            photo: merged.kasiPemerintahanPhoto || "",
+            roleBadge: "KASI",
+            division: "Wilayah & Ketertiban Umum",
+            duties: "Pembinaan ketertiban umum, penanganan sengketa warga, dan koordinasi dengan ketua 8 RW & 32 RT.",
+          },
+          {
+            id: "off-4",
+            name: merged.kasiPelayananName || DEFAULT_SITE_SETTINGS.kasiPelayananName,
+            title: merged.kasiPelayananTitle || DEFAULT_SITE_SETTINGS.kasiPelayananTitle,
+            nip: merged.kasiPelayananNip || DEFAULT_SITE_SETTINGS.kasiPelayananNip,
+            photo: merged.kasiPelayananPhoto || "",
+            roleBadge: "KASI",
+            division: "Administrasi & Pelayanan",
+            duties: "Verifikasi berkas persyaratan surat keterangan, legalisasi dokumen kependudukan, dan loket PATEN.",
+          },
+        ];
+      }
+
+      // Pastikan demography terisi
+      if (!merged.demography || typeof merged.demography.total !== "number") {
+        merged.demography = DEFAULT_SITE_SETTINGS.demography;
+      }
+
+      // Pastikan externalLinks terisi
+      if (!Array.isArray(merged.externalLinks) || merged.externalLinks.length === 0) {
+        merged.externalLinks = DEFAULT_SITE_SETTINGS.externalLinks;
+      }
+
       cachedSettings = { data: merged, at: Date.now() };
       return merged;
     }
@@ -183,7 +443,43 @@ export function invalidateSiteSettings(): void {
  */
 export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
   const current = await getSetting<Partial<SiteSettings>>("profile", {});
-  await saveSetting("profile", { ...current, ...settings });
+  const toSave = { ...current, ...settings };
+
+  // Sinkronkan legacy fields jika officials diupdate
+  if (Array.isArray(toSave.officials) && toSave.officials.length > 0) {
+    const lurah = toSave.officials.find((o) => o.roleBadge === "LURAH") || toSave.officials[0];
+    if (lurah) {
+      toSave.headName = lurah.name;
+      toSave.headTitle = lurah.title;
+      toSave.headNip = lurah.nip || "";
+      toSave.headPhoto = lurah.photo || "";
+    }
+    const seklur = toSave.officials.find((o) => o.roleBadge === "SEKRETARIAT") || toSave.officials[1];
+    if (seklur) {
+      toSave.secretaryName = seklur.name;
+      toSave.secretaryTitle = seklur.title;
+      toSave.secretaryNip = seklur.nip || "";
+      toSave.secretaryPhoto = seklur.photo || "";
+    }
+  }
+
+  // Sinkronkan legacy fields jika facilities diupdate
+  if (Array.isArray(toSave.facilities) && toSave.facilities.length > 0) {
+    if (toSave.facilities[0]) {
+      toSave.facility1Title = toSave.facilities[0].title;
+      toSave.facility1Desc = toSave.facilities[0].desc;
+    }
+    if (toSave.facilities[1]) {
+      toSave.facility2Title = toSave.facilities[1].title;
+      toSave.facility2Desc = toSave.facilities[1].desc;
+    }
+    if (toSave.facilities[2]) {
+      toSave.facility3Title = toSave.facilities[2].title;
+      toSave.facility3Desc = toSave.facilities[2].desc;
+    }
+  }
+
+  await saveSetting("profile", toSave);
 }
 export const DEFAULT_BERITA_CATEGORIES = [
   "Pengumuman",

@@ -8,24 +8,43 @@ import {
   User, 
   Minimize2, 
   Maximize2,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  AlertCircle,
+  Newspaper,
+  ArrowRight,
+  BarChart2,
+  MapPin
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { DEFAULT_CHATBOT_SETTINGS, getChatbotSettings } from "@/lib/chatbot-config";
+
+export interface ChatAction {
+  label: string;
+  url: string;
+  type: "pengaduan" | "layanan" | "berita" | "data" | "profil";
+}
 
 interface ChatMessage {
   id: string;
   role: "user" | "model";
   text: string;
   time: string;
+  actions?: ChatAction[];
 }
 
+const INITIAL_ACTIONS: ChatAction[] = [
+  { label: "Ajukan Surat Mandiri", url: "/layanan", type: "layanan" },
+  { label: "Buat Pengaduan Warga", url: "/pengaduan", type: "pengaduan" },
+  { label: "Warta & Berita Terbaru", url: "/berita", type: "berita" },
+];
+
 const QUICK_PROMPTS = [
-  "Syarat buat Surat Keterangan Usaha?",
   "Bagaimana cara membuat SKTM?",
-  "Bagaimana cara lapor pengaduan?",
-  "Informasi kontak kantor kelurahan?",
+  "Bagaimana cara lapor pengaduan warga?",
+  "Apa berita dan pengumuman terbaru?",
+  "Syarat Surat Keterangan Usaha (SKU)?",
 ];
 
 export function ChatWidget() {
@@ -48,6 +67,7 @@ export function ChatWidget() {
         role: "model",
         text: DEFAULT_CHATBOT_SETTINGS.welcomeMessage,
         time: timeStr,
+        actions: INITIAL_ACTIONS,
       },
     ]);
 
@@ -134,6 +154,7 @@ export function ChatWidget() {
             role: "model",
             text: data.reply,
             time: botTime,
+            actions: data.actions || [],
           },
         ]);
       } else {
@@ -179,6 +200,7 @@ export function ChatWidget() {
         role: "model",
         text: welcomeText,
         time: timeStr,
+        actions: INITIAL_ACTIONS,
       },
     ]);
   };
@@ -335,6 +357,60 @@ export function ChatWidget() {
                       ) : (
                         <div className="whitespace-pre-wrap">{msg.text}</div>
                       )}
+
+                      {/* CTA Buttons for model messages */}
+                      {msg.role === "model" && msg.actions && msg.actions.length > 0 && (
+                        <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Akses Cepat Layanan:
+                          </span>
+                          <div className="flex flex-col gap-1.5">
+                            {msg.actions.map((act, actIdx) => (
+                              <Link
+                                key={actIdx}
+                                href={act.url}
+                                onClick={() => {
+                                  if (typeof window !== "undefined" && window.innerWidth < 640) {
+                                    setIsMinimized(true);
+                                  }
+                                }}
+                                className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all border shadow-2xs hover:shadow-xs hover:translate-x-0.5 ${
+                                  act.type === "pengaduan"
+                                    ? "bg-amber-50 hover:bg-amber-100/90 text-amber-950 border-amber-200"
+                                    : act.type === "layanan"
+                                    ? "bg-blue-50 hover:bg-blue-100/90 text-[#1b365d] border-blue-200"
+                                    : act.type === "berita"
+                                    ? "bg-emerald-50 hover:bg-emerald-100/90 text-emerald-950 border-emerald-200"
+                                    : "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`p-1 rounded-md shrink-0 ${
+                                      act.type === "pengaduan"
+                                        ? "bg-amber-200/70 text-amber-900"
+                                        : act.type === "layanan"
+                                        ? "bg-blue-200/70 text-[#1b365d]"
+                                        : act.type === "berita"
+                                        ? "bg-emerald-200/70 text-emerald-900"
+                                        : "bg-slate-200/70 text-slate-700"
+                                    }`}
+                                  >
+                                    {act.type === "pengaduan" && <AlertCircle className="w-3.5 h-3.5" />}
+                                    {act.type === "layanan" && <FileText className="w-3.5 h-3.5" />}
+                                    {act.type === "berita" && <Newspaper className="w-3.5 h-3.5" />}
+                                    {act.type === "data" && <BarChart2 className="w-3.5 h-3.5" />}
+                                    {act.type === "profil" && <MapPin className="w-3.5 h-3.5" />}
+                                  </span>
+                                  <span className="font-semibold">{act.label}</span>
+                                </div>
+                                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-800 group-hover:translate-x-0.5 transition-all" />
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div
                         className={`text-[10px] mt-1 text-right ${
                           msg.role === "user" ? "text-blue-200" : "text-slate-400"

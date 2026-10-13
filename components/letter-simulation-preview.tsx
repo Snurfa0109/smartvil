@@ -6,7 +6,7 @@ import { generateSampleFilledDocx, downloadBlob } from "@/lib/letter-template";
 import { DOCX_PREVIEW_CSS } from "@/lib/docx-preview-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Download, FileWarning, Sparkles, Loader2 } from "lucide-react";
+import { Download, FileWarning, Eye, Loader2 } from "lucide-react";
 
 type Props = {
   templateBuffer: ArrayBuffer | null;
@@ -146,7 +146,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
       <div className="space-y-3">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-400 text-sm font-bold flex items-center justify-center">
-            <Sparkles className="h-4 w-4" />
+            <Eye className="h-4 w-4" />
           </div>
           <div className="flex-1">
             <Label className="font-bold text-base text-slate-900 block">Live Preview</Label>
@@ -169,7 +169,7 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center">
-            <Sparkles className="h-4 w-4" />
+            <Eye className="h-4 w-4" />
           </div>
           <div className="flex-1">
             <Label className="font-bold text-base text-slate-900 block">Live Preview</Label>

@@ -3,19 +3,123 @@ import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@
 import { getSiteSettings } from "@/lib/site-config";
 import { getLetterTypes } from "@/lib/letters";
 
+interface ChatAction {
+  label: string;
+  url: string;
+  type: "pengaduan" | "layanan" | "berita" | "data" | "profil";
+}
+
+function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
+  const combined = `${userMsg} ${botReply}`.toLowerCase();
+  const actions: ChatAction[] = [];
+
+  // 1. Pengaduan / Aspirasi / Lapor Masalah
+  const isPengaduan =
+    combined.includes("lapor") ||
+    combined.includes("pengaduan") ||
+    combined.includes("aspirasi") ||
+    combined.includes("keluhan") ||
+    combined.includes("mengadukan") ||
+    combined.includes("laporan") ||
+    combined.includes("aduan") ||
+    combined.includes("/pengaduan");
+
+  if (isPengaduan) {
+    actions.push({
+      label: "Buat Pengaduan Online",
+      url: "/pengaduan",
+      type: "pengaduan",
+    });
+  }
+
+  // 2. Administrasi Surat / Layanan Mandiri
+  const isSurat =
+    combined.includes("surat") ||
+    combined.includes("sktm") ||
+    combined.includes("sku") ||
+    combined.includes("domisili") ||
+    combined.includes("keterangan usaha") ||
+    combined.includes("pengantar ktp") ||
+    combined.includes("pengantar kk") ||
+    combined.includes("akta") ||
+    combined.includes("kematian") ||
+    combined.includes("kelahiran") ||
+    combined.includes("layanan mandiri") ||
+    combined.includes("ajukan surat") ||
+    combined.includes("/layanan");
+
+  if (isSurat) {
+    actions.push({
+      label: "Ajukan Surat Mandiri",
+      url: "/layanan",
+      type: "layanan",
+    });
+  }
+
+  // 3. Warta & Berita / Pengumuman / Kegiatan
+  const isBerita =
+    combined.includes("berita") ||
+    combined.includes("kabar") ||
+    combined.includes("pengumuman") ||
+    combined.includes("agenda") ||
+    combined.includes("kegiatan") ||
+    combined.includes("warta") ||
+    combined.includes("bansos") ||
+    combined.includes("terbaru") ||
+    combined.includes("/berita");
+
+  if (isBerita) {
+    actions.push({
+      label: "Lihat Warta & Berita",
+      url: "/berita",
+      type: "berita",
+    });
+  }
+
+  // 4. Data / Statistik
+  const isData =
+    combined.includes("jumlah penduduk") ||
+    combined.includes("data kependudukan") ||
+    combined.includes("statistik") ||
+    combined.includes("demografi") ||
+    combined.includes("/data");
+
+  if (isData && actions.length < 2) {
+    actions.push({
+      label: "Buka Data & Statistik",
+      url: "/data",
+      type: "data",
+    });
+  }
+
+  // 5. Kontak & Lokasi
+  const isProfil =
+    combined.includes("lokasi kantor") ||
+    combined.includes("alamat kantor") ||
+    combined.includes("kantor kelurahan dimana") ||
+    combined.includes("peta wilayah") ||
+    combined.includes("/profil");
+
+  if (isProfil && actions.length < 2) {
+    actions.push({
+      label: "Lihat Profil & Lokasi",
+      url: "/profil",
+      type: "profil",
+    });
+  }
+
+  return actions.slice(0, 2);
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { message, history } = body;
+    const { message, history } = await req.json();
 
-    if (!message || typeof message !== "string" || !message.trim()) {
-      return NextResponse.json(
-        { error: "Pesan tidak boleh kosong." },
-        { status: 400 }
-      );
+    if (!message || typeof message !== "string") {
+      return NextResponse.json({ error: "Pesan tidak valid." }, { status: 400 });
     }
 
-    let settings: ChatbotSettings = { ...DEFAULT_CHATBOT_SETTINGS };
+    let settings: ChatbotSettings = DEFAULT_CHATBOT_SETTINGS;
     try {
       settings = await getChatbotSettings();
     } catch (e) {
@@ -61,10 +165,10 @@ export async function POST(req: NextRequest) {
 Banjar Agung menyediakan pembuatan surat pengantar secara online di menu "Layanan Mandiri" (/layanan).
 Jenis-jenis surat yang dapat diajukan:
 ${await (async () => { try { const types = await getLetterTypes(); return types.filter(t => t.active !== false).map((t, i) => `${i + 1}. ${t.name} - ${t.desc}`).join("\n") || "Belum ada jenis surat terdaftar. Silakan hubungi petugas kelurahan."; } catch { return "Data jenis surat sedang dimuat dari database."; } })()}
-Alur pengajuan: Warga memilih jenis surat di halaman /layanan, mengisi NIK, Nama Lengkap, Keperluan, dan Nomor WhatsApp/Telepon, lalu klik Kirim Permohonan. Petugas desa akan memproses permohonan.
+Alur pengajuan: Warga memilih jenis surat di halaman /layanan, mengisi NIK, Nama Lengkap, Keperluan, dan Nomor WhatsApp/Telepon, lalu klik Kirim Permohonan. Petugas desa akan memproses permohonan. Beri tahu warga bahwa ada tombol tindakan langsung.
 
 [PENGADUAN WARGA]:
-Warga dapat menyampaikan aspirasi atau laporan pengaduan melalui halaman "Pengaduan" (/pengaduan) dengan mengisi formulir secara online. Laporan akan ditindaklanjuti oleh aparatur kelurahan.
+Warga dapat menyampaikan aspirasi atau laporan pengaduan melalui halaman "Pengaduan" (/pengaduan) dengan mengisi formulir secara online. Laporan akan ditindaklanjuti oleh aparatur kelurahan. Beri tahu warga bahwa ada tombol tindakan langsung ke /pengaduan.
         `.trim();
       } catch (e) {
         console.warn("Could not fetch live profile context:", e);
@@ -188,9 +292,12 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, "")
       .trim();
 
+    const actions = determineChatActions(message, cleanReply);
+
     return NextResponse.json({
       reply: cleanReply,
       botName: settings.botName,
+      actions,
     });
   } catch (error) {
     console.error("Chat route handler exception:", error);
