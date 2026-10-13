@@ -25,7 +25,7 @@ export interface LetterType {
   customFields?: LetterCustomFieldDef[];
 }
 
-const DEFAULT_LETTER_TYPES: LetterType[] = [];
+export const DEFAULT_LETTER_TYPES: LetterType[] = [];
 
 const ROW_STRIP_KEYS = new Set([
   "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
