@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 import { generateSampleFilledDocx, downloadBlob } from "@/lib/letter-template";
+import { DOCX_PREVIEW_CSS } from "@/lib/docx-preview-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Download, FileWarning, Eye, Loader2 } from "lucide-react";
@@ -14,12 +15,8 @@ type Props = {
   fileName?: string;
 };
 
-/**
- * Live preview template surat apa adanya (tanpa data contoh).
- * Render di dalam <iframe> terisolasi supaya CSS Tailwind/global
- * tidak ikut menimpa style bawaan docx-preview.
- * "Unduh Contoh Terisi" generate file terpisah dengan data sample.
- */
+// Live preview of template as-is (no sample data).
+// "Unduh Contoh Terisi" generates a separate filled file on demand.
 export default function LetterSimulationPreview({ templateBuffer, placeholders, customFields, fileName }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"idle" | "rendering" | "ready" | "error">("idle");
@@ -75,12 +72,8 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
         doc.open();
         doc.write(
           '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
-            'body { margin:0; background:#e8e8e8; }' +
-            '.docx-wrapper { background: transparent !important; padding: 20px !important; }' +
-            '.docx-wrapper > section.docx { background: white !important; box-shadow: 0 1px 8px rgba(0,0,0,0.2) !important; margin-bottom: 20px !important; }' +
-            'section.docx { overflow: visible !important; }' +
-            '</style></head>' +
-            '<body></body></html>'
+            DOCX_PREVIEW_CSS +
+            '</style></head><body></body></html>'
         );
         doc.close();
         const styleHost = doc.createElement("div");

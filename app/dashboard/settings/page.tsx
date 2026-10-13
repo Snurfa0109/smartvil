@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Settings as SettingsIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,22 +19,17 @@ import {
   Home,
   PhoneCall,
   MapPin,
-  Shield,
-  Clock,
-  Image as ImageIcon,
-  HeartPulse,
-  ShieldAlert,
   Tag,
   Plus,
   Trash2,
   GripVertical,
-  Lock,
-  Unlock,
-  Edit3,
-  RotateCcw,
-  BarChart3,
+  BookOpen,
+  Landmark,
   Globe,
-  ExternalLink,
+  Clock,
+  Shield,
+  Mail,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadImageToStorage } from "@/lib/uploadImage";
@@ -43,10 +38,6 @@ import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings, saveChat
 import {
   SiteSettings,
   DEFAULT_SITE_SETTINGS,
-  OfficialItem,
-  FacilityItem,
-  ExternalLinkItem,
-  DemographySettings,
   getSiteSettings,
   saveSiteSettings,
   invalidateSiteSettings,
@@ -54,7 +45,6 @@ import {
   saveBeritaCategories,
   DEFAULT_BERITA_CATEGORIES,
 } from "@/lib/site-config";
-import { BannerManagement } from "@/components/dashboard/banner-management";
 import { useToast } from "@/components/ui/toast";
 
 function SettingsContent() {
@@ -64,17 +54,7 @@ function SettingsContent() {
   const initialTab = searchParams.get("tab") || "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
-
   const [siteForm, setSiteForm] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-  const [backupSiteForm, setBackupSiteForm] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-  const [isProfileEditing, setIsProfileEditing] = useState(false);
-  const [isDataEditing, setIsDataEditing] = useState(false);
   const [siteLoading, setSiteLoading] = useState(true);
   const [savingSite, setSavingSite] = useState(false);
   const [siteMsg, setSiteMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -91,6 +71,7 @@ function SettingsContent() {
   const [savingAccount, setSavingAccount] = useState(false);
   const [accountMsg, setAccountMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const [seeding, setSeeding] = useState(false);
   const [beritaCategories, setBeritaCategories] = useState<string[]>(DEFAULT_BERITA_CATEGORIES);
   const [newCategoryInput, setNewCategoryInput] = useState("");
   const [editingCategoryIdx, setEditingCategoryIdx] = useState<number | null>(null);
@@ -111,7 +92,6 @@ function SettingsContent() {
         const config = await getSiteSettings();
 
         setSiteForm(config);
-        setBackupSiteForm(config);
       } catch (err) {
         console.error("Error loading site settings:", err);
       } finally {
@@ -142,6 +122,7 @@ function SettingsContent() {
     if (authUser?.displayName) {
       setAccountName(authUser.displayName);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSaveSite = async (sectionName = "Pengaturan") => {
@@ -155,207 +136,34 @@ function SettingsContent() {
         text: `Berhasil! ${sectionName} telah diperbarui dan otomatis tampil di halaman website.`,
       });
       setTimeout(() => setSiteMsg(null), 6000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving site settings:", err);
       setSiteMsg({
         type: "error",
-        text: err.message || "Gagal menyimpan perubahan ke database.",
+        text: err instanceof Error ? err.message : "Gagal menyimpan perubahan ke database.",
       });
     } finally {
       setSavingSite(false);
     }
   };
 
-  const handleSaveProfile = async () => {
-    setSavingSite(true);
-    setSiteMsg(null);
-    try {
-      await saveSiteSettings(siteForm);
-      invalidateSiteSettings();
-      setBackupSiteForm(siteForm);
-      setIsProfileEditing(false);
-      success("Profil kelurahan berhasil disimpan dan terkunci kembali.");
-      setSiteMsg({
-        type: "success",
-        text: "Berhasil! Profil kelurahan, aparatur, dan fasilitas umum telah diperbarui di website.",
-      });
-      setTimeout(() => setSiteMsg(null), 5000);
-    } catch (err: any) {
-      console.error("Error saving profile:", err);
-      showError(err.message || "Gagal menyimpan perubahan profil.");
-    } finally {
-      setSavingSite(false);
-    }
-  };
-
-  const handleCancelProfile = () => {
-    setSiteForm(backupSiteForm);
-    setIsProfileEditing(false);
-    setSiteMsg(null);
-  };
-
-  const handleAddOfficial = () => {
-    const newOff: OfficialItem = {
-      id: "off-" + Date.now(),
-      name: "",
-      title: "",
-      nip: "",
-      photo: "",
-      roleBadge: "STAF",
-      division: "Pelayanan",
-      duties: "",
-    };
-    setSiteForm((p) => ({
-      ...p,
-      officials: [...(p.officials || []), newOff],
-    }));
-  };
-
-  const handleUpdateOfficial = (id: string, field: keyof OfficialItem, value: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      officials: (p.officials || []).map((off) =>
-        off.id === id ? { ...off, [field]: value } : off
-      ),
-    }));
-  };
-
-  const handleDeleteOfficial = (id: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      officials: (p.officials || []).filter((off) => off.id !== id),
-    }));
-  };
-
-  const handleOfficialPhotoUpload = async (
+  const handlePhotoUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    officialId: string
+    field: keyof SiteSettings
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingPhoto(officialId);
+    const key = field as string;
+    setUploadingPhoto(key);
     try {
       const url = await uploadImageToStorage(file, "aparatur");
-      setSiteForm((p) => ({
-        ...p,
-        officials: (p.officials || []).map((off) =>
-          off.id === officialId ? { ...off, photo: url } : off
-        ),
-      }));
-      success("Foto aparatur berhasil diunggah.");
+      setSiteForm((p) => ({ ...p, [field]: url }));
     } catch (err) {
-      console.error("Official photo upload error:", err);
-      showError("Gagal mengunggah foto. Pastikan file gambar tidak melebihi 5MB.");
+      console.error("Photo upload error:", err);
+      showError("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
     } finally {
       setUploadingPhoto(null);
     }
-  };
-
-  const handleRemoveOfficialPhoto = (officialId: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      officials: (p.officials || []).map((off) =>
-        off.id === officialId ? { ...off, photo: "" } : off
-      ),
-    }));
-  };
-
-  const handleAddFacility = () => {
-    const newFac: FacilityItem = {
-      id: "fac-" + Date.now(),
-      title: "",
-      desc: "",
-      category: "Fasilitas Umum",
-    };
-    setSiteForm((p) => ({
-      ...p,
-      facilities: [...(p.facilities || []), newFac],
-    }));
-  };
-
-  const handleUpdateFacility = (id: string, field: keyof FacilityItem, value: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      facilities: (p.facilities || []).map((fac) =>
-        fac.id === id ? { ...fac, [field]: value } : fac
-      ),
-    }));
-  };
-
-  const handleDeleteFacility = (id: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      facilities: (p.facilities || []).filter((fac) => fac.id !== id),
-    }));
-  };
-
-  const handleSaveDataSettings = async () => {
-    setSavingSite(true);
-    setSiteMsg(null);
-    try {
-      await saveSiteSettings(siteForm);
-      invalidateSiteSettings();
-      setBackupSiteForm(siteForm);
-      setIsDataEditing(false);
-      success("Data statistik demografi & direktori layanan berhasil disimpan.");
-      setSiteMsg({
-        type: "success",
-        text: "Berhasil! Statistik demografi dan tautan layanan telah diperbarui di website.",
-      });
-      setTimeout(() => setSiteMsg(null), 5000);
-    } catch (err: any) {
-      console.error("Error saving data settings:", err);
-      showError(err.message || "Gagal menyimpan pengaturan data.");
-    } finally {
-      setSavingSite(false);
-    }
-  };
-
-  const handleCancelDataSettings = () => {
-    setSiteForm(backupSiteForm);
-    setIsDataEditing(false);
-    setSiteMsg(null);
-  };
-
-  const handleUpdateDemography = (field: keyof DemographySettings, value: any) => {
-    setSiteForm((p) => ({
-      ...p,
-      demography: {
-        ...(p.demography || DEFAULT_SITE_SETTINGS.demography!),
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleAddExternalLink = () => {
-    const newLink: ExternalLinkItem = {
-      id: "link-" + Date.now(),
-      name: "",
-      desc: "",
-      url: "https://",
-      badge: "Layanan",
-      category: "Bantuan Sosial & Kesejahteraan",
-    };
-    setSiteForm((p) => ({
-      ...p,
-      externalLinks: [...(p.externalLinks || []), newLink],
-    }));
-  };
-
-  const handleUpdateExternalLink = (id: string, field: keyof ExternalLinkItem, value: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      externalLinks: (p.externalLinks || []).map((lnk) =>
-        lnk.id === id ? { ...lnk, [field]: value } : lnk
-      ),
-    }));
-  };
-
-  const handleDeleteExternalLink = (id: string) => {
-    setSiteForm((p) => ({
-      ...p,
-      externalLinks: (p.externalLinks || []).filter((lnk) => lnk.id !== id),
-    }));
   };
 
   const handleSaveChatbot = async () => {
@@ -420,716 +228,449 @@ function SettingsContent() {
       }
 
       setAccountMsg({ type: "success", text: "Informasi profil akun & kata sandi berhasil diperbarui!" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating account:", err);
-      setAccountMsg({ type: "error", text: err.message || "Gagal memperbarui akun." });
+      setAccountMsg({ type: "error", text: err instanceof Error ? err.message : "Gagal memperbarui akun." });
     } finally {
       setSavingAccount(false);
     }
   };
 
+  const handleSeed = async () => {
+    const confirmed = await showConfirm({
+      title: "Isi Database Dummy?",
+      message: "Apakah anda yakin ingin mengisi database dengan data dummy? Ini akan menambahkan data baru.",
+      variant: "danger",
+      confirmLabel: "Ya, Isi Data",
+    });
+    if (confirmed) {
+      setSeeding(true);
+      try {
+        const token = getToken();
+        const res = await fetch("/api/seed", { 
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal mengisi database.");
+        success("Database berhasil diisi:\n" + (data.logs || []).join("\n"));
+      } catch (err: unknown) {
+        console.error("Seed error:", err);
+        showError("Gagal mengisi database: " + (err instanceof Error ? err.message : "Unknown error"));
+      } finally {
+        setSeeding(false);
+      }
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Pengaturan & Kelola Konten</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Ubah seluruh teks profil kelurahan, beranda, kontak, nomor darurat, dan chatbot tanpa ubah kode HTML.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
+            <SettingsIcon className="h-[18px] w-[18px] text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Pengaturan & Konten</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">
+              Kelola profil kelurahan, beranda, kontak, dan chatbot
+            </p>
+          </div>
         </div>
       </div>
 
       {siteMsg && (
         <div
-          className={`p-4 rounded-xl text-sm flex items-center gap-3 border shadow-xs ${
+          className={`p-3 rounded-xl text-[11px] font-bold flex items-center gap-2 border ${
             siteMsg.type === "success"
-              ? "bg-emerald-50 text-emerald-900 border-emerald-200"
-              : "bg-rose-50 text-rose-900 border-rose-200"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
           }`}
         >
-          <CheckCircle className={`h-5 w-5 shrink-0 ${siteMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
-          <span className="font-medium">{siteMsg.text}</span>
+          <CheckCircle className={`h-4 w-4 shrink-0 ${siteMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
+          <span>{siteMsg.text}</span>
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
-          {/* Sub-Navigation Sidebar (UCD Gold Standard: No horizontal scrollbars, logical chunking) */}
-          <aside className="w-full lg:w-64 shrink-0 bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs lg:sticky lg:top-4">
-            <div className="space-y-4">
-              {/* Kelompok 1: Konten Publik */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+        <TabsList className="bg-slate-100 p-0.5 flex flex-wrap h-auto gap-0.5 border border-slate-200/70 rounded-xl">
+          <TabsTrigger value="profile" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Building className="h-3.5 w-3.5" /> Profil
+          </TabsTrigger>
+          <TabsTrigger value="home" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Home className="h-3.5 w-3.5" /> Beranda
+          </TabsTrigger>
+          <TabsTrigger value="contact" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <PhoneCall className="h-3.5 w-3.5" /> Kontak
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Tag className="h-3.5 w-3.5" /> Kategori
+          </TabsTrigger>
+          <TabsTrigger value="chatbot" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Bot className="h-3.5 w-3.5" /> Chatbot
+          </TabsTrigger>
+          <TabsTrigger value="account" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <User className="h-3.5 w-3.5" /> Akun
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <Database className="h-3.5 w-3.5" /> Sistem
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile" className="space-y-6">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <FileText className="h-4 w-4 text-[#1b365d]" />
+              </div>
               <div>
-                <p className="px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  Konten Publik
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("profile")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "profile"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <Building className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Profil Kelurahan</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("home")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "home"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <Home className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Beranda & Loket</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("data")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "data"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <BarChart3 className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Informasi & Data</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("contact")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "contact"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <PhoneCall className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Kontak & Medsos</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("banners")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "banners"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <ImageIcon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Banner & Kegiatan</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Kelompok 2: Konfigurasi & Akun */}
-              <div className="pt-2 border-t border-slate-100">
-                <p className="px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  Konfigurasi & Akun
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("categories")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "categories"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <Tag className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Kategori Berita</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("chatbot")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "chatbot"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <Bot className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Layanan Chatbot</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("account")}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all text-left ${
-                      activeTab === "account"
-                        ? "bg-[#1b365d] text-white shadow-xs font-bold"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <User className="h-4 w-4 shrink-0" />
-                    <span className="truncate">Akun Admin</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Panel Konten Pengaturan */}
-          <div className="flex-1 min-w-0 w-full space-y-6">
-            <TabsContent value="profile" className="space-y-6">
-          {/* Banner Status Mode Kunci / Edit (Defensive Accidental Edit Prevention) */}
-          <div
-            className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs ${
-              isProfileEditing
-                ? "bg-amber-50/70 border-amber-300 text-amber-950"
-                : "bg-slate-50 border-slate-200 text-slate-800"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isProfileEditing
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {isProfileEditing ? (
-                  <Unlock className="w-5 h-5 animate-pulse" />
-                ) : (
-                  <Lock className="w-5 h-5" />
-                )}
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm sm:text-base">
-                    {isProfileEditing
-                      ? "Mode Pengeditan Aktif (Terbuka)"
-                      : "Data Profil Sedang Terkunci (Perlindungan Data)"}
-                  </span>
-                  <span
-                    className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      isProfileEditing
-                        ? "bg-amber-200 text-amber-900"
-                        : "bg-slate-200 text-slate-700"
-                    }`}
-                  >
-                    {isProfileEditing ? "Editing" : "Locked"}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                  {isProfileEditing
-                    ? "Anda dapat mengubah narasi sejarah, visi-misi, menambah/menghapus aparatur, mengunggah foto, dan fasilitas umum. Pastikan mengklik 'Simpan Perubahan' setelah selesai."
-                    : "Formulir dikunci otomatis untuk mencegah data profil, aparatur, atau fasilitas umum terhapus atau tergeser secara tidak sengaja saat menggulir layar."}
+                <p className="text-[13px] font-bold text-slate-800">Judul Halaman Profil</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Teks judul utama dan subjudul yang muncul di bagian paling atas halaman <code>/profil</code>.
                 </p>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-              {isProfileEditing ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancelProfile}
-                    disabled={savingSite}
-                    className="border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                    Batal
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleSaveProfile}
-                    disabled={savingSite}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs"
-                  >
-                    <Save className="w-3.5 h-3.5 mr-1.5" />
-                    {savingSite ? "Menyimpan..." : "Simpan & Kunci"}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setIsProfileEditing(true)}
-                  className="bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold text-xs shadow-xs"
-                >
-                  <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-                  Buka Kunci &amp; Edit Profil
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* 1. Judul & Subjudul */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                <span>Judul Halaman Profil</span>
-                {!isProfileEditing && (
-                  <span className="text-xs font-normal text-slate-500 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Hanya Baca
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Teks judul utama dan subjudul yang muncul di bagian paling atas halaman <code>/profil</code>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="prof-title" className="text-xs font-semibold">Judul Halaman Profil</Label>
+            <div className="p-5 pt-3 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="prof-title">Judul Halaman Profil</Label>
                 <Input
                   id="prof-title"
                   value={siteForm.title}
                   onChange={(e) => setSiteForm((p) => ({ ...p, title: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="Contoh: Profil Kelurahan Banjar Agung"
-                  className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="prof-subtitle" className="text-xs font-semibold">Subjudul &amp; Deskripsi Singkat</Label>
+              <div className="space-y-2">
+                <Label htmlFor="prof-subtitle">Subjudul & Deskripsi Singkat</Label>
                 <Input
                   id="prof-subtitle"
                   value={siteForm.subtitle}
                   onChange={(e) => setSiteForm((p) => ({ ...p, subtitle: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="Deskripsi wilayah kecamatan & kota"
-                  className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* 2. Sejarah, Visi, Misi */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                <span>Sejarah, Visi &amp; Misi Kelurahan</span>
-                {!isProfileEditing && (
-                  <span className="text-xs font-normal text-slate-500 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Hanya Baca
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Ubah narasi sejarah desa, visi jangka panjang, dan poin-poin misi kelurahan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-1.5">
-                <Label htmlFor="prof-history" className="text-xs font-semibold">Narasi Sejarah Kelurahan</Label>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Sejarah, Visi & Misi Kelurahan</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Ubah narasi sejarah desa, visi jangka panjang, dan poin-poin misi kelurahan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="prof-history">Narasi Sejarah Kelurahan</Label>
                 <Textarea
                   id="prof-history"
                   rows={5}
                   value={siteForm.history}
                   onChange={(e) => setSiteForm((p) => ({ ...p, history: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="Tuliskan latar belakang sejarah..."
-                  className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                 />
-                <p className="text-[11px] text-slate-500">Pisahkan paragraf dengan baris baru (enter ganda).</p>
+                <p className="text-xs text-slate-500">Pisahkan paragraf dengan baris baru (enter ganda).</p>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="prof-vision" className="text-xs font-semibold">Visi Kelurahan</Label>
+              <div className="space-y-2">
+                <Label htmlFor="prof-vision">Visi Kelurahan</Label>
                 <Textarea
                   id="prof-vision"
                   rows={3}
                   value={siteForm.vision}
                   onChange={(e) => setSiteForm((p) => ({ ...p, vision: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="Visi kelurahan..."
-                  className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="prof-mission" className="text-xs font-semibold">Misi Kelurahan</Label>
+              <div className="space-y-2">
+                <Label htmlFor="prof-mission">Misi Kelurahan</Label>
                 <Textarea
                   id="prof-mission"
                   rows={5}
                   value={siteForm.mission}
                   onChange={(e) => setSiteForm((p) => ({ ...p, mission: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="Poin misi kelurahan (1 poin per baris)..."
-                  className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                 />
-                <p className="text-[11px] text-slate-500">Tuliskan setiap poin misi pada baris baru (enter). Otomatis diformat sebagai daftar berpoin di web.</p>
+                <p className="text-xs text-slate-500">Tuliskan setiap poin misi pada baris baru (enter). Otomatis diformat sebagai daftar berpoin di web.</p>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* 3. Struktur Organisasi & Aparatur Kelurahan (Dinamis & Fleksibel) */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <User className="h-5 w-5 text-[#1b365d]" />
-                    <span>Struktur Organisasi &amp; Aparatur Kelurahan</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Kelola foto resmi, nama, jabatan, NIP, dan tugas aparatur. Anda dapat menambah atau mengurangi aparatur secara fleksibel.
-                  </CardDescription>
-                </div>
-                {isProfileEditing && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAddOfficial}
-                    className="bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold text-xs shadow-xs self-start sm:self-auto"
-                  >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Tambah Aparatur
-                  </Button>
-                )}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Landmark className="h-4 w-4 text-[#1b365d]" />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(!siteForm.officials || siteForm.officials.length === 0) ? (
-                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                  <User className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">Belum ada data aparatur</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                    {isProfileEditing
-                      ? "Klik tombol '+ Tambah Aparatur' di atas untuk memasukkan profil aparatur pertama."
-                      : "Buka kunci pengeditan terlebih dahulu untuk menambahkan aparatur kelurahan."}
-                  </p>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Struktur Organisasi & Aparatur Kelurahan</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Atur nama, jabatan, dan <strong>foto resmi</strong> pejabat yang tampil pada bagan struktur organisasi <code>/profil</code>.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-6">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="font-semibold text-sm text-[#1b365d] flex items-center gap-2">
+                  <User className="h-4 w-4" /> Pimpinan / Kepala Kelurahan (Lurah)
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {siteForm.officials.map((off, idx) => (
-                    <div
-                      key={off.id || idx}
-                      className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-4 relative transition-all hover:border-slate-300"
-                    >
-                      {/* Baris Atas Kartu: Nomor & Aksi */}
-                      <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-xs font-bold flex items-center justify-center">
-                            {idx + 1}
-                          </span>
-                          <span className="text-xs font-bold text-slate-800">
-                            {off.name ? off.name : `Aparatur #${idx + 1}`}
-                          </span>
-                          {off.roleBadge && (
-                            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">
-                              {off.roleBadge}
-                            </span>
-                          )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Foto Resmi</Label>
+                    <div className="flex flex-col items-center gap-2">
+                      {siteForm.headPhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={siteForm.headPhoto} alt="Lurah" className="w-20 h-20 rounded-full object-cover border-2 border-[#1b365d]/20" />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
+                          <User className="h-8 w-8" />
                         </div>
-                        {isProfileEditing && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteOfficial(off.id)}
-                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 h-8 px-2 text-xs"
-                            title="Hapus aparatur ini"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
-                            Hapus
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Layout Foto & Data Form */}
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                        {/* Kolom Foto */}
-                        <div className="md:col-span-3 flex flex-col items-center gap-2 text-center">
-                          <Label className="text-xs font-semibold text-slate-700">Foto Resmi</Label>
-                          <div className="relative">
-                            {off.photo ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={off.photo}
-                                alt={off.name || "Aparatur"}
-                                className="w-24 h-24 rounded-full object-cover border-2 border-[#1b365d]/20 shadow-xs"
-                              />
-                            ) : (
-                              <div className="w-24 h-24 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center text-slate-400">
-                                <User className="h-10 w-10" />
-                              </div>
-                            )}
-                          </div>
-
-                          {isProfileEditing && (
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <label className="cursor-pointer">
-                                <span className="text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium text-slate-700 inline-block shadow-2xs">
-                                  {uploadingPhoto === off.id ? "Mengunggah..." : "Unggah"}
-                                </span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => handleOfficialPhotoUpload(e, off.id)}
-                                  disabled={!isProfileEditing || siteLoading || uploadingPhoto !== null}
-                                />
-                              </label>
-                              {off.photo && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveOfficialPhoto(off.id)}
-                                  className="text-xs px-2 py-1.5 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
-                                  title="Hapus foto ini"
-                                >
-                                  Hapus
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Kolom Input Form */}
-                        <div className="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1 sm:col-span-2">
-                            <Label className="text-xs font-semibold text-slate-700">Nama Lengkap &amp; Gelar</Label>
-                            <Input
-                              value={off.name}
-                              onChange={(e) => handleUpdateOfficial(off.id, "name", e.target.value)}
-                              disabled={!isProfileEditing || siteLoading}
-                              placeholder="Contoh: H. Ahmad Fauzi, S.Sos., M.Si."
-                              className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-xs font-semibold text-slate-700">Jabatan Resmi</Label>
-                            <Input
-                              value={off.title}
-                              onChange={(e) => handleUpdateOfficial(off.id, "title", e.target.value)}
-                              disabled={!isProfileEditing || siteLoading}
-                              placeholder="Contoh: Kepala Kelurahan (Lurah)"
-                              className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-xs font-semibold text-slate-700">NIP (Nomor Induk Pegawai)</Label>
-                            <Input
-                              value={off.nip || ""}
-                              onChange={(e) => handleUpdateOfficial(off.id, "nip", e.target.value)}
-                              disabled={!isProfileEditing || siteLoading}
-                              placeholder="Contoh: 19780512 200501 1 004"
-                              className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-xs font-semibold text-slate-700">Kategori Hirarki / Posisi</Label>
-                            <Input
-                              value={off.roleBadge || ""}
-                              onChange={(e) => handleUpdateOfficial(off.id, "roleBadge", e.target.value)}
-                              disabled={!isProfileEditing || siteLoading}
-                              placeholder="Contoh: PIMPINAN / SEKRETARIAT / KASI / STAF"
-                              className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-xs font-semibold text-slate-700">Divisi / Seksi</Label>
-                            <Input
-                              value={off.division || ""}
-                              onChange={(e) => handleUpdateOfficial(off.id, "division", e.target.value)}
-                              disabled={!isProfileEditing || siteLoading}
-                              placeholder="Contoh: Pemerintahan & Trantib / Pelayanan Umum"
-                              className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                            />
-                          </div>
-
-                          <div className="space-y-1 sm:col-span-2">
-                            <Label className="text-xs font-semibold text-slate-700">Tugas Pokok &amp; Tanggung Jawab Singkat</Label>
-                            <Input
-                              value={off.duties || ""}
-                              onChange={(e) => handleUpdateOfficial(off.id, "duties", e.target.value)}
-                              disabled={!isProfileEditing || siteLoading}
-                              placeholder="Contoh: Penanggung jawab kebijakan wilayah dan legalitas surat..."
-                              className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      )}
+                      <label className="cursor-pointer">
+                        <span className="text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium text-slate-700">
+                          {uploadingPhoto === "headPhoto" ? "Mengunggah..." : "Unggah Foto"}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "headPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
+                      </label>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 4. Fasilitas & Pemukiman Utama (Dinamis & Fleksibel) */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Home className="h-5 w-5 text-[#1b365d]" />
-                    <span>Fasilitas Publik &amp; Kawasan Pemukiman</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Kelola fasilitas umum, sarana kesehatan primer, balai pertemuan, dan pemukiman yang disorot pada halaman profil.
-                  </CardDescription>
-                </div>
-                {isProfileEditing && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAddFacility}
-                    className="bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold text-xs shadow-xs self-start sm:self-auto"
-                  >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Tambah Fasilitas
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(!siteForm.facilities || siteForm.facilities.length === 0) ? (
-                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                  <Home className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-slate-700">Belum ada data fasilitas umum</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                    {isProfileEditing
-                      ? "Klik '+ Tambah Fasilitas' untuk memasukkan fasilitas publik atau perumahan."
-                      : "Buka kunci pengeditan terlebih dahulu untuk menambahkan fasilitas."}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {siteForm.facilities.map((fac, idx) => (
-                    <div
-                      key={fac.id || idx}
-                      className="p-4 rounded-xl bg-slate-50/70 border border-slate-200 space-y-3 relative hover:border-slate-300 transition-all flex flex-col justify-between"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                          <span className="text-xs font-bold text-slate-700">
-                            Fasilitas #{idx + 1}
-                          </span>
-                          {isProfileEditing && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteFacility(fac.id)}
-                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 h-7 px-2 text-xs"
-                              title="Hapus fasilitas ini"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold text-slate-700">Nama / Judul Fasilitas</Label>
-                          <Input
-                            placeholder="Contoh: Balai Warga & Puskesmas Pembantu"
-                            value={fac.title}
-                            onChange={(e) => handleUpdateFacility(fac.id, "title", e.target.value)}
-                            disabled={!isProfileEditing || siteLoading}
-                            className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold text-slate-700">Kategori</Label>
-                          <Input
-                            placeholder="Contoh: Fasilitas Sosial / Pemukiman"
-                            value={fac.category || ""}
-                            onChange={(e) => handleUpdateFacility(fac.id, "category", e.target.value)}
-                            disabled={!isProfileEditing || siteLoading}
-                            className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold text-slate-700">Deskripsi Singkat</Label>
-                          <Textarea
-                            rows={3}
-                            placeholder="Deskripsi sarana dan kegunaan..."
-                            value={fac.desc}
-                            onChange={(e) => handleUpdateFacility(fac.id, "desc", e.target.value)}
-                            disabled={!isProfileEditing || siteLoading}
-                            className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                          />
-                        </div>
-                      </div>
+                  </div>
+                  <div className="md:col-span-2 grid grid-cols-1 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="head-name">Nama Lengkap & Gelar</Label>
+                      <Input id="head-name" value={siteForm.headName} onChange={(e) => setSiteForm((p) => ({ ...p, headName: e.target.value }))} disabled={siteLoading} />
                     </div>
-                  ))}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="head-title">Jabatan Resmi</Label>
+                      <Input id="head-title" value={siteForm.headTitle} onChange={(e) => setSiteForm((p) => ({ ...p, headTitle: e.target.value }))} disabled={siteLoading} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="head-nip">NIP (untuk tanda tangan surat)</Label>
+                      <Input id="head-nip" value={siteForm.headNip} onChange={(e) => setSiteForm((p) => ({ ...p, headNip: e.target.value }))} disabled={siteLoading} placeholder="19780512 200501 1 004" />
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="font-semibold text-sm text-blue-700 flex items-center gap-2">
+                  <User className="h-4 w-4" /> Sekretaris Kelurahan (Seklur)
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Foto Resmi</Label>
+                    <div className="flex flex-col items-center gap-2">
+                      {siteForm.secretaryPhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={siteForm.secretaryPhoto} alt="Seklur" className="w-20 h-20 rounded-full object-cover border-2 border-blue-200" />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
+                          <User className="h-8 w-8" />
+                        </div>
+                      )}
+                      <label className="cursor-pointer">
+                        <span className="text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium text-slate-700">
+                          {uploadingPhoto === "secretaryPhoto" ? "Mengunggah..." : "Unggah Foto"}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "secretaryPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2 grid grid-cols-1 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sec-name">Nama Lengkap & Gelar</Label>
+                      <Input id="sec-name" value={siteForm.secretaryName} onChange={(e) => setSiteForm((p) => ({ ...p, secretaryName: e.target.value }))} disabled={siteLoading} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sec-title">Jabatan Resmi</Label>
+                      <Input id="sec-title" value={siteForm.secretaryTitle} onChange={(e) => setSiteForm((p) => ({ ...p, secretaryTitle: e.target.value }))} disabled={siteLoading} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="font-semibold text-sm text-emerald-700 flex items-center gap-2">
+                    <User className="h-4 w-4" /> Kasi Pemerintahan & Trantib
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {siteForm.kasiPemerintahanPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={siteForm.kasiPemerintahanPhoto} alt="Kasi" className="w-14 h-14 rounded-full object-cover border border-emerald-200 shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                        <User className="h-6 w-6" />
+                      </div>
+                    )}
+                    <label className="cursor-pointer">
+                      <span className="text-xs px-2.5 py-1 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 font-medium text-slate-700">
+                        {uploadingPhoto === "kasiPemerintahanPhoto" ? "..." : "Unggah Foto"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "kasiPemerintahanPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="kasi-pem-name">Nama Lengkap & Gelar</Label>
+                    <Input id="kasi-pem-name" value={siteForm.kasiPemerintahanName} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPemerintahanName: e.target.value }))} disabled={siteLoading} />
+                    <Label htmlFor="kasi-pem-title">Jabatan</Label>
+                    <Input id="kasi-pem-title" value={siteForm.kasiPemerintahanTitle} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPemerintahanTitle: e.target.value }))} disabled={siteLoading} />
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="font-semibold text-sm text-amber-700 flex items-center gap-2">
+                    <User className="h-4 w-4" /> Kasi Pelayanan Umum
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {siteForm.kasiPelayananPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={siteForm.kasiPelayananPhoto} alt="Kasi" className="w-14 h-14 rounded-full object-cover border border-amber-200 shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                        <User className="h-6 w-6" />
+                      </div>
+                    )}
+                    <label className="cursor-pointer">
+                      <span className="text-xs px-2.5 py-1 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 font-medium text-slate-700">
+                        {uploadingPhoto === "kasiPelayananPhoto" ? "..." : "Unggah Foto"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "kasiPelayananPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="kasi-pel-name">Nama Lengkap & Gelar</Label>
+                    <Input id="kasi-pel-name" value={siteForm.kasiPelayananName} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPelayananName: e.target.value }))} disabled={siteLoading} />
+                    <Label htmlFor="kasi-pel-title">Jabatan</Label>
+                    <Input id="kasi-pel-title" value={siteForm.kasiPelayananTitle} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPelayananTitle: e.target.value }))} disabled={siteLoading} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Building className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Fasilitas & Pemukiman Utama</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Atur 3 fasilitas dan kawasan pemukiman utama yang disorot pada halaman <code>/profil</code>.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <Label className="font-bold text-slate-800">Fasilitas / Wilayah 1</Label>
+                  <Input
+                    placeholder="Judul Fasilitas 1"
+                    value={siteForm.facility1Title}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, facility1Title: e.target.value }))}
+                    disabled={siteLoading}
+                  />
+                  <Textarea
+                    rows={3}
+                    placeholder="Deskripsi ringkas..."
+                    value={siteForm.facility1Desc}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, facility1Desc: e.target.value }))}
+                    disabled={siteLoading}
+                  />
+                </div>
 
-          {/* 5. Geografis & Batas Wilayah */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                <span>Geografis &amp; Batas Wilayah</span>
-                {!isProfileEditing && (
-                  <span className="text-xs font-normal text-slate-500 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Hanya Baca
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Informasi luas wilayah, titik koordinat, dan batas administratif kelurahan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <Label className="font-bold text-slate-800">Fasilitas / Wilayah 2</Label>
+                  <Input
+                    placeholder="Judul Fasilitas 2"
+                    value={siteForm.facility2Title}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, facility2Title: e.target.value }))}
+                    disabled={siteLoading}
+                  />
+                  <Textarea
+                    rows={3}
+                    placeholder="Deskripsi ringkas..."
+                    value={siteForm.facility2Desc}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, facility2Desc: e.target.value }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <Label className="font-bold text-slate-800">Fasilitas / Wilayah 3</Label>
+                  <Input
+                    placeholder="Judul Fasilitas 3"
+                    value={siteForm.facility3Title}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, facility3Title: e.target.value }))}
+                    disabled={siteLoading}
+                  />
+                  <Textarea
+                    rows={3}
+                    placeholder="Deskripsi ringkas..."
+                    value={siteForm.facility3Desc}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, facility3Desc: e.target.value }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Globe className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Geografis & Batas Wilayah</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Informasi luas wilayah, titik koordinat, dan batas administratif kelurahan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="geo-area" className="text-xs font-semibold">Luas Wilayah</Label>
+                  <Label htmlFor="geo-area">Luas Wilayah</Label>
                   <Input
                     id="geo-area"
                     value={siteForm.geoArea}
                     onChange={(e) => setSiteForm((p) => ({ ...p, geoArea: e.target.value }))}
-                    disabled={!isProfileEditing || siteLoading}
+                    disabled={siteLoading}
                     placeholder="Contoh: 348 Ha"
-                    className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="geo-coord" className="text-xs font-semibold">Titik Koordinat</Label>
+                  <Label htmlFor="geo-coord">Titik Koordinat</Label>
                   <Input
                     id="geo-coord"
                     value={siteForm.geoCoord}
                     onChange={(e) => setSiteForm((p) => ({ ...p, geoCoord: e.target.value }))}
-                    disabled={!isProfileEditing || siteLoading}
-                    placeholder="Contoh: 6°7'25&quot;S 106°11'54&quot;E"
-                    className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                    disabled={siteLoading}
+                    placeholder="Contoh: 6Â°7â€²25â€³S 106Â°11â€²54â€³E"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="geo-area-desc" className="text-xs font-semibold">Keterangan Wilayah</Label>
+                  <Label htmlFor="geo-area-desc">Keterangan Wilayah</Label>
                   <Input
                     id="geo-area-desc"
                     value={siteForm.geoAreaDesc}
                     onChange={(e) => setSiteForm((p) => ({ ...p, geoAreaDesc: e.target.value }))}
-                    disabled={!isProfileEditing || siteLoading}
-                    className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                    disabled={siteLoading}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="geo-coord-desc" className="text-xs font-semibold">Keterangan Koordinat</Label>
+                  <Label htmlFor="geo-coord-desc">Keterangan Koordinat</Label>
                   <Input
                     id="geo-coord-desc"
                     value={siteForm.geoCoordDesc}
                     onChange={(e) => setSiteForm((p) => ({ ...p, geoCoordDesc: e.target.value }))}
-                    disabled={!isProfileEditing || siteLoading}
-                    className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                    disabled={siteLoading}
                   />
                 </div>
               </div>
@@ -1143,8 +684,7 @@ function SettingsContent() {
                       id="b-north"
                       value={siteForm.boundaryNorth}
                       onChange={(e) => setSiteForm((p) => ({ ...p, boundaryNorth: e.target.value }))}
-                      disabled={!isProfileEditing || siteLoading}
-                      className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                      disabled={siteLoading}
                     />
                   </div>
                   <div className="space-y-1">
@@ -1153,8 +693,7 @@ function SettingsContent() {
                       id="b-south"
                       value={siteForm.boundarySouth}
                       onChange={(e) => setSiteForm((p) => ({ ...p, boundarySouth: e.target.value }))}
-                      disabled={!isProfileEditing || siteLoading}
-                      className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                      disabled={siteLoading}
                     />
                   </div>
                   <div className="space-y-1">
@@ -1163,8 +702,7 @@ function SettingsContent() {
                       id="b-east"
                       value={siteForm.boundaryEast}
                       onChange={(e) => setSiteForm((p) => ({ ...p, boundaryEast: e.target.value }))}
-                      disabled={!isProfileEditing || siteLoading}
-                      className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                      disabled={siteLoading}
                     />
                   </div>
                   <div className="space-y-1">
@@ -1173,131 +711,105 @@ function SettingsContent() {
                       id="b-west"
                       value={siteForm.boundaryWest}
                       onChange={(e) => setSiteForm((p) => ({ ...p, boundaryWest: e.target.value }))}
-                      disabled={!isProfileEditing || siteLoading}
-                      className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
+                      disabled={siteLoading}
                     />
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* 6. Identitas & Kode Wilayah */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-[#1b365d]" /> Identitas &amp; Kode Wilayah
-                </span>
-                {!isProfileEditing && (
-                  <span className="text-xs font-normal text-slate-500 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Hanya Baca
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Kode resmi Kemendagri, kode pos, dan tautan Google Maps yang tampil di halaman profil &amp; footer.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Identitas & Kode Wilayah</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Kode resmi Kemendagri, kode pos, dan tautan Google Maps yang tampil di halaman profil &amp; footer.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="kemendagri-code" className="text-xs font-semibold">Kode Wilayah Kemendagri</Label>
+                  <Label htmlFor="kemendagri-code">Kode Wilayah Kemendagri</Label>
                   <Input
                     id="kemendagri-code"
                     value={siteForm.kemendagriCode}
                     onChange={(e) => setSiteForm((p) => ({ ...p, kemendagriCode: e.target.value }))}
-                    disabled={!isProfileEditing || siteLoading}
+                    disabled={siteLoading}
                     placeholder="Contoh: 36.73.05.1004"
-                    className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                   />
                   <p className="text-[11px] text-slate-500">Kode Kemendagri resmi Kelurahan (format: XX.XX.XX.XXXX).</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="postal-code" className="text-xs font-semibold">Kode Pos</Label>
+                  <Label htmlFor="postal-code">Kode Pos</Label>
                   <Input
                     id="postal-code"
                     value={siteForm.postalCode}
                     onChange={(e) => setSiteForm((p) => ({ ...p, postalCode: e.target.value }))}
-                    disabled={!isProfileEditing || siteLoading}
+                    disabled={siteLoading}
                     placeholder="Contoh: 42122"
-                    className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="maps-url" className="text-xs font-semibold">Tautan Google Maps (URL Langsung)</Label>
+                <Label htmlFor="maps-url">Tautan Google Maps (URL Langsung)</Label>
                 <Input
                   id="maps-url"
                   value={siteForm.googleMapsUrl}
                   onChange={(e) => setSiteForm((p) => ({ ...p, googleMapsUrl: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="https://maps.google.com/?q=Kelurahan+Banjar+Agung"
-                  className={!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
                 />
                 <p className="text-[11px] text-slate-500">Tautan ini digunakan untuk tombol &quot;Buka di Google Maps&quot; di footer.</p>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="maps-embed" className="text-xs font-semibold">Kode Embed Google Maps (iframe src)</Label>
+                <Label htmlFor="maps-embed">Kode Embed Google Maps (iframe src)</Label>
                 <Textarea
                   id="maps-embed"
                   rows={3}
                   value={siteForm.googleMapsEmbed}
                   onChange={(e) => setSiteForm((p) => ({ ...p, googleMapsEmbed: e.target.value }))}
-                  disabled={!isProfileEditing || siteLoading}
+                  disabled={siteLoading}
                   placeholder="https://www.google.com/maps/embed?pb=..."
-                  className={`font-mono text-xs ${!isProfileEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}`}
+                  className="font-mono text-xs"
                 />
                 <p className="text-[11px] text-slate-500">
-                  Buka Google Maps &rarr; Bagikan &rarr; Sematkan Peta &rarr; Salin URL dari atribut <code>src</code> pada kode iframe.
+                  Buka Google Maps â†’ Bagikan â†’ Sematkan Peta â†’ Salin URL dari atribut <code>src</code> pada kode iframe.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Action Bar Bawah */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            <p className="text-xs text-slate-500">
-              {isProfileEditing
-                ? "Pastikan data aparatur dan fasilitas sudah benar sebelum menyimpan."
-                : "Klik 'Buka Kunci & Edit Profil' di atas jika Anda ingin melakukan perubahan data."}
-            </p>
-            {isProfileEditing && (
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelProfile}
-                  disabled={savingSite}
-                  className="border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                  Batal
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  disabled={savingSite || siteLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 font-semibold text-xs shadow-xs"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {savingSite ? "Menyimpan..." : "Simpan & Kunci Profil"}
-                </Button>
-              </div>
-            )}
+          <div className="flex justify-end">
+            <Button
+              onClick={() => handleSaveSite("Profil Kelurahan")}
+              disabled={savingSite || siteLoading}
+              className="bg-[#1b365d] hover:bg-[#152a48] text-white px-6 font-semibold"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {savingSite ? "Menyimpan..." : "Simpan Profil Kelurahan"}
+            </Button>
           </div>
         </TabsContent>
         <TabsContent value="home" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Teks Hero Beranda Utama</CardTitle>
-              <CardDescription>
-                Teks yang dilihat pertama kali oleh warga saat membuka halaman depan website.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Home className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Teks Hero Beranda Utama</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Teks yang dilihat pertama kali oleh warga saat membuka halaman depan website.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="hero-badge">Badge Label Atas</Label>
                 <Input
@@ -1329,16 +841,21 @@ function SettingsContent() {
                   disabled={siteLoading}
                 />
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Status & Jadwal Loket Pelayanan</CardTitle>
-              <CardDescription>
-                Atur status buka/tutup loket serta jam kerja pelayanan administrasi di kantor kelurahan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Clock className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Status & Jadwal Loket Pelayanan</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Atur status buka/tutup loket serta jam kerja pelayanan administrasi di kantor kelurahan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="counter-status">Status Loket Saat Ini</Label>
@@ -1376,16 +893,21 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Kontak Darurat Wilayah Terpadu</CardTitle>
-              <CardDescription>
-                Nomor hotline medis dan keamanan darurat yang tampil di kartu biru beranda serta footer website.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-red-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Kontak Darurat Wilayah Terpadu</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Nomor hotline medis dan keamanan darurat yang tampil di kartu biru beranda serta footer website.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="em-hotline" className="text-red-700 font-semibold">Hotline Bebas Pulsa (112)</Label>
@@ -1437,8 +959,8 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           <div className="flex justify-end">
             <Button
@@ -1451,397 +973,20 @@ function SettingsContent() {
             </Button>
           </div>
         </TabsContent>
-
-        {/* TAB: INFORMASI & DATA */}
-        <TabsContent value="data" className="space-y-6">
-          {/* Banner Status Mode Kunci / Edit (Defensive Accidental Edit Prevention) */}
-          <div
-            className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs ${
-              isDataEditing
-                ? "bg-amber-50/70 border-amber-300 text-amber-950"
-                : "bg-slate-50 border-slate-200 text-slate-800"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isDataEditing
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {isDataEditing ? (
-                  <Unlock className="w-5 h-5 animate-pulse" />
-                ) : (
-                  <Lock className="w-5 h-5" />
-                )}
+        <TabsContent value="contact" className="space-y-6">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Mail className="h-4 w-4 text-[#1b365d]" />
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm sm:text-base">
-                    {isDataEditing
-                      ? "Mode Pengeditan Aktif (Terbuka)"
-                      : "Data Statistik & Informasi Terkunci (Perlindungan Data)"}
-                  </span>
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      isDataEditing
-                        ? "bg-amber-200 text-amber-900"
-                        : "bg-slate-200 text-slate-700"
-                    }`}
-                  >
-                    {isDataEditing ? "Dapat Diedit" : "Terkunci Aman"}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600">
-                  {isDataEditing
-                    ? "Silakan perbarui angka statistik demografi atau direktori tautan layanan resmi di bawah ini. Klik 'Simpan' untuk mempublikasikan."
-                    : "Perlindungan defensif mencegah data penting tergeser tidak sengaja. Klik tombol di kanan untuk membuka akses perubahan."}
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Kontak Resmi & Media Sosial</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Informasi ini otomatis tampil di footer seluruh halaman, navigasi, dan informasi kontak publik.
                 </p>
               </div>
             </div>
-            <div>
-              {isDataEditing ? (
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancelDataSettings}
-                    disabled={savingSite}
-                    className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                    Batal
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleSaveDataSettings}
-                    disabled={savingSite}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs"
-                  >
-                    <Save className="w-3.5 h-3.5 mr-1" />
-                    {savingSite ? "Menyimpan..." : "Simpan & Kunci"}
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setIsDataEditing(true)}
-                  className="bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-semibold shadow-xs"
-                >
-                  <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-                  Buka Kunci Pengeditan
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* CARD 1: REKAPITULASI STATISTIK DEMOGRAFI */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg flex items-center justify-between">
-                <span className="flex items-center gap-2 text-slate-900">
-                  <BarChart3 className="w-5 h-5 text-[#1b365d]" />
-                  Rekapitulasi Demografi Agregat Kelurahan
-                </span>
-                {!isDataEditing && (
-                  <span className="text-xs font-normal text-slate-500 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Hanya Baca
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Angka agregat resmi monografi kependudukan yang ditampilkan pada kartu ringkasan dan grafik halaman Informasi &amp; Data publik.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="demo-total" className="text-xs font-semibold">Total Penduduk (Jiwa)</Label>
-                  <Input
-                    id="demo-total"
-                    type="number"
-                    value={siteForm.demography?.total ?? 3840}
-                    onChange={(e) => handleUpdateDemography("total", parseInt(e.target.value) || 0)}
-                    disabled={!isDataEditing || siteLoading}
-                    className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                  />
-                  <p className="text-[11px] text-slate-500">Jumlah seluruh warga terdaftar.</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="demo-kk" className="text-xs font-semibold">Kepala Keluarga (KK)</Label>
-                  <Input
-                    id="demo-kk"
-                    type="number"
-                    value={siteForm.demography?.kk ?? 1185}
-                    onChange={(e) => handleUpdateDemography("kk", parseInt(e.target.value) || 0)}
-                    disabled={!isDataEditing || siteLoading}
-                    className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                  />
-                  <p className="text-[11px] text-slate-500">Jumlah Kartu Keluarga aktif.</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="demo-male" className="text-xs font-semibold">Laki-laki (Jiwa)</Label>
-                  <Input
-                    id="demo-male"
-                    type="number"
-                    value={siteForm.demography?.male ?? 1948}
-                    onChange={(e) => handleUpdateDemography("male", parseInt(e.target.value) || 0)}
-                    disabled={!isDataEditing || siteLoading}
-                    className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                  />
-                  <p className="text-[11px] text-slate-500">Penduduk berjenis kelamin laki-laki.</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="demo-female" className="text-xs font-semibold">Perempuan (Jiwa)</Label>
-                  <Input
-                    id="demo-female"
-                    type="number"
-                    value={siteForm.demography?.female ?? 1892}
-                    onChange={(e) => handleUpdateDemography("female", parseInt(e.target.value) || 0)}
-                    disabled={!isDataEditing || siteLoading}
-                    className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                  />
-                  <p className="text-[11px] text-slate-500">Penduduk berjenis kelamin perempuan.</p>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100">
-                <Label className="text-xs font-semibold text-slate-800 block mb-2">Sebaran Kelompok Usia Penduduk</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="demo-age-children" className="text-[11px] text-slate-600">Usia 0 - 17 Tahun (Anak & Remaja)</Label>
-                    <Input
-                      id="demo-age-children"
-                      type="number"
-                      value={siteForm.demography?.ageChildren ?? 998}
-                      onChange={(e) => handleUpdateDemography("ageChildren", parseInt(e.target.value) || 0)}
-                      disabled={!isDataEditing || siteLoading}
-                      className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="demo-age-adults" className="text-[11px] text-slate-600">Usia 18 - 59 Tahun (Usia Produktif)</Label>
-                    <Input
-                      id="demo-age-adults"
-                      type="number"
-                      value={siteForm.demography?.ageAdults ?? 2496}
-                      onChange={(e) => handleUpdateDemography("ageAdults", parseInt(e.target.value) || 0)}
-                      disabled={!isDataEditing || siteLoading}
-                      className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="demo-age-seniors" className="text-[11px] text-slate-600">Usia ≥ 60 Tahun (Lanjut Usia)</Label>
-                    <Input
-                      id="demo-age-seniors"
-                      type="number"
-                      value={siteForm.demography?.ageSeniors ?? 346}
-                      onChange={(e) => handleUpdateDemography("ageSeniors", parseInt(e.target.value) || 0)}
-                      disabled={!isDataEditing || siteLoading}
-                      className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="demo-period" className="text-xs font-semibold">Periode Pemutakhiran Data</Label>
-                  <Input
-                    id="demo-period"
-                    value={siteForm.demography?.updatedPeriod ?? "Semester II Tahun 2026"}
-                    onChange={(e) => handleUpdateDemography("updatedPeriod", e.target.value)}
-                    disabled={!isDataEditing || siteLoading}
-                    placeholder="Contoh: Semester II Tahun 2026"
-                    className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                  />
-                  <p className="text-[11px] text-slate-500">Tampil sebagai catatan waktu pemutakhiran data resmi.</p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="demo-source" className="text-xs font-semibold">Sumber Rekapitulasi</Label>
-                  <Input
-                    id="demo-source"
-                    value={siteForm.demography?.source ?? "Rekapitulasi Monografi BPS & Kelurahan Banjar Agung"}
-                    onChange={(e) => handleUpdateDemography("source", e.target.value)}
-                    disabled={!isDataEditing || siteLoading}
-                    placeholder="Contoh: Rekapitulasi Monografi BPS & Kelurahan Banjar Agung"
-                    className={!isDataEditing ? "bg-slate-50 text-slate-700 cursor-not-allowed" : ""}
-                  />
-                  <p className="text-[11px] text-slate-500">Nama dokumen atau rujukan data resmi instansi.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* CARD 2: DIREKTORI TAUTAN LAYANAN & BANSOS EKSTERNAL */}
-          <Card className="border-slate-200">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-900">
-                    <Globe className="w-5 h-5 text-[#1b365d]" />
-                    Direktori Layanan &amp; Bansos Resmi Pemerintah
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    Daftar tautan portal pemerintah resmi (Cek Bansos, DTKS, Dukcapil, BPJS, dll) yang dapat diakses langsung oleh masyarakat.
-                  </CardDescription>
-                </div>
-                {isDataEditing && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleAddExternalLink}
-                    disabled={siteLoading}
-                    className="border-slate-300 text-xs font-semibold text-[#1b365d] hover:bg-slate-100 shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    Tambah Tautan
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(siteForm.externalLinks || []).length === 0 ? (
-                <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl text-slate-500 text-xs">
-                  Belum ada tautan layanan yang ditambahkan.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {(siteForm.externalLinks || []).map((link, idx) => (
-                    <div
-                      key={link.id || idx}
-                      className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3"
-                    >
-                      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-md bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center">
-                            {idx + 1}
-                          </span>
-                          <span className="text-xs font-bold text-slate-800">
-                            {link.name || "Tautan Layanan Baru"}
-                          </span>
-                        </div>
-                        {isDataEditing && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteExternalLink(link.id)}
-                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 h-8 w-8 p-0"
-                            title="Hapus tautan ini"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-semibold text-slate-600">Nama Layanan</Label>
-                          <Input
-                            value={link.name}
-                            onChange={(e) => handleUpdateExternalLink(link.id, "name", e.target.value)}
-                            disabled={!isDataEditing || siteLoading}
-                            placeholder="Contoh: Cek Bansos Kemensos RI"
-                            className={`text-xs ${!isDataEditing ? "bg-slate-50 cursor-not-allowed" : ""}`}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-semibold text-slate-600">Kategori</Label>
-                          <Input
-                            value={link.category}
-                            onChange={(e) => handleUpdateExternalLink(link.id, "category", e.target.value)}
-                            disabled={!isDataEditing || siteLoading}
-                            placeholder="Contoh: Bantuan Sosial & Kesejahteraan"
-                            className={`text-xs ${!isDataEditing ? "bg-slate-50 cursor-not-allowed" : ""}`}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-semibold text-slate-600">Label Badge</Label>
-                          <Input
-                            value={link.badge}
-                            onChange={(e) => handleUpdateExternalLink(link.id, "badge", e.target.value)}
-                            disabled={!isDataEditing || siteLoading}
-                            placeholder="Contoh: Bansos, Kemendagri"
-                            className={`text-xs ${!isDataEditing ? "bg-slate-50 cursor-not-allowed" : ""}`}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="sm:col-span-1 space-y-1">
-                          <Label className="text-[11px] font-semibold text-slate-600">URL Tautan</Label>
-                          <Input
-                            value={link.url}
-                            onChange={(e) => handleUpdateExternalLink(link.id, "url", e.target.value)}
-                            disabled={!isDataEditing || siteLoading}
-                            placeholder="https://cekbansos.kemensos.go.id"
-                            className={`text-xs ${!isDataEditing ? "bg-slate-50 cursor-not-allowed" : ""}`}
-                          />
-                        </div>
-                        <div className="sm:col-span-2 space-y-1">
-                          <Label className="text-[11px] font-semibold text-slate-600">Deskripsi Singkat</Label>
-                          <Input
-                            value={link.desc}
-                            onChange={(e) => handleUpdateExternalLink(link.id, "desc", e.target.value)}
-                            disabled={!isDataEditing || siteLoading}
-                            placeholder="Penjelasan singkat manfaat layanan bagi warga..."
-                            className={`text-xs ${!isDataEditing ? "bg-slate-50 cursor-not-allowed" : ""}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {isDataEditing && (
-                <div className="flex justify-end pt-4 border-t border-slate-100 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelDataSettings}
-                    disabled={savingSite}
-                    className="border-slate-300 text-slate-700 text-xs"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSaveDataSettings}
-                    disabled={savingSite || siteLoading}
-                    className="bg-[#1b365d] hover:bg-[#152a48] text-white text-xs font-semibold px-5"
-                  >
-                    <Save className="mr-1.5 h-3.5 w-3.5" />
-                    {savingSite ? "Menyimpan..." : "Simpan Seluruh Data & Tautan"}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="contact" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Kontak Resmi & Media Sosial</CardTitle>
-              <CardDescription>
-                Informasi ini otomatis tampil di footer seluruh halaman, navigasi, dan informasi kontak publik.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="vil-name">Nama Instansi / Kelurahan</Label>
@@ -1912,8 +1057,8 @@ function SettingsContent() {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           <div className="flex justify-end">
             <Button
@@ -1927,29 +1072,30 @@ function SettingsContent() {
           </div>
         </TabsContent>
         <TabsContent value="chatbot" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Bot className="h-5 w-5 text-[#1b365d]" /> Pengaturan Asisten AI (Gemini)
-                  </CardTitle>
-                  <CardDescription>
-                    Atur perilaku, instruksi, dan batas ruang lingkup chatbot berbasis Google Gemini untuk warga Banjar Agung.
-                  </CardDescription>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-[#1b365d]" />
                 </div>
-                <span
-                  className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
-                    chatbotForm.enabled
-                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                      : "bg-slate-100 text-slate-600 border-slate-200"
-                  }`}
-                >
-                  {chatbotForm.enabled ? "Aktif" : "Non-Aktif"}
-                </span>
+                <div>
+                  <p className="text-[13px] font-bold text-slate-800">Pengaturan Asisten AI (Gemini)</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Atur perilaku, instruksi, dan batas ruang lingkup chatbot berbasis Google Gemini untuk warga Banjar Agung.
+                  </p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
+              <span
+                className={`text-[10px] px-2.5 py-1 rounded-lg font-bold border ${
+                  chatbotForm.enabled
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                    : "bg-slate-100 text-slate-500 border-slate-200"
+                }`}
+              >
+                {chatbotForm.enabled ? "Aktif" : "Non-Aktif"}
+              </span>
+            </div>
+            <div className="p-5 pt-3 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-xl bg-slate-50/50">
                 <div className="space-y-2">
                   <Label htmlFor="bot-enabled">Status Chatbot</Label>
@@ -2081,20 +1227,23 @@ function SettingsContent() {
                   {savingChatbot ? "Menyimpan..." : "Simpan Pengaturan Chatbot"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="account" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5 text-[#1b365d]" /> Profil Akun & Kata Sandi Administrator
-              </CardTitle>
-              <CardDescription>
-                Ubah nama tampilan login admin dan perbarui kata sandi akun keamanan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <User className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Profil Akun & Kata Sandi Administrator</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Ubah nama tampilan login admin dan perbarui kata sandi akun keamanan.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3">
               <form onSubmit={handleUpdateAccount} className="space-y-6 max-w-xl">
                 {accountMsg && (
                   <div
@@ -2171,20 +1320,52 @@ function SettingsContent() {
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="system" className="space-y-6">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Database className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Pengaturan Sistem & Database</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Utilitas pengisian data contoh ke Firestore.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                <div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Isi Database Dummy</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Tambahkan data contoh untuk Penduduk, Berita & Artikel, Pengaduan Warga, dan Permohonan Surat.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={handleSeed} disabled={seeding} className="border-slate-300">
+                  <Database className="mr-2 h-4 w-4" />
+                  {seeding ? "Memproses..." : "Isi Data Dummy"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="categories" className="space-y-6">
-          <Card className="border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Tag className="h-5 w-5 text-[#1b365d]" /> Manajemen Kategori Berita
-              </CardTitle>
-              <CardDescription>
-                Kelola daftar kategori yang tersedia saat membuat atau mengedit berita. Perubahan langsung berlaku di form tambah/edit berita.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Tag className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Manajemen Kategori Berita</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Kelola daftar kategori yang tersedia saat membuat atau mengedit berita. Perubahan langsung berlaku di form tambah/edit berita.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
               {categoryMsg && (
                 <div className={`p-3 rounded-lg text-sm flex items-center gap-2 border ${
                   categoryMsg.type === "success"
@@ -2327,16 +1508,9 @@ function SettingsContent() {
                   {savingCategories ? "Menyimpan..." : "Simpan Kategori"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* TAB: BANNER & EVENT */}
-        <TabsContent value="banners" className="space-y-6">
-          <BannerManagement />
-        </TabsContent>
+            </div>
           </div>
-        </div>
+        </TabsContent>
 
       </Tabs>
     </div>

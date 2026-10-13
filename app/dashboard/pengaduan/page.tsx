@@ -1,18 +1,32 @@
-"use client";
+﻿"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
 import { apiList, apiUpdate, apiDelete } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User, AlertTriangle, Inbox } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+
+interface ComplaintItem {
+  id: string;
+  title: string;
+  nama: string;
+  email: string;
+  phone: string;
+  category: string;
+  message: string;
+  photoUrl: string;
+  status: string;
+  adminResponse: string;
+  createdAt: unknown;
+  ticketCode: string;
+  judul?: string;
+  isi?: string;
+}
 
 export default function PengaduanDashboardPage() {
   const { success, error: showError, warning, confirm: showConfirm } = useToast();
-  const [complaints, setComplaints] = useState<any[]>([]);
+  const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedComplaint, setSelectedComplaint] = useState<any | null>(null);
+  const [selectedComplaint, setSelectedComplaint] = useState<ComplaintItem | null>(null);
   const [replyText, setReplyText] = useState("");
   const [savingReply, setSavingReply] = useState(false);
   const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
@@ -49,7 +63,6 @@ export default function PengaduanDashboardPage() {
     fetchComplaints();
   }, []);
 
-  // Compute how many times each phone number has reported
   const phoneCountMap = useMemo(() => {
     const counts: Record<string, number> = {};
     complaints.forEach((c) => {
@@ -80,12 +93,15 @@ export default function PengaduanDashboardPage() {
     });
   }, [complaints, searchTerm, filterPhone]);
 
+  const pendingCount = complaints.filter((c) => c.status === "pending" || (!c.status)).length;
+  const completedCount = complaints.filter((c) => c.status === "completed" || c.status === "resolved").length;
+
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
       await apiUpdate("complaints", id, { status: newStatus });
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
-        setSelectedComplaint((prev: any) => ({ ...prev, status: newStatus }));
+        setSelectedComplaint((prev) => prev ? ({ ...prev, status: newStatus }) : prev);
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -104,11 +120,11 @@ export default function PengaduanDashboardPage() {
       success("Tanggapan resmi berhasil disimpan dan dapat dibaca oleh pelapor.");
       fetchComplaints();
       if (selectedComplaint && selectedComplaint.id === id) {
-        setSelectedComplaint((prev: any) => ({
+        setSelectedComplaint((prev) => prev ? ({
           ...prev,
           adminResponse: replyText.trim(),
           status: prev.status === "pending" ? "processed" : prev.status,
-        }));
+        }) : prev);
       }
     } catch (error) {
       console.error("Error saving reply:", error);
@@ -137,7 +153,7 @@ export default function PengaduanDashboardPage() {
     }
   };
 
-  const handleSendWhatsApp = (item: any) => {
+  const handleSendWhatsApp = (item: ComplaintItem) => {
     if (!item.phone) {
       warning("Pelapor tidak mencantumkan nomor telepon.");
       return;
@@ -156,8 +172,8 @@ export default function PengaduanDashboardPage() {
       `*INFORMASI PENGADUAN - KELURAHAN BANJAR AGUNG*\n\n` +
       `Yth. Bpk/Ibu *${item.nama || "Pelapor"}*,\n\n` +
       `Kami menginformasikan bahwa pengaduan Anda:\n` +
-      `â€¢ *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
-      `â€¢ *Status:* ${statusText}.\n\n` +
+      `• *Judul:* ${item.title || item.judul || "Laporan Pengaduan"}\n` +
+      `• *Status:* ${statusText}.\n\n` +
       (item.adminResponse ? `*Tanggapan Resmi Kami:*\n${item.adminResponse}\n\n` : "") +
       `Jika ada pertanyaan, silakan balas pesan ini.\n\n` +
       `_Pemerintah Kelurahan Banjar Agung, Kec. Cipocok Jaya, Kota Serang_`
@@ -165,257 +181,386 @@ export default function PengaduanDashboardPage() {
     window.open(`https://wa.me/${clean}?text=${message}`, "_blank");
   };
 
+  const statCards = [
+    {
+      label: "Total Pengaduan",
+      value: complaints.length,
+      icon: <MessageSquare className="h-[18px] w-[18px]" />,
+      iconBg: "bg-[#1b365d]/10",
+      iconText: "text-[#1b365d]",
+      numText: "text-[#1b365d]",
+      accentBar: "bg-[#1b365d]",
+    },
+    {
+      label: "Menunggu",
+      value: pendingCount,
+      icon: <Clock className="h-[18px] w-[18px]" />,
+      iconBg: "bg-amber-100",
+      iconText: "text-amber-600",
+      numText: "text-amber-700",
+      accentBar: "bg-amber-500",
+    },
+    {
+      label: "Selesai",
+      value: completedCount,
+      icon: <CheckCircle className="h-[18px] w-[18px]" />,
+      iconBg: "bg-emerald-100",
+      iconText: "text-emerald-600",
+      numText: "text-emerald-700",
+      accentBar: "bg-emerald-500",
+    },
+  ];
+
   if (loading) {
-    return <div className="p-8 text-center text-muted-foreground">Memuat daftar pengaduan...</div>;
+    return (
+      <div className="py-20 text-center">
+        <div className="w-8 h-8 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
+        <p className="text-xs text-slate-400 mt-3 font-medium">Memuat daftar pengaduan...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-5 pb-8">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Daftar Pengaduan Masuk</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Kelola dan tindak lanjuti aspirasi warga kelurahan. Data identitas dan kontak pelapor bersifat internal dan terlindungi.</p>
-        </div>
-        <div className="text-sm bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20 px-3 py-1.5 rounded-lg font-semibold">
-          Total: {complaints.length} Laporan
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
+            <AlertTriangle className="h-[18px] w-[18px] text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Daftar Pengaduan Masuk</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">Kelola dan tindak lanjuti aspirasi serta keluhan warga kelurahan</p>
+          </div>
         </div>
       </div>
-      <div className="bg-white border border-slate-200/90 rounded-xl p-4 space-y-3 shadow-xs">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari berdasarkan nama pelapor, nomor telepon, atau judul laporan..."
-              className="w-full pl-9 pr-8 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
 
-          {filterPhone && (
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2 rounded-lg shrink-0">
-              <span>Filter No: <strong>{filterPhone}</strong></span>
-              <button
-                onClick={() => setFilterPhone(null)}
-                className="text-blue-600 hover:text-blue-900"
-                title="Hapus filter nomor"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {statCards.map((stat, i) => (
+          <div
+            key={i}
+            className="dash-card group relative overflow-hidden rounded-xl border border-slate-200/70 bg-white transition-all duration-300 hover:shadow-md hover:border-slate-300/80"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className={`h-[3px] ${stat.accentBar}`} />
+            <div className="p-4 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <p className={`text-2xl font-extrabold mt-1 tabular-nums tracking-tight ${stat.numText}`}>
+                  {stat.value.toLocaleString("id-ID")}
+                </p>
+              </div>
+              <div className={`w-9 h-9 rounded-xl ${stat.iconBg} ${stat.iconText} flex items-center justify-center shrink-0 dash-icon-box`}>
+                {stat.icon}
+              </div>
             </div>
-          )}
+          </div>
+        ))}
+      </div>
 
-          {(searchTerm || filterPhone) && (
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Cari berdasarkan nama, telepon, atau judul laporan..."
+            className="w-full pl-9 pr-8 h-9 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1 focus-visible:ring-[#1b365d] transition-all duration-300"
+          />
+          {searchTerm && (
             <button
-              onClick={() => {
-                setSearchTerm("");
-                setFilterPhone(null);
-              }}
-              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 shrink-0"
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
             >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
+
+        {filterPhone && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-bold px-3 py-2 rounded-xl shrink-0">
+            <span>Filter No: <strong>{filterPhone}</strong></span>
+            <button
+              onClick={() => setFilterPhone(null)}
+              className="text-blue-600 hover:text-blue-900"
+              title="Hapus filter nomor"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {(searchTerm || filterPhone) && (
+          <button
+            onClick={() => {
+              setSearchTerm("");
+              setFilterPhone(null);
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1b365d] hover:underline shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Reset
+          </button>
+        )}
       </div>
 
-      <div className="grid gap-4">
-        {filteredComplaints.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p>Tidak ditemukan pengaduan yang sesuai.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredComplaints.map((item) => {
-            const title = item.title || item.judul || "Laporan Pengaduan";
-            const message = item.message || item.isi || "(Tanpa isi pesan)";
-            const isDone = item.status === "resolved" || item.status === "completed";
-            const isProcessed = item.status === "processed";
-            const cleanPhone = item.phone ? item.phone.replace(/\D/g, "") : "";
-            const countForPhone = cleanPhone ? phoneCountMap[cleanPhone] || 1 : 1;
+      {/* Complaints List */}
+      <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+              <Inbox className="h-4 w-4 text-[#1b365d]" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-slate-800">Laporan Masuk</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {filteredComplaints.length === complaints.length ? (
+                  <><span className="tabular-nums font-semibold text-slate-500">{complaints.length}</span> pengaduan tercatat</>
+                ) : (
+                  <><span className="tabular-nums font-semibold text-slate-500">{filteredComplaints.length}</span> dari {complaints.length} pengaduan</>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
 
-            return (
-              <Card key={item.id} className="hover:shadow-sm transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CardTitle className="text-base font-bold text-slate-900">{title}</CardTitle>
+        {filteredComplaints.length === 0 ? (
+          <div className="py-20 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <MessageSquare className="h-6 w-6 text-slate-300" />
+            </div>
+            <p className="text-sm font-bold text-slate-700">Tidak ditemukan pengaduan</p>
+            <p className="text-xs text-slate-400 mt-1">Coba ubah kata kunci pencarian atau hapus filter aktif.</p>
+            {(searchTerm || filterPhone) && (
+              <button
+                type="button"
+                onClick={() => { setSearchTerm(""); setFilterPhone(null); }}
+                className="mt-3 text-xs font-semibold text-[#1b365d] hover:underline"
+              >
+                Reset filter
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 space-y-3">
+            {filteredComplaints.map((item) => {
+              const title = item.title || item.judul || "Laporan Pengaduan";
+              const message = item.message || item.isi || "(Tanpa isi pesan)";
+              const isDone = item.status === "resolved" || item.status === "completed";
+              const isProcessed = item.status === "processed";
+              const cleanPhone = item.phone ? item.phone.replace(/\D/g, "") : "";
+              const countForPhone = cleanPhone ? phoneCountMap[cleanPhone] || 1 : 1;
+
+              const statusAccent = isDone
+                ? "from-emerald-500 to-emerald-400"
+                : isProcessed
+                ? "from-blue-500 to-blue-400"
+                : "from-amber-500 to-amber-400";
+
+              return (
+                <div
+                  key={item.id}
+                  className="dash-card group rounded-xl border border-slate-200/70 bg-white overflow-hidden transition-all duration-300 hover:shadow-md hover:border-slate-300/80"
+                >
+                  <div className={`h-[3px] bg-gradient-to-r ${statusAccent}`} />
+                  <div className="p-4">
+                    {/* Row 1: Title + badges */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <h3 className="text-sm font-bold text-slate-900 leading-snug">{title}</h3>
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                            isDone ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
+                            isProcessed ? "bg-blue-50 text-blue-700 border border-blue-200/60" :
+                            "bg-amber-50 text-amber-700 border border-amber-200/60"
+                          }`}>
+                            {isDone ? "Selesai" : isProcessed ? "Diproses" : "Menunggu"}
+                          </span>
+                          {item.category && (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1b365d]/[0.06] text-[#1b365d]">
+                              {item.category}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{message}</p>
+                      </div>
                       {item.ticketCode && (
-                        <span className="text-[11px] font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
+                        <span className="text-[10px] font-mono bg-slate-100 px-2 py-1 rounded-lg text-slate-500 border border-slate-200/70 shrink-0 tabular-nums">
                           {item.ticketCode}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500">
-                      Kategori: <span className="font-semibold text-slate-800">{item.category || "Umum"}</span>
-                    </p>
-                  </div>
-                  <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    isDone ? "bg-emerald-100 text-emerald-800" :
-                    isProcessed ? "bg-blue-100 text-blue-800" :
-                    "bg-amber-100 text-amber-800"
-                  }`}>
-                    {isDone ? "Selesai" : isProcessed ? "Diproses" : "Menunggu"}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <p className="text-sm text-slate-700 mb-3 line-clamp-2">{message}</p>
-                  
-                  <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2 pt-2 border-t border-slate-100">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3.5 h-3.5 text-slate-400" />
-                        Pelapor: <strong className="text-slate-900">{item.nama || "Warga"}</strong>
+
+                    {/* Row 2: Reporter info + meta */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100/80 text-[11px] text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-md bg-[#1b365d]/[0.06] flex items-center justify-center">
+                          <User className="w-3 h-3 text-[#1b365d]" />
+                        </div>
+                        <strong className="text-slate-700">{item.nama || "Warga"}</strong>
                       </span>
                       {item.phone && (
                         <div className="flex items-center gap-1.5">
-                          <span>WA: <strong className="text-slate-900">{item.phone}</strong></span>
-                          <button
-                            type="button"
-                            onClick={() => setFilterPhone(cleanPhone)}
-                            className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer"
-                            title="Klik untuk menyaring seluruh laporan dari warga ini"
-                          >
-                            Total {countForPhone}x Melapor
-                          </button>
+                          <span className="text-slate-500">WA: <strong className="text-slate-700">{item.phone}</strong></span>
+                          {countForPhone > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setFilterPhone(cleanPhone)}
+                              className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/70 hover:bg-blue-100 transition-colors"
+                              title="Filter semua laporan dari warga ini"
+                            >
+                              {countForPhone}x Melapor
+                            </button>
+                          )}
                         </div>
                       )}
                       {item.photoUrl && (
-                        <span className="inline-flex items-center gap-1 text-[#1b365d] font-medium">
-                          <ImageIcon className="h-3 w-3" /> Ada Foto
+                        <span className="inline-flex items-center gap-1 text-[#1b365d] font-bold">
+                          <ImageIcon className="h-3 w-3" /> Foto
                         </span>
                       )}
                       {item.adminResponse && (
-                        <span className="text-emerald-700 font-medium">âœ“ Sudah Ditanggapi</span>
+                        <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                          <CheckCircle className="h-3 w-3" /> Ditanggapi
+                        </span>
                       )}
+                      <span className="text-slate-400 tabular-nums ml-auto">
+                        {item.createdAt ? new Date(typeof item.createdAt === "string" ? item.createdAt : (item.createdAt as { seconds: number }).seconds * 1000).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"}
+                      </span>
                     </div>
-                    <span>
-                      {item.createdAt ? new Date(typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000).toLocaleDateString("id-ID") : "-"}
-                    </span>
-                  </div>
 
-                  <div className="flex gap-2 justify-end pt-3">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedComplaint(item);
-                        setReplyText(item.adminResponse || "");
-                      }}
-                    >
-                      Detail & Tanggapi
-                    </Button>
-                    {!isProcessed && !isDone && (
-                      <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(item.id, "processed")}>
-                        <Clock className="mr-2 h-3 w-3" /> Proses
-                      </Button>
-                    )}
-                    {!isDone && (
-                      <Button size="sm" onClick={() => handleStatusUpdate(item.id, "completed")}>
-                        <CheckCircle className="mr-2 h-3 w-3" /> Selesai
-                      </Button>
-                    )}
-                    {item.phone && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-                        onClick={() => handleSendWhatsApp(item)}
-                        title="Kirim pemberitahuan status via WhatsApp ke pelapor"
+                    {/* Row 3: Actions */}
+                    <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100/80">
+                      <button
+                        onClick={() => {
+                          setSelectedComplaint(item);
+                          setReplyText(item.adminResponse || "");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1b365d] hover:bg-[#152a48] text-white rounded-lg text-[11px] font-bold transition-colors shadow-sm"
                       >
-                        <PhoneCall className="mr-1.5 h-3.5 w-3.5" /> WA Pelapor
-                      </Button>
-                    )}
-                    <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(item.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                        <MessageSquare className="h-3 w-3" /> Detail & Tanggapi
+                      </button>
+                      {!isProcessed && !isDone && (
+                        <button
+                          onClick={() => handleStatusUpdate(item.id, "processed")}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-50 transition-colors"
+                        >
+                          <Clock className="h-3 w-3" /> Proses
+                        </button>
+                      )}
+                      {!isDone && (
+                        <button
+                          onClick={() => handleStatusUpdate(item.id, "completed")}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-emerald-200 bg-emerald-50 text-emerald-700 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors"
+                        >
+                          <CheckCircle className="h-3 w-3" /> Selesai
+                        </button>
+                      )}
+                      <div className="ml-auto flex items-center gap-1">
+                        {item.phone && (
+                          <button
+                            onClick={() => handleSendWhatsApp(item)}
+                            className="inline-flex items-center justify-center w-8 h-8 border border-emerald-200 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors"
+                            title="Kirim pemberitahuan via WhatsApp"
+                          >
+                            <PhoneCall className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="inline-flex items-center justify-center w-8 h-8 border border-slate-200 bg-white text-slate-400 rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                          title="Hapus pengaduan"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* Detail Modal */}
       {selectedComplaint && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <Card className="w-full max-w-2xl bg-white relative my-8 max-h-[90vh] flex flex-col">
-            <CardHeader className="border-b">
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-xl">Detail & Tanggapan Pengaduan</CardTitle>
-                  {selectedComplaint.ticketCode && (
-                    <p className="text-xs font-mono text-muted-foreground mt-0.5">
-                      No. Registrasi: {selectedComplaint.ticketCode}
-                    </p>
-                  )}
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedComplaint(null)}>âœ•</Button>
+          <div className="w-full max-w-2xl bg-white rounded-2xl relative my-8 max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-br from-[#1b365d] to-[#264478] px-6 py-4 flex justify-between items-center shrink-0">
+              <div>
+                <h2 className="text-[15px] font-bold text-white">Detail & Tanggapan Pengaduan</h2>
+                {selectedComplaint.ticketCode && (
+                  <p className="text-[11px] font-mono text-white/60 mt-0.5">
+                    No. Registrasi: {selectedComplaint.ticketCode}
+                  </p>
+                )}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-5 p-6 overflow-y-auto">
+              <button
+                onClick={() => setSelectedComplaint(null)}
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-5 p-6 overflow-y-auto">
+              {/* Reporter History Banner */}
               {selectedComplaint.phone && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 flex items-center justify-between gap-3">
+                <div className="bg-blue-50 border border-blue-200/70 rounded-xl p-3.5 text-[11px] text-blue-900 flex items-center justify-between gap-3">
                   <div>
                     <span className="font-bold">Riwayat Pelapor:</span> Warga dengan nomor telepon <strong>{selectedComplaint.phone}</strong> telah mengirim sebanyak <strong>{phoneCountMap[selectedComplaint.phone.replace(/\D/g, "")] || 1} kali laporan</strong>.
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs bg-white text-blue-700 border-blue-300 hover:bg-blue-100 shrink-0"
+                  <button
                     onClick={() => {
                       setFilterPhone(selectedComplaint.phone.replace(/\D/g, ""));
                       setSelectedComplaint(null);
                     }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-blue-700 border border-blue-300 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors shrink-0"
                   >
                     Lihat Semua ({phoneCountMap[selectedComplaint.phone.replace(/\D/g, "")] || 1})
-                  </Button>
+                  </button>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm bg-slate-50 p-4 rounded-lg">
+              {/* Reporter Info Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50/80 border border-slate-100 p-4 rounded-xl">
                 <div>
-                  <p className="text-xs text-muted-foreground">Pelapor</p>
-                  <p className="font-semibold">{selectedComplaint.nama || "Warga"}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pelapor</p>
+                  <p className="text-[13px] font-semibold text-slate-800 mt-1">{selectedComplaint.nama || "Warga"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Kontak (WA/Telp)</p>
-                  <p className="font-semibold">{selectedComplaint.phone || "-"}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kontak (WA/Telp)</p>
+                  <p className="text-[13px] font-semibold text-slate-800 mt-1">{selectedComplaint.phone || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-semibold">{selectedComplaint.email || "-"}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</p>
+                  <p className="text-[13px] font-semibold text-slate-800 mt-1">{selectedComplaint.email || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Kategori</p>
-                  <p className="font-semibold">{selectedComplaint.category || "Umum"}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kategori</p>
+                  <p className="text-[13px] font-semibold text-slate-800 mt-1">{selectedComplaint.category || "Umum"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Tanggal Laporan</p>
-                  <p className="font-semibold">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tanggal Laporan</p>
+                  <p className="text-[13px] font-semibold text-slate-800 mt-1">
                     {selectedComplaint.createdAt
-                      ? new Date(typeof selectedComplaint.createdAt === "string" ? selectedComplaint.createdAt : selectedComplaint.createdAt.seconds * 1000).toLocaleString("id-ID")
+                      ? new Date(typeof selectedComplaint.createdAt === "string" ? selectedComplaint.createdAt : (selectedComplaint.createdAt as { seconds: number }).seconds * 1000).toLocaleString("id-ID")
                       : "-"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Status Saat Ini</p>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status Saat Ini</p>
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-lg text-[10px] font-bold ${
                     selectedComplaint.status === "completed" || selectedComplaint.status === "resolved"
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-emerald-50 text-emerald-700"
                       : selectedComplaint.status === "processed"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-yellow-100 text-yellow-700"
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-amber-50 text-amber-700"
                   }`}>
                     {selectedComplaint.status === "completed" || selectedComplaint.status === "resolved"
                       ? "Selesai"
@@ -426,86 +571,91 @@ export default function PengaduanDashboardPage() {
                 </div>
               </div>
 
+              {/* Complaint Title */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Judul Pengaduan
                 </p>
-                <p className="text-base font-bold text-foreground">
+                <p className="text-[15px] font-bold text-slate-900">
                   {selectedComplaint.title || selectedComplaint.judul}
                 </p>
               </div>
 
+              {/* Complaint Content */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Isi Laporan Warga
                 </p>
-                <div className="bg-slate-50 border p-3.5 rounded-md text-sm whitespace-pre-line leading-relaxed">
+                <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-[13px] text-slate-700 whitespace-pre-line leading-relaxed">
                   {selectedComplaint.message || selectedComplaint.isi || "-"}
                 </div>
               </div>
 
+              {/* Photo Evidence */}
               {selectedComplaint.photoUrl && (
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                     Bukti Foto Lapangan
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={selectedComplaint.photoUrl}
                     alt="Bukti foto"
-                    className="h-44 rounded-lg border object-cover cursor-pointer hover:opacity-95"
+                    className="h-44 rounded-xl border border-slate-200/70 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => setImageModalUrl(selectedComplaint.photoUrl)}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">Klik gambar untuk melihat ukuran penuh.</p>
+                  <p className="text-[10px] text-slate-400 mt-1.5">Klik gambar untuk melihat ukuran penuh.</p>
                 </div>
               )}
-              <div className="border-t pt-4 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+
+              {/* Admin Response Section */}
+              <div className="border-t border-slate-100 pt-5 space-y-2.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Tulis Tanggapan Resmi / Catatan Tindak Lanjut
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[11px] text-slate-400">
                   Tanggapan ini akan dapat dilihat langsung oleh pelapor saat mengecek status pengaduannya.
                 </p>
-                <Textarea
+                <textarea
                   placeholder="Contoh: Tim perbaikan sarana desa telah mengecek ke lokasi dan perbaikan dijadwalkan pada hari Jumat..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  className="min-h-[90px]"
+                  className="w-full min-h-[90px] px-4 py-3 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1 focus-visible:ring-[#1b365d] transition-all duration-300 resize-y"
                 />
                 <div className="flex justify-between items-center pt-1">
                   <div className="flex gap-2">
                     {selectedComplaint.status !== "processed" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <button
                         onClick={() => handleStatusUpdate(selectedComplaint.id, "processed")}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-50 transition-colors shadow-sm"
                       >
-                        <Clock className="mr-1.5 h-3.5 w-3.5" /> Tandai Diproses
-                      </Button>
+                        <Clock className="h-3.5 w-3.5" /> Tandai Diproses
+                      </button>
                     )}
                     {selectedComplaint.status !== "completed" && (
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700"
+                      <button
                         onClick={() => handleStatusUpdate(selectedComplaint.id, "completed")}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-emerald-200 bg-emerald-50 text-emerald-700 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition-colors shadow-sm"
                       >
-                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Tandai Selesai
-                      </Button>
+                        <CheckCircle className="h-3.5 w-3.5" /> Tandai Selesai
+                      </button>
                     )}
                   </div>
-                  <Button
-                    size="sm"
+                  <button
                     onClick={() => handleSaveReply(selectedComplaint.id)}
                     disabled={savingReply}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#1b365d] hover:bg-[#152a48] text-white rounded-lg text-[11px] font-bold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="mr-1.5 h-3.5 w-3.5" /> {savingReply ? "Menyimpan..." : "Simpan Tanggapan"}
-                  </Button>
+                    <Send className="h-3.5 w-3.5" /> {savingReply ? "Menyimpan..." : "Simpan Tanggapan"}
+                  </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Image Modal */}
       {imageModalUrl && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -514,16 +664,15 @@ export default function PengaduanDashboardPage() {
           <div className="relative max-w-4xl max-h-[90vh]">
             <button
               onClick={() => setImageModalUrl(null)}
-              className="absolute -top-10 right-0 text-white bg-black/50 p-2 rounded-full hover:bg-black"
+              className="absolute -top-10 right-0 w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageModalUrl} alt="Bukti Foto Penuh" className="max-w-full max-h-[85vh] rounded-lg shadow-2xl" />
+            <img src={imageModalUrl} alt="Bukti Foto Penuh" className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl" />
           </div>
         </div>
       )}
     </div>
   );
 }
-

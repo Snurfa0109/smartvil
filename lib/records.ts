@@ -16,7 +16,6 @@ export const TABLES = [
 export type TableName = (typeof TABLES)[number];
 
 const PUBLIC_READ = new Set<TableName>([
-  "residents",
   "news",
   "complaints",
   "requests",
@@ -30,11 +29,11 @@ const ANON_INSERT = new Set<TableName>(["complaints", "requests"]);
 const TABLE_KEYS: Record<string, string[]> = {
   profiles: ["id", "email", "display_name", "role", "active", "department", "permissions", "last_login"],
   residents: ["id", "nik", "nama", "gender", "address", "occupation", "birth_date", "status", "status_keluarga", "status_penduduk", "agama", "education"],
-  news: ["id", "title", "category", "content", "date", "image_url"],
+  news: ["id", "title", "category", "content", "date", "image_url", "views"],
   complaints: ["id", "ticket_code", "nama", "email", "phone", "category", "title", "message", "photo_url", "status", "admin_response"],
   requests: ["id", "ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "status", "form_data", "template_narrative", "admin_notes"],
   letter_types: ["id", "code", "name", "description", "requirements", "template_narrative", "active", "sort_order", "template_file_url", "template_data", "template_placeholders", "custom_fields"],
-  agenda: ["id", "title", "category", "category_color", "schedule", "description", "time_location", "active", "sort_order"],
+  agenda: ["id", "title", "category", "category_color", "schedule", "description", "time_location", "date_start", "date_end", "time_start", "time_end", "location", "active", "sort_order"],
   settings: ["key", "value"],
   audit_logs: ["id", "uid", "email", "display_name", "role", "action", "module", "detail"],
 };
@@ -55,7 +54,11 @@ export async function listRecords(
 ): Promise<Record<string, unknown>[]> {
   const cols = opts.select && opts.select.length > 0 ? opts.select.map((c) => `\`${c}\``).join(", ") : "*";
   let sql = `SELECT ${cols} FROM \`${table}\``;
-  if (opts.orderBy) sql += ` ORDER BY \`${opts.orderBy}\` ${opts.order === "asc" ? "ASC" : "DESC"}`;
+  const allowed = TABLE_KEYS[table];
+  if (opts.orderBy) {
+    const orderCol = allowed && allowed.includes(opts.orderBy) ? opts.orderBy : "created_at";
+    sql += ` ORDER BY \`${orderCol}\` ${opts.order === "asc" ? "ASC" : "DESC"}`;
+  }
   if (opts.limit) sql += ` LIMIT ${Math.min(opts.limit, 1000)}`;
   return query<Record<string, unknown>[]>(sql);
 }
@@ -64,6 +67,8 @@ export async function countRecords(table: TableName, where?: { column: string; v
   let sql = `SELECT COUNT(*) AS c FROM \`${table}\``;
   const params: unknown[] = [];
   if (where) {
+    const allowed = TABLE_KEYS[table];
+    if (!allowed || !allowed.includes(where.column)) return 0;
     sql += ` WHERE \`${where.column}\` = ?`;
     params.push(toDbValue(where.value));
   }
@@ -76,6 +81,8 @@ export async function findRecords(
   where: { column: string; value: unknown },
   limit = 100
 ): Promise<Record<string, unknown>[]> {
+  const allowed = TABLE_KEYS[table];
+  if (!allowed || !allowed.includes(where.column)) return [];
   return query<Record<string, unknown>[]>(
     `SELECT * FROM \`${table}\` WHERE \`${where.column}\` = ? LIMIT ${Math.min(limit, 1000)}`,
     [toDbValue(where.value)]
@@ -83,6 +90,8 @@ export async function findRecords(
 }
 
 export async function findOne(table: TableName, where: { column: string; value: unknown }): Promise<Record<string, unknown> | null> {
+  const allowed = TABLE_KEYS[table];
+  if (!allowed || !allowed.includes(where.column)) return null;
   const rows = await findRecords(table, where, 1);
   return rows[0] ?? null;
 }

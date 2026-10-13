@@ -2,7 +2,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { query } from "@/lib/db";
 
-const JWT_SECRET: string = process.env.JWT_SECRET || "smartvil-jwt-secret-key-default-2026";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is required in environment variables");
+}
+const SECRET: string = JWT_SECRET;
 const TOKEN_TTL = "7d";
 
 export interface SessionProfile {
@@ -26,18 +30,18 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
 }
 
 export function signToken(payload: { uid: string; email: string; role: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_TTL });
+  return jwt.sign(payload, SECRET, { expiresIn: TOKEN_TTL });
 }
 
-export function verifyToken(token: string): { uid: string; email: string; role: string } | null {
+function verifyToken(token: string): { uid: string; email: string; role: string } | null {
   try {
-    return (jwt.verify(token, JWT_SECRET) as unknown) as { uid: string; email: string; role: string };
+    return jwt.verify(token, SECRET) as { uid: string; email: string; role: string };
   } catch {
     return null;
   }
 }
 
-export function getBearerToken(req: Request): string | null {
+function getBearerToken(req: Request): string | null {
   const h = req.headers.get("authorization") || "";
   if (h.toLowerCase().startsWith("bearer ")) return h.slice(7).trim() || null;
   return null;
@@ -48,14 +52,10 @@ export async function getSessionProfile(req: Request): Promise<SessionProfile | 
   if (!token) return null;
   const payload = verifyToken(token);
   if (!payload) return null;
-  const rows = await query<SessionProfile[]>("SELECT * FROM profiles WHERE id = ? LIMIT 1", [payload.uid]);
+  const rows = await query<SessionProfile[]>("SELECT id, email, display_name, role, active, department, permissions FROM profiles WHERE id = ? LIMIT 1", [payload.uid]);
   const profile = rows[0];
   if (!profile || !profile.active) return null;
   return { ...profile, uid: profile.id };
-}
-
-export async function requireAuth(req: Request): Promise<SessionProfile | null> {
-  return getSessionProfile(req);
 }
 
 export async function requireSuperAdmin(req: Request): Promise<SessionProfile | null> {
@@ -64,12 +64,4 @@ export async function requireSuperAdmin(req: Request): Promise<SessionProfile | 
   return profile;
 }
 
-export function parseJsonField(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
+

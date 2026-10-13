@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, Suspense } from "react";
+import type { ComponentType } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Search, X, FileText, Newspaper, Building2, HelpCircle, ArrowRight, RotateCcw } from "lucide-react";
@@ -161,7 +162,7 @@ function SearchContent() {
     router.push(`/cari?q=${encodeURIComponent(inputVal.trim())}`);
   };
 
-  const categoryIcons: Record<string, any> = {
+  const categoryIcons: Record<string, ComponentType<{ className?: string }>> = {
     layanan: FileText,
     berita: Newspaper,
     profil: Building2,

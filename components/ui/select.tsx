@@ -13,7 +13,14 @@ interface SelectContextType {
 
 const SelectContext = React.createContext<SelectContextType | undefined>(undefined);
 
-const Select = ({ children, onValueChange, value, defaultValue }: any) => {
+interface SelectProps {
+  children: React.ReactNode;
+  onValueChange?: (value: string) => void;
+  value?: string;
+  defaultValue?: string;
+}
+
+const Select = ({ children, onValueChange, value, defaultValue }: SelectProps) => {
   const [open, setOpen] = React.useState(false);
   const [internalValue, setInternalValue] = React.useState(value || defaultValue);
 
@@ -138,6 +145,6 @@ SelectItem.displayName = "SelectItem";
 
 export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectLabel, SelectItem, SelectSeparator }
 
-const SelectGroup = ({ children }: any) => <>{children}</>;
-const SelectLabel = ({ children }: any) => <div className="py-1.5 pl-8 pr-2 text-sm font-semibold">{children}</div>;
+const SelectGroup = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const SelectLabel = ({ children }: { children: React.ReactNode }) => <div className="py-1.5 pl-8 pr-2 text-sm font-semibold">{children}</div>;
 const SelectSeparator = () => <div className="-mx-1 my-1 h-px bg-muted" />;

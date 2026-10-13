@@ -9,7 +9,6 @@ import { useRef, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Bold,
@@ -45,8 +44,35 @@ type BeritaEditorProps = {
   id?: string | null;
 };
 
+function ToolBtn({
+  onClick,
+  active,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
+        active
+          ? "bg-[#1b365d] text-white shadow-sm"
+          : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function Toolbar({ editor }: { editor: Editor | null }) {
-  const { success, error: showError, warning } = useToast();
+  const { error: showError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,31 +89,6 @@ function Toolbar({ editor }: { editor: Editor | null }) {
   };
 
   if (!editor) return null;
-
-  const ToolBtn = ({
-    onClick,
-    active,
-    children,
-    title,
-  }: {
-    onClick: () => void;
-    active?: boolean;
-    children: React.ReactNode;
-    title?: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
-        active
-          ? "bg-[#1b365d] text-white shadow-sm"
-          : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-      }`}
-    >
-      {children}
-    </button>
-  );
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border border-slate-200 rounded-t-xl bg-slate-50/80 border-b-0">
@@ -249,6 +250,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       }
     };
     loadBerita();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {

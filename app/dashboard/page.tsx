@@ -357,7 +357,6 @@ export default function DashboardPage() {
             style={{ animationDelay: `${i * 70}ms` }}
             className={`dash-card group relative overflow-hidden rounded-2xl border border-slate-200 bg-white ${card.hoverBorder} hover:shadow-lg transition-all duration-300 flex flex-col`}
           >
-            {/* Top accent bar */}
             <div className={`h-1 ${card.accentBar}`} />
 
             <div className="p-5 flex-1 flex flex-col">
@@ -394,7 +393,6 @@ export default function DashboardPage() {
 
         {/* Left: Pipeline */}
         <div className="lg:col-span-7 rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-          {/* Pipeline header */}
           <div className="px-6 pt-5 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -418,7 +416,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="px-5 pb-5 space-y-4">
-            {/* Pipeline visual flow — horizontal stepper look */}
             <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden border border-slate-200/80">
               {pipelineStages.map((stage, idx) => {
                 const isActive = selectedPipelineStage === stage.key;
@@ -437,7 +434,6 @@ export default function DashboardPage() {
                     }`}
                   >
                     <div className="px-3.5 py-4">
-                      {/* Icon + percentage */}
                       <div className="flex items-center justify-between mb-3">
                         <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all duration-200 ${
                           isActive ? "bg-white/20 text-white" : `${stage.iconBg} ${stage.iconText}`
@@ -449,7 +445,6 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      {/* Count */}
                       <p className={`text-2xl font-extrabold tabular-nums leading-none ${isActive ? "text-white" : stage.numText}`}>
                         {stage.count}
                       </p>
@@ -457,7 +452,6 @@ export default function DashboardPage() {
                         {stage.label}
                       </p>
 
-                      {/* Progress bar */}
                       <div className={`w-full h-[3px] rounded-full overflow-hidden mt-3 ${isActive ? "bg-white/15" : "bg-slate-100"}`}>
                         <div
                           className={`h-full rounded-full transition-all duration-700 ease-out ${isActive ? "bg-white/50" : stage.barColor + "/60"}`}
@@ -466,14 +460,12 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Active bottom glow */}
                     {isActive && <div className="absolute bottom-0 inset-x-0 h-[2px] bg-white/30" />}
                   </button>
                 );
               })}
             </div>
 
-            {/* Active stage detail card */}
             <div className={`rounded-xl p-4 border transition-all duration-300 ${
               activeStageInfo.key === "pending" ? "bg-amber-50/60 border-amber-200/50" :
               activeStageInfo.key === "processed" ? "bg-sky-50/60 border-sky-200/50" :
@@ -514,7 +506,6 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Flow indicator */}
             <div className="flex items-center gap-2 px-1">
               <div className="flex items-center gap-1">
                 {pipelineStages.map((stage, idx) => (
@@ -535,7 +526,6 @@ export default function DashboardPage() {
 
         {/* Right: Activity Stream */}
         <div className="lg:col-span-5 rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm flex flex-col">
-          {/* Activity header */}
           <div className="px-6 pt-5 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -548,7 +538,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Filter pills inline */}
               <div className="flex rounded-lg bg-slate-100 p-0.5 text-[11px] font-medium">
                 {([
                   { key: "all" as const, label: "Semua" },
@@ -573,7 +562,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="px-4 pb-4 flex flex-col flex-1">
-            {/* Activity list — hidden scrollbar */}
             <div className="space-y-1.5 max-h-[420px] overflow-y-auto sidebar-scroll flex-1">
               {loading ? (
                 <div className="text-center py-16">
@@ -617,7 +605,6 @@ export default function DashboardPage() {
                       href={isReq ? "/dashboard/layanan" : "/dashboard/pengaduan"}
                       className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-all duration-200"
                     >
-                      {/* Icon */}
                       <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${
                         isReq
                           ? "bg-gradient-to-br from-[#1b365d]/10 to-[#1b365d]/5 text-[#1b365d]"
@@ -626,7 +613,6 @@ export default function DashboardPage() {
                         {isReq ? <FileText className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
                       </div>
 
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-[13px] font-semibold text-slate-800 truncate group-hover:text-[#1b365d] transition-colors">
@@ -644,7 +630,6 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      {/* Status */}
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold shrink-0 ${st.cls}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
                         {st.label}
@@ -655,7 +640,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* View all link */}
             {!loading && filteredActivities.length > 0 && (
               <div className="pt-3 mt-2 border-t border-slate-100">
                 <Link

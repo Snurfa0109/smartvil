@@ -39,8 +39,12 @@ export const DEFAULT_CHATBOT_SETTINGS: ChatbotSettings = {
 };
 
 export async function getChatbotSettings(): Promise<ChatbotSettings> {
-  const stored = await getSetting<Partial<ChatbotSettings>>("chatbot", {});
-  return { ...DEFAULT_CHATBOT_SETTINGS, ...stored };
+  try {
+    const stored = await getSetting<Partial<ChatbotSettings>>("chatbot", {});
+    return { ...DEFAULT_CHATBOT_SETTINGS, ...stored };
+  } catch {
+    return { ...DEFAULT_CHATBOT_SETTINGS };
+  }
 }
 
 export async function saveChatbotSettings(settings: ChatbotSettings): Promise<void> {

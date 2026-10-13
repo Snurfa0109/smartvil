@@ -25,32 +25,14 @@ import type { LetterType } from "@/lib/letters";
 import type { LetterPrintConfig } from "@/components/letter-print-document";
 import LetterPrintDocument from "@/components/letter-print-document";
 import { buildTemplateData, generateFilledDocx, dataUrlToBuffer, extractNarrativesFromDocx, replaceNarrativesInDocx, downloadBlob } from "@/lib/letter-template";
+import { ADMIN_ONLY_FIELDS } from "@/lib/letter-constants";
+import { DOCX_PREVIEW_CSS } from "@/lib/docx-preview-styles";
 import styles from "@/app/letter-print.module.css";
 
-/**
- * Fix docx-preview rendered DOM so the header matches the original Word layout.
- *
- * The template header in Word:
- *   - Logo: anchor image at left page edge
- *   - Title lines: centered text with left-indent ~85pt to clear the logo
- *   - Address/email: w:bidi paragraphs (docx-preview renders as direction:rtl)
- *   - Horizontal line separator (SVG) in article
- *
- * docx-preview puts logo + title text inside ONE <p>:
- *   <p style="margin-inline-start:85.5pt; text-align:center">
- *     <span><div style="width:0;height:0;display:inline-block;position:relative">
- *       <img .../>
- *     </div></span>
- *     <span>PEMERINTAH KOTA SERANG</span>
- *     <span>KECAMATAN CIPOCOK JAYA</span>
- *   </p>
- *
- * The 0×0 div is display:inline-block but contains a block-level scaled img,
- * which forces a line break and pushes the title text below the logo.
- * Fix: make the logo wrapper absolutely positioned and fully out of text flow.
- */
+// docx-preview renders anchor images as 0×0 inline-block divs inside <p>,
+// breaking header text flow. This extracts the logo, fixes bidi direction,
+// and adjusts SVG separator positioning.
 function fixDocxPreviewDom(root: HTMLElement) {
-  // 1. Fix logo inside header: move it OUT of the text paragraph entirely
   const header = root.querySelector("header");
   if (header) {
     header.style.position = "relative";
@@ -105,7 +87,7 @@ function fixDocxPreviewDom(root: HTMLElement) {
     }
   }
 
-  // 2. Fix bidi paragraphs (direction:rtl → ltr)
+  // docx-preview renders w:bidi as direction:rtl; reset to ltr
   root.querySelectorAll<HTMLElement>("p[style]").forEach((p) => {
     if (p.style.direction !== "rtl") return;
     p.style.direction = "ltr";
@@ -115,7 +97,7 @@ function fixDocxPreviewDom(root: HTMLElement) {
     p.style.marginInlineEnd = "0pt";
   });
 
-  // 3. Fix SVG separator line (in article, first child with class docx_header)
+  // SVG separator line rendered incorrectly; fix positioning
   root.querySelectorAll<HTMLElement>("p.docx_header[style]").forEach((p) => {
     if (p.style.marginInlineStart) {
       p.style.marginInlineStart = "0pt";
@@ -214,18 +196,8 @@ export default function LetterPrintEditor({
     setEditable((p) => ({ ...p, formData: { ...p.formData, [key]: val } }));
 
   const hasDocxTemplate = !!(letterType?.templateFileUrl || letterType?.templateData);
-  const PRINT_PANEL_HIDDEN = new Set([
-    "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
-    "nama_pejabat", "jabatan_pejabat", "nip_pejabat",
-    "keperluan", "kebutuhan", "tujuan", "keterangan",
-    "dipergunakan_untuk", "digunakan_untuk",
-    "guna_keperluan", "untuk_keperluan", "maksud_dan_tujuan",
-    "bermaksud_untuk", "dimaksudkan_untuk",
-    "surat_keterangan_ini_dipergunakan_untuk",
-    "surat_ini_dipergunakan_untuk", "surat_ini_digunakan_untuk",
-  ]);
   const customFields = (letterType?.customFields ?? []).filter(
-    (f) => !PRINT_PANEL_HIDDEN.has(f.key.toLowerCase())
+    (f) => !ADMIN_ONLY_FIELDS.has(f.key.toLowerCase())
   );
   const [narratives, setNarratives] = useState<string[]>([]);
   const [originalNarratives, setOriginalNarratives] = useState<string[]>([]);
@@ -294,9 +266,7 @@ export default function LetterPrintEditor({
       doc.open();
       doc.write(
         '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
-        'body{margin:0;background:#e8e8e8;}' +
-        '.docx-wrapper{background:transparent!important;padding:20px!important;}' +
-        '.docx-wrapper>section.docx{background:white!important;box-shadow:0 1px 8px rgba(0,0,0,0.18)!important;margin-bottom:20px!important;}' +
+        DOCX_PREVIEW_CSS +
         '</style></head><body></body></html>'
       );
       doc.close();

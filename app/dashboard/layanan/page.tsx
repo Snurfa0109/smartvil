@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState, useMemo } from "react";
 import { apiInsert, apiUpdate, apiDelete, apiList, apiUpload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ import {
   Edit2,
   FolderCog,
   Layers,
-  PhoneCall,
   Search,
   ClipboardList,
   ListChecks,
@@ -50,13 +49,31 @@ import LetterSimulationPreview from "@/components/letter-simulation-preview";
 import LetterPrintEditor from "@/components/letter-print-editor";
 import { useToast } from "@/components/ui/toast";
 
+interface RequestItem {
+  id: string;
+  nama: string;
+  nik: string;
+  phone: string;
+  keperluan: string;
+  ticketCode: string;
+  type: string;
+  typeName: string;
+  templateNarrative: string;
+  requirements: string[];
+  formData: Record<string, unknown>;
+  status: string;
+  adminNotes: string;
+  createdAt: string | number | { seconds: number } | null;
+  [key: string]: unknown;
+}
+
 export default function LayananDashboardPage() {
   const { success, error: showError, warning, confirm: showConfirm } = useToast();
   const [activeTab, setActiveTab] = useState<"requests" | "letter_types">("requests");
 
-  const [requests, setRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(null);
   const [reqSearch, setReqSearch] = useState("");
   const [reqStatusFilter, setReqStatusFilter] = useState<"all" | "pending" | "processed" | "ready" | "completed">("all");
 
@@ -86,7 +103,7 @@ export default function LayananDashboardPage() {
   const [dragOver, setDragOver] = useState(false);
   const [templateError, setTemplateError] = useState("");
 
-  const [printRequest, setPrintRequest] = useState<any | null>(null);
+  const [printRequest, setPrintRequest] = useState<RequestItem | null>(null);
   const [printConfig, setPrintConfig] = useState({
     nomorSurat: "",
     pejabatNama: DEFAULT_SITE_SETTINGS.headName,
@@ -118,7 +135,7 @@ export default function LayananDashboardPage() {
           formData: typeof row.form_data === "string" ? JSON.parse(row.form_data || "{}") : row.form_data || {},
           status: String(row.status || ""),
           adminNotes: String(row.admin_notes || ""),
-          createdAt: row.created_at,
+          createdAt: row.created_at as string | number | { seconds: number } | null,
         }))
       );
     } catch (error) {
@@ -156,7 +173,7 @@ export default function LayananDashboardPage() {
       await apiUpdate("requests", id, { status: newStatus });
       fetchRequests();
       if (selectedRequest && selectedRequest.id === id) {
-        setSelectedRequest((prev: any) => ({ ...prev, status: newStatus }));
+        setSelectedRequest((prev) => prev ? ({ ...prev, status: newStatus }) : prev);
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -177,7 +194,7 @@ export default function LayananDashboardPage() {
     }
   };
 
-  const handleSendWhatsApp = (item: any) => {
+  const handleSendWhatsApp = (item: RequestItem) => {
     if (!item.phone) {
       warning("Warga tidak mencantumkan nomor telepon.");
       return;
@@ -469,7 +486,7 @@ export default function LayananDashboardPage() {
     }
   };
 
-  const handleOpenPrint = (req: any) => {
+  const handleOpenPrint = (req: RequestItem) => {
     const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
     const currentMonthRoman = romanMonths[new Date().getMonth()];
     const randomNum = req.ticketCode ? req.ticketCode.split("-").pop() : "042";
@@ -744,7 +761,7 @@ export default function LayananDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100/80">
-                    {filteredRequests.map((item, idx) => {
+                    {filteredRequests.map((item) => {
                       const statusConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
                         pending: { label: "Menunggu", bg: "bg-amber-50 border-amber-200/60", text: "text-amber-700", dot: "bg-amber-500" },
                         processed: { label: "Diproses", bg: "bg-sky-50 border-sky-200/60", text: "text-sky-700", dot: "bg-sky-500" },
@@ -785,7 +802,7 @@ export default function LayananDashboardPage() {
                             <span className="text-[11px] text-slate-400">
                               {item.createdAt
                                 ? new Date(
-                                    typeof item.createdAt === "string" ? item.createdAt : item.createdAt.seconds * 1000
+                                    typeof item.createdAt === "string" ? item.createdAt : (item.createdAt as { seconds: number }).seconds * 1000
                                   ).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
                                 : "-"}
                             </span>
@@ -1443,7 +1460,7 @@ export default function LayananDashboardPage() {
                   </div>
                   <p className="text-[13px] font-semibold text-slate-700">
                     {selectedRequest.createdAt
-                      ? new Date(typeof selectedRequest.createdAt === "string" ? selectedRequest.createdAt : selectedRequest.createdAt.seconds * 1000).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+                      ? new Date(typeof selectedRequest.createdAt === "string" ? selectedRequest.createdAt : (selectedRequest.createdAt as { seconds: number }).seconds * 1000).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
                       : "-"}
                   </p>
                 </div>
@@ -1492,7 +1509,6 @@ export default function LayananDashboardPage() {
                     const stepIdx = steps.indexOf(s.key);
                     const isDone = stepIdx < currentIdx;
                     const isCurrent = stepIdx === currentIdx;
-                    const isFuture = stepIdx > currentIdx;
                     return (
                       <button
                         key={s.key}

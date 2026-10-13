@@ -1,5 +1,16 @@
 import { getToken } from "@/lib/api";
 
+export interface AuditEntry {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: string;
+  action: AuditAction;
+  module: AuditModule;
+  detail: string;
+  timestamp: unknown;
+}
+
 export type AuditAction = "LOGIN" | "LOGOUT" | "CREATE" | "UPDATE" | "DELETE" | "AKSES_DITOLAK";
 export type AuditModule =
   | "berita"

@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ import {
   X,
   Users,
   UserCheck,
-  Filter,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -113,7 +111,7 @@ export default function PendudukDashboardPage() {
     try {
       const rows = await apiList("residents", { orderBy: "nama", order: "asc" });
       setResidents(
-        (rows || []).map((row: any) => ({
+        (rows || []).map((row) => ({
           id: String(row.id),
           nik: String(row.nik || ""),
           nama: String(row.nama || ""),
@@ -140,7 +138,6 @@ export default function PendudukDashboardPage() {
     fetchResidents();
   }, [fetchResidents]);
 
-  // Derived stats from real data
   const stats = useMemo(() => {
     const total = residents.length;
     const laki = residents.filter((r) => r.gender === "Laki-laki").length;
@@ -151,7 +148,6 @@ export default function PendudukDashboardPage() {
     return { total, laki, perempuan, kk };
   }, [residents]);
 
-  // Filter + search
   const filteredResidents = useMemo(() => {
     let result = residents;
 
@@ -184,12 +180,10 @@ export default function PendudukDashboardPage() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Reset page on filter/search change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, activeFilter]);
 
-  // Keyboard: close modal with Escape
   useEffect(() => {
     if (!isModalOpen) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -199,7 +193,6 @@ export default function PendudukDashboardPage() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [isModalOpen]);
 
-  // Focus trap: focus first input when modal opens
   useEffect(() => {
     if (isModalOpen && modalRef.current) {
       const firstInput = modalRef.current.querySelector<HTMLInputElement>("input, select");
@@ -344,7 +337,6 @@ export default function PendudukDashboardPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Pagination range (show page numbers around current)
   const pageRange = useMemo(() => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
     const start = Math.max(1, currentPage - 2);
@@ -353,92 +345,126 @@ export default function PendudukDashboardPage() {
     return Array.from({ length: end - adjusted + 1 }, (_, i) => adjusted + i);
   }, [totalPages, currentPage]);
 
+  const statCards = [
+    {
+      label: "Total Penduduk",
+      value: stats.total,
+      icon: <Users className="h-4 w-4" />,
+      iconBg: "bg-[#1b365d]/8",
+      iconText: "text-[#1b365d]",
+      numText: "text-slate-900",
+    },
+    {
+      label: "Laki-laki",
+      value: stats.laki,
+      icon: <User className="h-4 w-4" />,
+      iconBg: "bg-sky-50",
+      iconText: "text-sky-600",
+      numText: "text-sky-700",
+    },
+    {
+      label: "Perempuan",
+      value: stats.perempuan,
+      icon: <User className="h-4 w-4" />,
+      iconBg: "bg-rose-50",
+      iconText: "text-rose-600",
+      numText: "text-rose-700",
+    },
+    {
+      label: "Kepala Keluarga",
+      value: stats.kk,
+      icon: <UserCheck className="h-4 w-4" />,
+      iconBg: "bg-amber-50",
+      iconText: "text-amber-600",
+      numText: "text-amber-700",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Data Penduduk
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Kelola basis data kependudukan dan status demografi kelurahan.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+            <Users className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Data Penduduk</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Kelola basis data kependudukan dan status demografi kelurahan
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={handleExportCSV}
-            className="text-xs border-slate-300"
+            className="h-9 px-4 text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="mr-1.5 h-3.5 w-3.5" />
             Export CSV
           </Button>
           <Button
             onClick={handleOpenAdd}
-            className="text-xs bg-[#1b365d] hover:bg-[#152a48]"
+            size="sm"
+            className="bg-[#1b365d] hover:bg-[#152a48] text-white h-9 px-4 text-xs font-bold shadow-sm"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
             Tambah Penduduk
           </Button>
         </div>
       </div>
 
-      {/* Summary Cards: values derived from real fetched data */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryCard
-          label="Total Penduduk"
-          value={stats.total}
-          icon={<Users className="h-5 w-5" />}
-          color="navy"
-          loading={loading}
-        />
-        <SummaryCard
-          label="Laki-laki"
-          value={stats.laki}
-          icon={<User className="h-5 w-5" />}
-          color="sky"
-          loading={loading}
-        />
-        <SummaryCard
-          label="Perempuan"
-          value={stats.perempuan}
-          icon={<User className="h-5 w-5" />}
-          color="rose"
-          loading={loading}
-        />
-        <SummaryCard
-          label="Kepala Keluarga"
-          value={stats.kk}
-          icon={<UserCheck className="h-5 w-5" />}
-          color="amber"
-          loading={loading}
-        />
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-xl bg-slate-200/60 border border-slate-200/70 overflow-hidden">
+        {statCards.map((s, i) => (
+          <div
+            key={s.label}
+            className="dash-card group bg-white px-4 py-3.5 flex items-center gap-3"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <div className={`w-9 h-9 rounded-lg ${s.iconBg} flex items-center justify-center shrink-0 ${s.iconText}`}>
+              {s.icon}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500">{s.label}</p>
+              {loading ? (
+                <div className="h-6 w-10 bg-slate-100 rounded mt-0.5 animate-pulse" />
+              ) : (
+                <p className={`text-xl font-bold tabular-nums leading-tight ${s.numText}`}>
+                  {s.value.toLocaleString("id-ID")}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Filters + Search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveFilter(tab.key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
                 activeFilter === tab.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-[#1b365d] text-white shadow-sm"
+                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
               }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+        <div className="relative flex-1 max-w-xs w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
           <Input
             type="search"
             placeholder="Cari nama, NIK, atau alamat..."
-            className="pl-8"
+            className="pl-9 h-9 text-sm rounded-xl border-slate-200 bg-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -446,205 +472,220 @@ export default function PendudukDashboardPage() {
       </div>
 
       {/* Data Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Daftar Penduduk</CardTitle>
-            {activeFilter !== "semua" && (
-              <span className="text-xs bg-[#1b365d]/10 text-[#1b365d] px-2 py-0.5 rounded font-medium">
-                {FILTER_TABS.find((t) => t.key === activeFilter)?.label}
-              </span>
-            )}
+      <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+        {/* Table header bar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+              <Users className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Daftar Penduduk</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {activeFilter !== "semua" && (
+                  <span className="inline-flex items-center gap-1 text-[#1b365d] font-semibold mr-1">
+                    {FILTER_TABS.find((t) => t.key === activeFilter)?.label} ·
+                  </span>
+                )}
+                <span className="tabular-nums font-semibold text-slate-500">{filteredResidents.length}</span> jiwa
+              </p>
+            </div>
           </div>
-          <span className="text-xs text-slate-500 tabular-nums">
-            {filteredResidents.length} jiwa
-          </span>
-        </CardHeader>
-        <CardContent className="px-0">
-          {loading ? (
-            <LoadingState />
-          ) : filteredResidents.length === 0 ? (
-            <EmptyState hasSearch={!!searchTerm.trim()} hasFilter={activeFilter !== "semua"} />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-y border-slate-100 bg-slate-50/80">
-                    <th className="text-left font-semibold text-slate-600 px-6 py-3 text-xs uppercase tracking-wide">
-                      Penduduk
-                    </th>
-                    <th className="text-left font-semibold text-slate-600 px-4 py-3 text-xs uppercase tracking-wide hidden md:table-cell">
-                      NIK
-                    </th>
-                    <th className="text-left font-semibold text-slate-600 px-4 py-3 text-xs uppercase tracking-wide hidden lg:table-cell">
-                      Status
-                    </th>
-                    <th className="text-left font-semibold text-slate-600 px-4 py-3 text-xs uppercase tracking-wide hidden xl:table-cell">
-                      Pekerjaan
-                    </th>
-                    <th className="text-left font-semibold text-slate-600 px-4 py-3 text-xs uppercase tracking-wide hidden xl:table-cell">
-                      Alamat
-                    </th>
-                    <th className="text-center font-semibold text-slate-600 px-4 py-3 text-xs uppercase tracking-wide w-24">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {paginatedResidents.map((resident) => {
-                    const isKK =
-                      resident.statusKeluarga === "Kepala Keluarga" ||
-                      resident.status === "Kepala Keluarga";
-                    return (
-                      <tr
-                        key={resident.id}
-                        className="hover:bg-slate-50/60 transition-colors"
-                      >
-                        {/* Combined name + gender + education for density */}
-                        <td className="px-6 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                                resident.gender === "Laki-laki"
-                                  ? "bg-sky-50 text-sky-700"
-                                  : "bg-rose-50 text-rose-700"
-                              }`}
-                            >
-                              {(resident.nama || "?").charAt(0).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-slate-900 truncate">
-                                {resident.nama}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {resident.gender === "Laki-laki" ? "L" : "P"}
-                                {resident.education ? ` · ${resident.education}` : ""}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
+        </div>
 
-                        <td className="px-4 py-3.5 hidden md:table-cell">
-                          <span className="font-mono text-xs text-slate-600 tracking-wide">
-                            {resident.nik || "-"}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5 hidden lg:table-cell">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              isKK
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-slate-100 text-slate-600"
+        {/* Table body */}
+        {loading ? (
+          <LoadingState />
+        ) : filteredResidents.length === 0 ? (
+          <EmptyState hasSearch={!!searchTerm.trim()} hasFilter={activeFilter !== "semua"} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50">
+                  <th className="text-left font-bold text-slate-400 px-6 py-3 text-[10px] uppercase tracking-wider">
+                    Penduduk
+                  </th>
+                  <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-wider hidden md:table-cell">
+                    NIK
+                  </th>
+                  <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-wider hidden lg:table-cell">
+                    Status
+                  </th>
+                  <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-wider hidden xl:table-cell">
+                    Pekerjaan
+                  </th>
+                  <th className="text-left font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-wider hidden xl:table-cell">
+                    Alamat
+                  </th>
+                  <th className="text-center font-bold text-slate-400 px-4 py-3 text-[10px] uppercase tracking-wider w-24">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedResidents.map((resident) => {
+                  const isKK =
+                    resident.statusKeluarga === "Kepala Keluarga" ||
+                    resident.status === "Kepala Keluarga";
+                  return (
+                    <tr
+                      key={resident.id}
+                      className="hover:bg-[#1b365d]/[0.015] transition-colors group"
+                    >
+                      <td className="px-6 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 text-white ${
+                              resident.gender === "Laki-laki"
+                                ? "bg-gradient-to-br from-[#1b365d] to-[#264478]"
+                                : "bg-gradient-to-br from-rose-500 to-pink-600"
                             }`}
                           >
-                            {resident.statusKeluarga || (isKK ? "Kepala Keluarga" : "Anggota")}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5 text-slate-600 hidden xl:table-cell">
-                          {resident.occupation || "-"}
-                        </td>
-
-                        <td className="px-4 py-3.5 hidden xl:table-cell">
-                          <span className="text-xs text-slate-500 truncate block max-w-[200px]">
-                            {resident.address || "-"}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5 text-center">
-                          <div className="flex items-center justify-center gap-0.5">
-                            <button
-                              onClick={() => handleOpenEdit(resident)}
-                              className="p-1.5 rounded-md text-slate-400 hover:text-[#1b365d] hover:bg-slate-100 transition-colors"
-                              title={`Edit data ${resident.nama}`}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(resident.id, resident.nama)}
-                              className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                              title={`Hapus data ${resident.nama}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {(resident.nama || "?").charAt(0).toUpperCase()}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 truncate">
+                              {resident.nama}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {resident.gender === "Laki-laki" ? "L" : "P"}
+                              {resident.education ? ` · ${resident.education}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3.5 hidden md:table-cell">
+                        <span className="font-mono text-xs text-slate-500 tracking-wide">
+                          {resident.nik || "-"}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3.5 hidden lg:table-cell">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            isKK
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {resident.statusKeluarga || (isKK ? "Kepala Keluarga" : "Anggota")}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3.5 text-slate-600 hidden xl:table-cell">
+                        {resident.occupation || "-"}
+                      </td>
+
+                      <td className="px-4 py-3.5 hidden xl:table-cell">
+                        <span className="text-xs text-slate-500 truncate block max-w-[200px]">
+                          {resident.address || "-"}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-0.5">
+                          <button
+                            onClick={() => handleOpenEdit(resident)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-[#1b365d] hover:bg-[#1b365d]/[0.06] transition-all"
+                            title={`Edit data ${resident.nama}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(resident.id, resident.nama)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                            title={`Hapus data ${resident.nama}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Pagination */}
         {filteredResidents.length > ITEMS_PER_PAGE && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-100">
-            <p className="text-xs text-slate-500">
-              Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-              {" - "}
-              {Math.min(currentPage * ITEMS_PER_PAGE, filteredResidents.length)} dari{" "}
-              {filteredResidents.length} data
+            <p className="text-xs text-slate-400">
+              Halaman <span className="font-semibold text-slate-600">{currentPage}</span> dari{" "}
+              <span className="font-semibold text-slate-600">{totalPages}</span>
+              <span className="text-slate-300 mx-1.5">·</span>
+              <span className="tabular-nums">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredResidents.length)}
+              </span>{" "}
+              dari {filteredResidents.length} data
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 title="Halaman pertama"
               >
-                <ChevronsLeft className="h-4 w-4" />
+                <ChevronsLeft className="h-3 w-3" />
               </button>
               <button
+                type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 title="Halaman sebelumnya"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3" /> Sblm
               </button>
 
-              {pageRange.map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`min-w-[32px] h-8 rounded-md text-xs font-medium transition-colors ${
-                    page === currentPage
-                      ? "bg-[#1b365d] text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              <div className="hidden sm:flex items-center gap-1">
+                {pageRange.map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-lg text-[11px] font-bold transition-all ${
+                      page === currentPage
+                        ? "bg-[#1b365d] text-white"
+                        : "text-slate-400 hover:bg-slate-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
 
               <button
+                type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 title="Halaman selanjutnya"
               >
-                <ChevronRight className="h-4 w-4" />
+                Slnjt <ChevronRight className="h-3 w-3" />
               </button>
               <button
+                type="button"
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 title="Halaman terakhir"
               >
-                <ChevronsRight className="h-4 w-4" />
+                <ChevronsRight className="h-3 w-3" />
               </button>
             </div>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setIsModalOpen(false)}
           role="dialog"
           aria-modal="true"
@@ -652,35 +693,45 @@ export default function PendudukDashboardPage() {
         >
           <div
             ref={modalRef}
-            className="w-full max-w-xl bg-white rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl bg-white rounded-2xl shadow-2xl relative max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  {isEditMode ? "Edit Data Penduduk" : "Tambah Penduduk Baru"}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {isEditMode
-                    ? "Perbarui informasi penduduk di bawah ini."
-                    : "Isi formulir berikut untuk menambahkan data penduduk."}
-                </p>
+            {/* Modal Header — navy gradient */}
+            <div className="relative bg-gradient-to-r from-[#1b365d] to-[#264478] px-6 py-5 text-white overflow-hidden shrink-0">
+              <div className="absolute right-0 top-0 w-40 h-40 rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
+              <div className="absolute left-0 bottom-0 w-24 h-24 rounded-full bg-white/[0.04] translate-y-1/2 -translate-x-1/3" />
+
+              <div className="relative flex justify-between items-start gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0 border border-white/10">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-bold leading-tight">
+                      {isEditMode ? "Edit Data Penduduk" : "Tambah Penduduk Baru"}
+                    </h2>
+                    <p className="text-[13px] text-white/50 mt-0.5">
+                      {isEditMode
+                        ? "Perbarui informasi penduduk di bawah ini."
+                        : "Isi formulir berikut untuk menambahkan data penduduk."}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+                  title="Tutup"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                title="Tutup"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 space-y-5">
               {/* Section: Identitas */}
               <fieldset className="space-y-3">
-                <legend className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">
+                <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Identitas
                 </legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -691,6 +742,7 @@ export default function PendudukDashboardPage() {
                       value={formData.nik}
                       onChange={(e) => updateField("nik", e.target.value)}
                       placeholder="Contoh: 320101..."
+                      className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
                       required
                     />
                   </div>
@@ -701,6 +753,7 @@ export default function PendudukDashboardPage() {
                       value={formData.nama}
                       onChange={(e) => updateField("nama", e.target.value)}
                       placeholder="Sesuai KTP"
+                      className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
                       required
                     />
                   </div>
@@ -720,6 +773,7 @@ export default function PendudukDashboardPage() {
                       type="date"
                       value={formData.birthDate}
                       onChange={(e) => updateField("birthDate", e.target.value)}
+                      className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
                       required
                     />
                   </div>
@@ -728,7 +782,7 @@ export default function PendudukDashboardPage() {
 
               {/* Section: Status */}
               <fieldset className="space-y-3">
-                <legend className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">
+                <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Status Kependudukan
                 </legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -782,8 +836,8 @@ export default function PendudukDashboardPage() {
 
               {/* Section: Pekerjaan & Alamat */}
               <fieldset className="space-y-3">
-                <legend className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">
-                  Pekerjaan & Domisili
+                <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Pekerjaan &amp; Domisili
                 </legend>
                 <div className="space-y-1.5">
                   <Label htmlFor="occupation" className="text-xs">Pekerjaan</Label>
@@ -792,6 +846,7 @@ export default function PendudukDashboardPage() {
                     value={formData.occupation}
                     onChange={(e) => updateField("occupation", e.target.value)}
                     placeholder="Contoh: Petani, Wiraswasta, Guru, Karyawan Swasta"
+                    className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
                     required
                   />
                 </div>
@@ -804,6 +859,7 @@ export default function PendudukDashboardPage() {
                     value={formData.address}
                     onChange={(e) => updateField("address", e.target.value)}
                     placeholder="Contoh: Dusun Krajan RT 02 / RW 01"
+                    className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
                     required
                   />
                 </div>
@@ -814,14 +870,17 @@ export default function PendudukDashboardPage() {
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   onClick={() => setIsModalOpen(false)}
+                  className="h-9 px-4 text-xs font-bold rounded-lg"
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
+                  size="sm"
                   disabled={saving}
-                  className="bg-[#1b365d] hover:bg-[#152a48]"
+                  className="bg-[#1b365d] hover:bg-[#152a48] text-white h-9 px-4 text-xs font-bold shadow-sm rounded-lg"
                 >
                   {saving ? "Menyimpan..." : "Simpan Data"}
                 </Button>
@@ -835,63 +894,6 @@ export default function PendudukDashboardPage() {
 }
 
 /* ─── Sub-components ─── */
-
-function SummaryCard({
-  label,
-  value,
-  icon,
-  color,
-  loading,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  color: "navy" | "sky" | "rose" | "amber";
-  loading: boolean;
-}) {
-  const colorMap = {
-    navy: {
-      bg: "bg-[#1b365d]/5",
-      icon: "text-[#1b365d]",
-      iconBg: "bg-[#1b365d]/10",
-    },
-    sky: {
-      bg: "bg-sky-50",
-      icon: "text-sky-600",
-      iconBg: "bg-sky-100",
-    },
-    rose: {
-      bg: "bg-rose-50",
-      icon: "text-rose-600",
-      iconBg: "bg-rose-100",
-    },
-    amber: {
-      bg: "bg-amber-50",
-      icon: "text-amber-700",
-      iconBg: "bg-amber-100",
-    },
-  };
-
-  const c = colorMap[color];
-
-  return (
-    <div className={`rounded-xl p-4 ${c.bg} border border-slate-100`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium text-slate-500">{label}</p>
-          {loading ? (
-            <div className="h-7 w-12 bg-slate-200/60 rounded mt-1" />
-          ) : (
-            <p className="text-2xl font-bold text-slate-900 mt-0.5 tabular-nums">
-              {value.toLocaleString("id-ID")}
-            </p>
-          )}
-        </div>
-        <div className={`p-2 rounded-lg ${c.iconBg} ${c.icon}`}>{icon}</div>
-      </div>
-    </div>
-  );
-}
 
 function NativeSelect({
   id,
@@ -907,7 +909,7 @@ function NativeSelect({
   return (
     <select
       id={id}
-      className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b365d] focus-visible:ring-offset-1"
+      className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b365d] focus-visible:ring-offset-1"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -922,9 +924,9 @@ function NativeSelect({
 
 function LoadingState() {
   return (
-    <div className="px-6 py-16 text-center">
-      <div className="w-8 h-8 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
-      <p className="text-sm text-slate-500 mt-4">Memuat data kependudukan...</p>
+    <div className="px-6 py-20 text-center">
+      <div className="w-10 h-10 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
+      <p className="text-sm text-slate-500 mt-4 font-medium">Memuat data kependudukan...</p>
     </div>
   );
 }
@@ -951,12 +953,12 @@ function EmptyState({
   }
 
   return (
-    <div className="px-6 py-16 text-center">
-      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-        <Users className="h-6 w-6 text-slate-300" />
+    <div className="px-6 py-20 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+        <Users className="h-7 w-7 text-slate-300" />
       </div>
-      <p className="text-sm font-medium text-slate-700">{message}</p>
-      <p className="text-xs text-slate-400 mt-1">{hint}</p>
+      <p className="text-sm font-bold text-slate-700">{message}</p>
+      <p className="text-xs text-slate-400 mt-1.5 max-w-xs mx-auto">{hint}</p>
     </div>
   );
 }

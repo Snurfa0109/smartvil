@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth-server";
 import { query } from "@/lib/db";
-import { countRecords } from "@/lib/records";
+import { countRecords, TableName } from "@/lib/records";
 import { randomUUID } from "crypto";
 
 const now = () => new Date();
 
 async function seedIfEmpty(table: string, insert: () => Promise<void>) {
   try {
-    const count = await countRecords(table as any);
+    const count = await countRecords(table as TableName);
     if (count > 0) {
       return `${table}: sudah ada ${count} baris, dilewati`;
     }
-  } catch (e) {
+  } catch {
     // Table mungkin belum ada atau error lain, lanjut seed
   }
   await insert();
@@ -24,6 +24,22 @@ export async function POST(req: NextRequest) {
     const session = await getSessionProfile(req);
     if (!session) return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
     const logs: string[] = [];
+
+    try {
+      await query("ALTER TABLE `news` ADD COLUMN `views` INT UNSIGNED NOT NULL DEFAULT 0");
+      logs.push("migration: added views column to news");
+    } catch {
+      // Column already exists
+    }
+
+    for (const col of ["date_start DATE NULL", "date_end DATE NULL", "time_start VARCHAR(10) DEFAULT ''", "time_end VARCHAR(10) DEFAULT ''", "location VARCHAR(500) DEFAULT ''"]) {
+      try {
+        await query(`ALTER TABLE \`agenda\` ADD COLUMN ${col}`);
+        logs.push(`migration: added ${col.split(" ")[0]} column to agenda`);
+      } catch {
+        // Column already exists
+      }
+    }
 
     try {
       logs.push(

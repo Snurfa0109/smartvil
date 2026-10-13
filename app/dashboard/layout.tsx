@@ -4,15 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  FileText,
   Users,
   MessageSquare,
-  Settings,
   LogOut,
   Menu,
   X,
   ChevronRight,
-  Bell,
   Globe,
   CalendarDays,
   ShieldCheck,
@@ -22,8 +19,6 @@ import {
   Sparkles,
   Inbox,
   Newspaper,
-  Search,
-  PanelLeftClose,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -78,7 +73,7 @@ export default function DashboardLayout({
     key: string;
     href: string;
     label: string;
-    icon: any;
+    icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
     exact?: boolean;
   }
 
