@@ -550,94 +550,136 @@ export default function ServicesPage() {
           </div>
 
           <div className="md:col-span-7 space-y-4">
-            <Card className="border-slate-200 shadow-2xs">
-              <CardHeader className="border-b border-slate-100 pb-4">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#1b365d] text-white text-xs flex items-center justify-center font-bold">2</span>
-                  {activeLetterObj ? activeLetterObj.name : "Formulir Permohonan Surat"}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {activeLetterObj ? activeLetterObj.desc : "Silakan pilih salah satu jenis surat di sebelah kiri."}
-                </CardDescription>
-              </CardHeader>
+            <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm">
+              {/* Form Header */}
+              <div className="bg-gradient-to-r from-[#1b365d] to-[#264478] px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                    {activeLetterObj
+                      ? <FileCheck className="h-[18px] w-[18px] text-white" />
+                      : <FileText className="h-[18px] w-[18px] text-white/60" />
+                    }
+                  </div>
+                  <div>
+                    <h3 className="text-[14px] font-bold text-white leading-tight">
+                      {activeLetterObj ? activeLetterObj.name : "Formulir Permohonan Surat"}
+                    </h3>
+                    <p className="text-[11px] text-slate-300 mt-0.5 line-clamp-1">
+                      {activeLetterObj ? activeLetterObj.desc : "Pilih jenis surat di sebelah kiri untuk memulai"}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              <CardContent className="pt-5">
+              <div className="p-5">
                 {activeLetterObj ? (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Syarat Berkas */}
                     {Array.isArray(activeLetterObj.requirements) && activeLetterObj.requirements.length > 0 && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
-                        <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                          <CheckSquare className="h-3.5 w-3.5 text-[#1b365d]" /> Syarat Berkas yang Wajib Dibawa saat Pengambilan:
-                        </span>
-                        <ul className="list-disc list-inside space-y-1 text-slate-600 pl-1">
+                      <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-amber-800">
+                          <CheckSquare className="h-4 w-4 shrink-0" />
+                          <span className="text-xs font-bold">Syarat Berkas saat Pengambilan</span>
+                        </div>
+                        <div className="grid gap-1.5 pl-0.5">
                           {activeLetterObj.requirements.map((req, idx) => (
-                            <li key={idx}>{req}</li>
+                            <div key={idx} className="flex items-start gap-2 text-[12px] text-amber-900/80">
+                              <div className="w-4 h-4 rounded bg-amber-200/60 flex items-center justify-center shrink-0 mt-0.5">
+                                <span className="text-[9px] font-bold text-amber-700">{idx + 1}</span>
+                              </div>
+                              {req}
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
 
-                    <div className="space-y-1.5">
-                      <label htmlFor="nik" className="text-xs font-semibold text-slate-700">
-                        NIK (Nomor Induk Kependudukan - 16 Digit) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="nik"
-                        type="text"
-                        required
-                        maxLength={16}
-                        className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
-                        placeholder="Contoh: 367305xxxxxxxxxx"
-                        value={formData.nik}
-                        onChange={(e) => setFormData({ ...formData, nik: e.target.value.replace(/\D/g, "") })}
-                      />
-                    </div>
+                    {/* Identitas Pemohon */}
+                    <fieldset className="space-y-3">
+                      <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d] flex items-center gap-2 pb-1">
+                        <ShieldCheck className="h-3.5 w-3.5" /> Identitas Pemohon
+                      </legend>
 
-                    <div className="space-y-1.5">
-                      <label htmlFor="nama" className="text-xs font-semibold text-slate-700">
-                        Nama Lengkap (Sesuai KTP) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="nama"
-                        type="text"
-                        required
-                        className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
-                        placeholder="Nama lengkap pemohon sesuai KTP"
-                        value={formData.nama}
-                        onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                      />
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label htmlFor="nik" className="text-[11px] font-semibold text-slate-600">
+                            NIK (16 Digit) <span className="text-red-400">*</span>
+                          </label>
+                          <div className="relative">
+                            <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <input
+                              id="nik"
+                              type="text"
+                              required
+                              maxLength={16}
+                              className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                              placeholder="367305xxxxxxxxxx"
+                              value={formData.nik}
+                              onChange={(e) => setFormData({ ...formData, nik: e.target.value.replace(/\D/g, "") })}
+                            />
+                          </div>
+                        </div>
 
-                    <div className="space-y-1.5">
-                      <label htmlFor="phone" className="text-xs font-semibold text-slate-700">
-                        Nomor WhatsApp Aktif <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="phone"
-                        type="tel"
-                        required
-                        className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
-                        placeholder="Contoh: 0813xxxxxxxx (untuk kemudahan pelacakan & notifikasi)"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      />
-                    </div>
+                        <div className="space-y-1.5">
+                          <label htmlFor="nama" className="text-[11px] font-semibold text-slate-600">
+                            Nama Lengkap (KTP) <span className="text-red-400">*</span>
+                          </label>
+                          <div className="relative">
+                            <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <input
+                              id="nama"
+                              type="text"
+                              required
+                              className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                              placeholder="Nama lengkap sesuai KTP"
+                              value={formData.nama}
+                              onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-                    <div className="space-y-1.5">
-                      <label htmlFor="keperluan" className="text-xs font-semibold text-slate-700">
-                        Keperluan Pembuatan Surat <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        id="keperluan"
-                        required
-                        rows={3}
-                        className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
-                        placeholder="Jelaskan keperluan pembuatan surat secara jelas (misal: syarat pendaftaran beasiswa, izin usaha warung sembako BAP)..."
-                        value={formData.keperluan}
-                        onChange={(e) => setFormData({ ...formData, keperluan: e.target.value })}
-                      />
-                    </div>
+                      <div className="space-y-1.5">
+                        <label htmlFor="phone" className="text-[11px] font-semibold text-slate-600">
+                          Nomor WhatsApp Aktif <span className="text-red-400">*</span>
+                        </label>
+                        <div className="relative">
+                          <PhoneCall className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                          <input
+                            id="phone"
+                            type="tel"
+                            required
+                            className="w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                            placeholder="0813xxxxxxxx"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </fieldset>
 
+                    {/* Keperluan */}
+                    <fieldset className="space-y-3">
+                      <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d] flex items-center gap-2 pb-1">
+                        <FileText className="h-3.5 w-3.5" /> Keperluan Surat
+                      </legend>
+                      <div className="space-y-1.5">
+                        <label htmlFor="keperluan" className="text-[11px] font-semibold text-slate-600">
+                          Jelaskan keperluan pembuatan surat <span className="text-red-400">*</span>
+                        </label>
+                        <textarea
+                          id="keperluan"
+                          required
+                          rows={3}
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                          placeholder="Misal: syarat pendaftaran beasiswa, izin usaha warung sembako..."
+                          value={formData.keperluan}
+                          onChange={(e) => setFormData({ ...formData, keperluan: e.target.value })}
+                        />
+                      </div>
+                    </fieldset>
+
+                    {/* Custom Fields */}
                     {activeLetterObj?.customFields && activeLetterObj.customFields.length > 0 && (() => {
                       const WARGA_HIDDEN = new Set([
                         "nomor_surat", "no_surat", "tanggal_surat", "tanggal",
@@ -653,90 +695,107 @@ export default function ServicesPage() {
                         (f) => !WARGA_HIDDEN.has(f.key.toLowerCase()) && !f.key.toLowerCase().startsWith("paragraf_")
                       );
                       return visibleFields.length > 0 ? (
-                      <div className="space-y-3 pt-2 border-t">
-                        <p className="text-xs font-bold text-slate-800">Data tambahan sesuai template surat ini:</p>
-                        {visibleFields.map((f) => (
-                          <div key={f.key} className="space-y-1.5">
-                            <label htmlFor={`custom-${f.key}`} className="text-xs font-semibold text-slate-700">
-                              {f.label} {f.required && <span className="text-red-500">*</span>}
-                            </label>
-                            {f.type === "select" && f.options && f.options.length > 0 ? (
-                              <select
-                                id={`custom-${f.key}`}
-                                required={f.required}
-                                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
-                                value={customFormData[f.key] || ""}
-                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
-                              >
-                                <option value="">Pilih {f.label.toLowerCase()}...</option>
-                                {f.options.map((opt) => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                            ) : f.type === "textarea" ? (
-                              <textarea
-                                id={`custom-${f.key}`}
-                                required={f.required}
-                                rows={3}
-                                className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-                                placeholder={`Isi ${f.label.toLowerCase()}...`}
-                                value={customFormData[f.key] || ""}
-                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
-                              />
-                            ) : (
-                              <input
-                                id={`custom-${f.key}`}
-                                type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
-                                required={f.required}
-                                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-                                placeholder={`Isi ${f.label.toLowerCase()}...`}
-                                value={customFormData[f.key] || ""}
-                                onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <fieldset className="space-y-3">
+                        <legend className="text-[10px] font-bold uppercase tracking-widest text-[#1b365d] flex items-center gap-2 pb-1">
+                          <FileCheck className="h-3.5 w-3.5" /> Data Tambahan Template
+                        </legend>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {visibleFields.map((f) => (
+                            <div key={f.key} className={`space-y-1.5 ${f.type === "textarea" ? "sm:col-span-2" : ""}`}>
+                              <label htmlFor={`custom-${f.key}`} className="text-[11px] font-semibold text-slate-600">
+                                {f.label} {f.required && <span className="text-red-400">*</span>}
+                              </label>
+                              {f.type === "select" && f.options && f.options.length > 0 ? (
+                                <select
+                                  id={`custom-${f.key}`}
+                                  required={f.required}
+                                  className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                                  value={customFormData[f.key] || ""}
+                                  onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                                >
+                                  <option value="">Pilih {f.label.toLowerCase()}...</option>
+                                  {f.options.map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              ) : f.type === "textarea" ? (
+                                <textarea
+                                  id={`custom-${f.key}`}
+                                  required={f.required}
+                                  rows={3}
+                                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                                  placeholder={`Isi ${f.label.toLowerCase()}...`}
+                                  value={customFormData[f.key] || ""}
+                                  onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                                />
+                              ) : (
+                                <input
+                                  id={`custom-${f.key}`}
+                                  type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+                                  required={f.required}
+                                  className="w-full h-10 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-colors"
+                                  placeholder={`Isi ${f.label.toLowerCase()}...`}
+                                  value={customFormData[f.key] || ""}
+                                  onChange={(e) => setCustomFormData({ ...customFormData, [f.key]: e.target.value })}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </fieldset>
                     ) : null; })()}
 
-                    <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-lg text-xs text-slate-600 space-y-1">
-                      <p className="font-semibold text-slate-800 flex items-center gap-1.5">
-                        <AlertCircle className="h-4 w-4 text-[#1b365d]" /> Ketentuan Pengambilan Berkas:
+                    {/* Ketentuan */}
+                    <div className="bg-[#1b365d]/[0.04] border border-[#1b365d]/10 p-4 rounded-xl text-xs space-y-1.5">
+                      <p className="font-bold text-[#1b365d] flex items-center gap-1.5">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Ketentuan Pengambilan Berkas
                       </p>
-                      <ul className="list-disc list-inside space-y-0.5 text-slate-600">
-                        <li>Pengambilan dokumen dilakukan di loket kelurahan pada jam kerja resmi.</li>
-                        <li>Harap membawa KTP asli dan Kartu Keluarga asli saat pengambilan fisik surat.</li>
+                      <ul className="space-y-1 text-slate-600 pl-5">
+                        <li className="flex items-start gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5 shrink-0" />
+                          Pengambilan dokumen di loket kelurahan pada jam kerja resmi.
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5 shrink-0" />
+                          Harap membawa KTP asli dan Kartu Keluarga asli saat pengambilan.
+                        </li>
                       </ul>
                     </div>
 
-                    <div className="flex justify-end pt-2">
+                    {/* Submit */}
+                    <div className="flex justify-end pt-1">
                       <Button
                         type="submit"
                         size="lg"
                         disabled={loading}
-                        className="w-full sm:w-auto bg-[#1b365d] hover:bg-[#152a48] text-white font-semibold rounded-lg"
+                        className="w-full sm:w-auto bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 px-6 h-11 text-sm cursor-pointer transition-all"
                       >
                         {loading ? "Mengirim Permohonan..." : (
                           <>
-                            <Send className="mr-2 h-4 w-4" /> Kirim Permohonan Surat Sekarang
+                            <Send className="mr-2 h-4 w-4" /> Kirim Permohonan Surat
                           </>
                         )}
                       </Button>
                     </div>
                   </form>
                 ) : (
-                  <div className="h-72 flex flex-col items-center justify-center text-slate-400 p-6 text-center space-y-2">
-                    <div className="w-14 h-14 rounded-full bg-slate-100 text-[#1b365d] flex items-center justify-center">
-                      <FileText size={28} />
+                  <div className="h-72 flex flex-col items-center justify-center p-6 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center">
+                      <FileText className="h-7 w-7 text-slate-300" />
                     </div>
-                    <p className="font-bold text-slate-800 text-sm">Pilih Jenis Surat Terlebih Dahulu</p>
-                    <p className="text-xs text-slate-500 max-w-xs">
-                      Silakan klik salah satu jenis surat di panel kiri untuk membuka formulir permohonan resmi.
-                    </p>
+                    <div>
+                      <p className="font-bold text-slate-700 text-sm">Pilih Jenis Surat</p>
+                      <p className="text-[11px] text-slate-400 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                        Klik salah satu jenis surat di panel kiri untuk membuka formulir permohonan.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
+                      <ArrowRight className="h-3 w-3 rotate-180" /> Panel kiri
+                    </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
