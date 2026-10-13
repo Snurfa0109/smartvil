@@ -822,20 +822,41 @@ export default function ServicesPage() {
                     </Button>
                   </form>
                 ) : (
-                  <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 flex items-center justify-center">
-                        <FileText className="h-8 w-8 text-slate-300" />
+                  <div className="py-12 px-6 flex flex-col items-center justify-center text-center">
+                    {/* Illustration */}
+                    <div className="relative mb-6">
+                      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#1b365d]/[0.06] to-[#1b365d]/[0.02] flex items-center justify-center">
+                        <Scroll className="h-10 w-10 text-[#1b365d]/20" />
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#1b365d]/10 flex items-center justify-center border border-[#1b365d]/10">
-                        <ArrowRight className="h-3.5 w-3.5 text-[#1b365d]/40 rotate-180" />
+                      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200/60 flex items-center justify-center shadow-sm animate-bounce" style={{ animationDuration: "2s" }}>
+                        <PenLine className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <div className="absolute -bottom-1.5 -left-1.5 w-7 h-7 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200/60 flex items-center justify-center shadow-sm">
+                        <FileCheck className="h-3 w-3 text-blue-500" />
                       </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-700 text-sm">Pilih Jenis Surat</p>
-                      <p className="text-[11px] text-slate-400 mt-1.5 max-w-[200px] mx-auto leading-relaxed">
-                        Klik salah satu jenis surat di panel kiri untuk membuka formulir
-                      </p>
+
+                    <h3 className="font-bold text-slate-800 text-[15px]">Mulai Permohonan Surat</h3>
+                    <p className="text-[12px] text-slate-400 mt-2 max-w-[240px] leading-relaxed">
+                      Pilih jenis surat yang dibutuhkan di panel sebelah kiri, lalu isi formulir permohonan.
+                    </p>
+
+                    {/* Steps hint */}
+                    <div className="mt-6 flex items-center gap-3">
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1b365d]/[0.04] border border-[#1b365d]/[0.08]">
+                        <div className="w-5 h-5 rounded-md bg-[#1b365d] text-white text-[10px] font-bold flex items-center justify-center">1</div>
+                        <span className="text-[10px] font-semibold text-slate-500">Pilih Surat</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                        <div className="w-5 h-5 rounded-md bg-slate-200 text-slate-400 text-[10px] font-bold flex items-center justify-center">2</div>
+                        <span className="text-[10px] font-semibold text-slate-400">Isi Data</span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200/80">
+                        <div className="w-5 h-5 rounded-md bg-slate-200 text-slate-400 text-[10px] font-bold flex items-center justify-center">3</div>
+                        <span className="text-[10px] font-semibold text-slate-400">Kirim</span>
+                      </div>
                     </div>
                   </div>
                 )}
