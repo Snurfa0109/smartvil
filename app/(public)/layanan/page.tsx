@@ -530,28 +530,33 @@ export default function ServicesPage() {
 
               {/* Letter List */}
               <div className="max-h-[520px] overflow-y-auto">
-                <div className="p-2 space-y-1">
+                <div className="p-2.5 space-y-2">
                   {filteredLetterTypes.map((letter) => {
                     const letterKey = letter.id || letter.code;
                     const isSelected = selectedLetter === letterKey || selectedLetter === letter.code;
+                    const noneSelected = !selectedLetter;
                     return (
                       <button
                         type="button"
                         key={letterKey}
                         onClick={() => { setSelectedLetter(letterKey); setCustomFormData({}); }}
-                        className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer group ${
+                        className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer group border ${
                           isSelected
-                            ? "bg-[#1b365d] text-white shadow-md shadow-[#1b365d]/20"
-                            : "hover:bg-slate-50 text-slate-700"
+                            ? "bg-[#1b365d] text-white shadow-md shadow-[#1b365d]/20 border-[#1b365d]"
+                            : noneSelected
+                              ? "border-slate-200/80 bg-white hover:border-[#1b365d]/30 hover:bg-[#1b365d]/[0.02] hover:shadow-sm"
+                              : "border-transparent hover:bg-slate-50"
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all ${
                             isSelected
                               ? "bg-white/20"
-                              : "bg-[#1b365d]/[0.06] group-hover:bg-[#1b365d]/10"
+                              : noneSelected
+                                ? "bg-gradient-to-br from-[#1b365d]/[0.08] to-[#1b365d]/[0.03] group-hover:from-[#1b365d]/[0.12] group-hover:to-[#1b365d]/[0.06]"
+                                : "bg-[#1b365d]/[0.06] group-hover:bg-[#1b365d]/10"
                           }`}>
-                            <FileText className={`h-4 w-4 ${isSelected ? "text-white" : "text-[#1b365d]"}`} />
+                            <FileText className={`h-4 w-4 transition-colors ${isSelected ? "text-white" : "text-[#1b365d]"}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className={`font-bold text-[12px] leading-tight truncate ${
@@ -565,13 +570,22 @@ export default function ServicesPage() {
                               {letter.desc}
                             </p>
                           </div>
-                          <ChevronRight className={`h-4 w-4 shrink-0 transition-transform ${
-                            isSelected ? "text-white/60 translate-x-0" : "text-slate-300 -translate-x-1 group-hover:translate-x-0 group-hover:text-slate-400"
+                          <ChevronRight className={`h-4 w-4 shrink-0 transition-all ${
+                            isSelected
+                              ? "text-white/60 translate-x-0"
+                              : noneSelected
+                                ? "text-slate-300 group-hover:text-[#1b365d]/40 group-hover:translate-x-0.5"
+                                : "text-slate-300 -translate-x-1 group-hover:translate-x-0 group-hover:text-slate-400"
                           }`} />
                         </div>
                         {isSelected && Array.isArray(letter.requirements) && letter.requirements.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-white/20 flex items-center gap-1.5 text-[10px] text-white/80 font-medium">
                             <ClipboardList className="h-3 w-3" /> {letter.requirements.length} dokumen syarat pengambilan
+                          </div>
+                        )}
+                        {!isSelected && noneSelected && Array.isArray(letter.requirements) && letter.requirements.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                            <ClipboardList className="h-3 w-3" /> {letter.requirements.length} dokumen syarat
                           </div>
                         )}
                       </button>
