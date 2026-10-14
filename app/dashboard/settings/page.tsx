@@ -33,6 +33,8 @@ import {
   Sparkles,
   BarChart3,
   Users,
+  Camera,
+  Compass,
 } from "lucide-react";
 import { BannerManagement } from "@/components/dashboard/banner-management";
 import { useAuth } from "@/contexts/AuthContext";
@@ -334,15 +336,15 @@ function SettingsContent() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <FileText className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <FileText className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Judul Halaman Profil</p>
+                <p className="text-sm font-bold text-slate-800">Judul Halaman Profil</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Teks judul utama dan subjudul yang muncul di bagian paling atas halaman <code>/profil</code>.
+                  Judul & subjudul di bagian atas halaman <code className="bg-slate-100 px-1 rounded text-[9px]">/profil</code>
                 </p>
               </div>
             </div>
@@ -369,15 +371,15 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <BookOpen className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <BookOpen className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Sejarah, Visi & Misi Kelurahan</p>
+                <p className="text-sm font-bold text-slate-800">Sejarah, Visi & Misi</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Ubah narasi sejarah desa, visi jangka panjang, dan poin-poin misi kelurahan.
+                  Narasi sejarah, visi jangka panjang, dan poin-poin misi kelurahan.
                 </p>
               </div>
             </div>
@@ -421,42 +423,43 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Landmark className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Landmark className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Struktur Organisasi & Aparatur Kelurahan</p>
+                <p className="text-sm font-bold text-slate-800">Struktur Organisasi & Aparatur</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Atur nama, jabatan, dan <strong>foto resmi</strong> pejabat yang tampil pada bagan struktur organisasi <code>/profil</code>.
+                  Nama, jabatan, dan foto resmi pejabat kelurahan.
                 </p>
               </div>
             </div>
-            <div className="p-5 pt-3 space-y-6">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
-                <div className="font-semibold text-sm text-[#1b365d] flex items-center gap-2">
-                  <User className="h-4 w-4" /> Pimpinan / Kepala Kelurahan (Lurah)
+            <div className="p-5 pt-3 space-y-5">
+              <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-[#1b365d] space-y-4 shadow-sm">
+                <div className="font-bold text-sm text-[#1b365d] flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-[#1b365d]/10 flex items-center justify-center">
+                    <User className="h-3.5 w-3.5 text-[#1b365d]" />
+                  </div>
+                  Kepala Kelurahan (Lurah)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Foto Resmi</Label>
-                    <div className="flex flex-col items-center gap-2">
-                      {siteForm.headPhoto ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={siteForm.headPhoto} alt="Lurah" className="w-20 h-20 rounded-full object-cover border-2 border-[#1b365d]/20" />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
-                          <User className="h-8 w-8" />
-                        </div>
-                      )}
-                      <label className="cursor-pointer">
-                        <span className="text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium text-slate-700">
-                          {uploadingPhoto === "headPhoto" ? "Mengunggah..." : "Unggah Foto"}
-                        </span>
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "headPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
-                      </label>
-                    </div>
+                  <div className="flex flex-col items-center gap-2.5">
+                    {siteForm.headPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={siteForm.headPhoto} alt="Lurah" className="w-24 h-24 rounded-2xl object-cover border-2 border-[#1b365d]/20 shadow-sm" />
+                    ) : (
+                      <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 gap-1 bg-slate-50">
+                        <Camera className="h-6 w-6" />
+                        <span className="text-[9px] font-medium">Foto Lurah</span>
+                      </div>
+                    )}
+                    <label className="cursor-pointer">
+                      <span className="text-[10px] px-3 py-1.5 bg-[#1b365d] text-white rounded-lg hover:bg-[#152a48] transition-colors font-bold shadow-sm">
+                        {uploadingPhoto === "headPhoto" ? "Mengunggah..." : "Unggah Foto"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "headPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
+                    </label>
                   </div>
                   <div className="md:col-span-2 grid grid-cols-1 gap-3">
                     <div className="space-y-1.5">
@@ -474,29 +477,30 @@ function SettingsContent() {
                   </div>
                 </div>
               </div>
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
-                <div className="font-semibold text-sm text-blue-700 flex items-center gap-2">
-                  <User className="h-4 w-4" /> Sekretaris Kelurahan (Seklur)
+              <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-blue-500 space-y-4 shadow-sm">
+                <div className="font-bold text-sm text-blue-700 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center">
+                    <User className="h-3.5 w-3.5 text-blue-600" />
+                  </div>
+                  Sekretaris Kelurahan (Seklur)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Foto Resmi</Label>
-                    <div className="flex flex-col items-center gap-2">
-                      {siteForm.secretaryPhoto ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={siteForm.secretaryPhoto} alt="Seklur" className="w-20 h-20 rounded-full object-cover border-2 border-blue-200" />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
-                          <User className="h-8 w-8" />
-                        </div>
-                      )}
-                      <label className="cursor-pointer">
-                        <span className="text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium text-slate-700">
-                          {uploadingPhoto === "secretaryPhoto" ? "Mengunggah..." : "Unggah Foto"}
-                        </span>
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "secretaryPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
-                      </label>
-                    </div>
+                  <div className="flex flex-col items-center gap-2.5">
+                    {siteForm.secretaryPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={siteForm.secretaryPhoto} alt="Seklur" className="w-24 h-24 rounded-2xl object-cover border-2 border-blue-200 shadow-sm" />
+                    ) : (
+                      <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 gap-1 bg-slate-50">
+                        <Camera className="h-6 w-6" />
+                        <span className="text-[9px] font-medium">Foto Seklur</span>
+                      </div>
+                    )}
+                    <label className="cursor-pointer">
+                      <span className="text-[10px] px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold shadow-sm">
+                        {uploadingPhoto === "secretaryPhoto" ? "Mengunggah..." : "Unggah Foto"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "secretaryPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
+                    </label>
                   </div>
                   <div className="md:col-span-2 grid grid-cols-1 gap-3">
                     <div className="space-y-1.5">
@@ -511,22 +515,25 @@ function SettingsContent() {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="font-semibold text-sm text-emerald-700 flex items-center gap-2">
-                    <User className="h-4 w-4" /> Kasi Pemerintahan & Trantib
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-emerald-500 space-y-3 shadow-sm">
+                  <div className="font-bold text-sm text-emerald-700 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center">
+                      <User className="h-3.5 w-3.5 text-emerald-600" />
+                    </div>
+                    Kasi Pemerintahan & Trantib
                   </div>
                   <div className="flex items-center gap-3">
                     {siteForm.kasiPemerintahanPhoto ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={siteForm.kasiPemerintahanPhoto} alt="Kasi" className="w-14 h-14 rounded-full object-cover border border-emerald-200 shrink-0" />
+                      <img src={siteForm.kasiPemerintahanPhoto} alt="Kasi" className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-200 shrink-0 shadow-sm" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                        <User className="h-6 w-6" />
+                      <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 shrink-0 bg-slate-50">
+                        <Camera className="h-4 w-4" />
                       </div>
                     )}
                     <label className="cursor-pointer">
-                      <span className="text-xs px-2.5 py-1 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 font-medium text-slate-700">
-                        {uploadingPhoto === "kasiPemerintahanPhoto" ? "..." : "Unggah Foto"}
+                      <span className="text-[10px] px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold shadow-sm">
+                        {uploadingPhoto === "kasiPemerintahanPhoto" ? "..." : "Unggah"}
                       </span>
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "kasiPemerintahanPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
                     </label>
@@ -538,22 +545,25 @@ function SettingsContent() {
                     <Input id="kasi-pem-title" value={siteForm.kasiPemerintahanTitle} onChange={(e) => setSiteForm((p) => ({ ...p, kasiPemerintahanTitle: e.target.value }))} disabled={siteLoading} />
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="font-semibold text-sm text-amber-700 flex items-center gap-2">
-                    <User className="h-4 w-4" /> Kasi Pelayanan Umum
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-amber-500 space-y-3 shadow-sm">
+                  <div className="font-bold text-sm text-amber-700 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center">
+                      <User className="h-3.5 w-3.5 text-amber-600" />
+                    </div>
+                    Kasi Pelayanan Umum
                   </div>
                   <div className="flex items-center gap-3">
                     {siteForm.kasiPelayananPhoto ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={siteForm.kasiPelayananPhoto} alt="Kasi" className="w-14 h-14 rounded-full object-cover border border-amber-200 shrink-0" />
+                      <img src={siteForm.kasiPelayananPhoto} alt="Kasi" className="w-16 h-16 rounded-xl object-cover border-2 border-amber-200 shrink-0 shadow-sm" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                        <User className="h-6 w-6" />
+                      <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 shrink-0 bg-slate-50">
+                        <Camera className="h-4 w-4" />
                       </div>
                     )}
                     <label className="cursor-pointer">
-                      <span className="text-xs px-2.5 py-1 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 font-medium text-slate-700">
-                        {uploadingPhoto === "kasiPelayananPhoto" ? "..." : "Unggah Foto"}
+                      <span className="text-[10px] px-2.5 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-bold shadow-sm">
+                        {uploadingPhoto === "kasiPelayananPhoto" ? "..." : "Unggah"}
                       </span>
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, "kasiPelayananPhoto")} disabled={siteLoading || uploadingPhoto !== null} />
                     </label>
@@ -568,22 +578,25 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Building className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Building className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Fasilitas & Pemukiman Utama</p>
+                <p className="text-sm font-bold text-slate-800">Fasilitas & Pemukiman Utama</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Atur 3 fasilitas dan kawasan pemukiman utama yang disorot pada halaman <code>/profil</code>.
+                  3 fasilitas utama yang disorot pada halaman profil.
                 </p>
               </div>
             </div>
             <div className="p-5 pt-3 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <Label className="font-bold text-slate-800">Fasilitas / Wilayah 1</Label>
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-[#1b365d] space-y-3 shadow-sm">
+                  <Label className="font-bold text-slate-800 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-[#1b365d] text-white text-[10px] font-bold flex items-center justify-center">1</span>
+                    Fasilitas / Wilayah
+                  </Label>
                   <Input
                     placeholder="Judul Fasilitas 1"
                     value={siteForm.facility1Title}
@@ -599,8 +612,11 @@ function SettingsContent() {
                   />
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <Label className="font-bold text-slate-800">Fasilitas / Wilayah 2</Label>
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-blue-500 space-y-3 shadow-sm">
+                  <Label className="font-bold text-slate-800 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                    Fasilitas / Wilayah
+                  </Label>
                   <Input
                     placeholder="Judul Fasilitas 2"
                     value={siteForm.facility2Title}
@@ -616,8 +632,11 @@ function SettingsContent() {
                   />
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <Label className="font-bold text-slate-800">Fasilitas / Wilayah 3</Label>
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-l-4 border-l-emerald-500 space-y-3 shadow-sm">
+                  <Label className="font-bold text-slate-800 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">3</span>
+                    Fasilitas / Wilayah
+                  </Label>
                   <Input
                     placeholder="Judul Fasilitas 3"
                     value={siteForm.facility3Title}
@@ -635,15 +654,15 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Globe className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Globe className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Geografis & Batas Wilayah</p>
+                <p className="text-sm font-bold text-slate-800">Geografis & Batas Wilayah</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Informasi luas wilayah, titik koordinat, dan batas administratif kelurahan.
+                  Luas wilayah, koordinat, dan batas administratif kelurahan.
                 </p>
               </div>
             </div>
@@ -693,10 +712,14 @@ function SettingsContent() {
               </div>
 
               <div className="pt-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">Batas Wilayah Administratif</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-3">
+                  <Compass className="h-3.5 w-3.5" /> Batas Wilayah Administratif
+                </Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="b-north" className="text-xs">Batas Utara</Label>
+                    <Label htmlFor="b-north" className="text-xs flex items-center gap-1">
+                      <span className="text-[10px]">↑</span> Batas Utara
+                    </Label>
                     <Input
                       id="b-north"
                       value={siteForm.boundaryNorth}
@@ -705,7 +728,9 @@ function SettingsContent() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="b-south" className="text-xs">Batas Selatan</Label>
+                    <Label htmlFor="b-south" className="text-xs flex items-center gap-1">
+                      <span className="text-[10px]">↓</span> Batas Selatan
+                    </Label>
                     <Input
                       id="b-south"
                       value={siteForm.boundarySouth}
@@ -714,7 +739,9 @@ function SettingsContent() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="b-east" className="text-xs">Batas Timur</Label>
+                    <Label htmlFor="b-east" className="text-xs flex items-center gap-1">
+                      <span className="text-[10px]">→</span> Batas Timur
+                    </Label>
                     <Input
                       id="b-east"
                       value={siteForm.boundaryEast}
@@ -723,7 +750,9 @@ function SettingsContent() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="b-west" className="text-xs">Batas Barat</Label>
+                    <Label htmlFor="b-west" className="text-xs flex items-center gap-1">
+                      <span className="text-[10px]">←</span> Batas Barat
+                    </Label>
                     <Input
                       id="b-west"
                       value={siteForm.boundaryWest}
@@ -735,15 +764,15 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <MapPin className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <MapPin className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Identitas & Kode Wilayah</p>
+                <p className="text-sm font-bold text-slate-800">Identitas & Kode Wilayah</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Kode resmi Kemendagri, kode pos, dan tautan Google Maps yang tampil di halaman profil &amp; footer.
+                  Kode Kemendagri, kode pos, dan Google Maps.
                 </p>
               </div>
             </div>
@@ -802,25 +831,23 @@ function SettingsContent() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={() => handleSaveSite("Profil Kelurahan")}
-              disabled={savingSite || siteLoading}
-              className="bg-[#1b365d] hover:bg-[#152a48] text-white px-6 font-semibold"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {savingSite ? "Menyimpan..." : "Simpan Profil Kelurahan"}
-            </Button>
-          </div>
+          <Button
+            onClick={() => handleSaveSite("Profil Kelurahan")}
+            disabled={savingSite || siteLoading}
+            className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {savingSite ? "Menyimpan..." : "Simpan Profil Kelurahan"}
+          </Button>
         </TabsContent>
         <TabsContent value="home" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Home className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Home className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Teks Hero Beranda Utama</p>
+                <p className="text-sm font-bold text-slate-800">Teks Hero Beranda Utama</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Teks yang dilihat pertama kali oleh warga saat membuka halaman depan website.
                 </p>
@@ -860,13 +887,13 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Clock className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Clock className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Status & Jadwal Loket Pelayanan</p>
+                <p className="text-sm font-bold text-slate-800">Status & Jadwal Loket Pelayanan</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Atur status buka/tutup loket serta jam kerja pelayanan administrasi di kantor kelurahan.
                 </p>
@@ -912,13 +939,13 @@ function SettingsContent() {
               </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                <Shield className="h-4 w-4 text-red-600" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600 to-red-500 flex items-center justify-center shadow-sm">
+                <Shield className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Kontak Darurat Wilayah Terpadu</p>
+                <p className="text-sm font-bold text-slate-800">Kontak Darurat Wilayah Terpadu</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Nomor hotline medis dan keamanan darurat yang tampil di kartu biru beranda serta footer website.
                 </p>
@@ -979,25 +1006,23 @@ function SettingsContent() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={() => handleSaveSite("Beranda & Loket")}
-              disabled={savingSite || siteLoading}
-              className="bg-[#1b365d] hover:bg-[#152a48] text-white px-6 font-semibold"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {savingSite ? "Menyimpan..." : "Simpan Beranda & Loket"}
-            </Button>
-          </div>
+          <Button
+            onClick={() => handleSaveSite("Beranda & Loket")}
+            disabled={savingSite || siteLoading}
+            className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {savingSite ? "Menyimpan..." : "Simpan Beranda & Loket"}
+          </Button>
         </TabsContent>
         <TabsContent value="contact" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Mail className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Mail className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Kontak Resmi & Media Sosial</p>
+                <p className="text-sm font-bold text-slate-800">Kontak Resmi & Media Sosial</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Informasi ini otomatis tampil di footer seluruh halaman, navigasi, dan informasi kontak publik.
                 </p>
@@ -1077,26 +1102,24 @@ function SettingsContent() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Button
-              onClick={() => handleSaveSite("Kontak & Media Sosial")}
-              disabled={savingSite || siteLoading}
-              className="bg-[#1b365d] hover:bg-[#152a48] text-white px-6 font-semibold"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {savingSite ? "Menyimpan..." : "Simpan Kontak & Medsos"}
-            </Button>
-          </div>
+          <Button
+            onClick={() => handleSaveSite("Kontak & Media Sosial")}
+            disabled={savingSite || siteLoading}
+            className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {savingSite ? "Menyimpan..." : "Simpan Kontak & Medsos"}
+          </Button>
         </TabsContent>
         <TabsContent value="chatbot" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                  <Bot className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-slate-800">Pengaturan Asisten AI (Gemini)</p>
+                  <p className="text-sm font-bold text-slate-800">Pengaturan Asisten AI (Gemini)</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     Atur perilaku, instruksi, dan batas ruang lingkup chatbot berbasis Google Gemini untuk warga Banjar Agung.
                   </p>
@@ -1234,27 +1257,25 @@ function SettingsContent() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSaveChatbot}
-                  disabled={savingChatbot || chatbotLoading}
-                  className="bg-[#1b365d] hover:bg-[#152a48] text-white px-6 font-semibold"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {savingChatbot ? "Menyimpan..." : "Simpan Pengaturan Chatbot"}
-                </Button>
-              </div>
+              <Button
+                onClick={handleSaveChatbot}
+                disabled={savingChatbot || chatbotLoading}
+                className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {savingChatbot ? "Menyimpan..." : "Simpan Pengaturan Chatbot"}
+              </Button>
             </div>
           </div>
         </TabsContent>
         <TabsContent value="account" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <User className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <User className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Profil Akun & Kata Sandi Administrator</p>
+                <p className="text-sm font-bold text-slate-800">Profil Akun & Kata Sandi Administrator</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Ubah nama tampilan login admin dan perbarui kata sandi akun keamanan.
                 </p>
@@ -1331,7 +1352,7 @@ function SettingsContent() {
                 </div>
 
                 <div className="pt-2">
-                  <Button type="submit" disabled={savingAccount} className="bg-[#1b365d] hover:bg-[#152a48] text-white">
+                  <Button type="submit" disabled={savingAccount} className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200">
                     <Save className="mr-2 h-4 w-4" />
                     {savingAccount ? "Menyimpan Perubahan..." : "Simpan Profil & Sandi"}
                   </Button>
@@ -1341,13 +1362,13 @@ function SettingsContent() {
           </div>
         </TabsContent>
         <TabsContent value="system" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Database className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Database className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Pengaturan Sistem & Database</p>
+                <p className="text-sm font-bold text-slate-800">Pengaturan Sistem & Database</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Utilitas pengisian data contoh ke Firestore.
                 </p>
@@ -1370,13 +1391,13 @@ function SettingsContent() {
           </div>
         </TabsContent>
         <TabsContent value="categories" className="space-y-6">
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Tag className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Tag className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Manajemen Kategori Berita</p>
+                <p className="text-sm font-bold text-slate-800">Manajemen Kategori Berita</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Kelola daftar kategori yang tersedia saat membuat atau mengedit berita. Perubahan langsung berlaku di form tambah/edit berita.
                 </p>
@@ -1519,7 +1540,7 @@ function SettingsContent() {
                     }
                   }}
                   disabled={savingCategories}
-                  className="bg-[#1b365d] hover:bg-[#152a48] text-white text-sm"
+                  className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200"
                 >
                   <Save className="h-4 w-4 mr-1.5" />
                   {savingCategories ? "Menyimpan..." : "Simpan Kategori"}
@@ -1535,13 +1556,13 @@ function SettingsContent() {
 
         <TabsContent value="demografi" className="space-y-6">
           {/* Populasi Utama */}
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Users className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Users className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Data Populasi</p>
+                <p className="text-sm font-bold text-slate-800">Data Populasi</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Jumlah penduduk, jenis kelamin, dan kepala keluarga yang ditampilkan di halaman <code>/data</code>.
                 </p>
@@ -1594,13 +1615,13 @@ function SettingsContent() {
           </div>
 
           {/* Kelompok Usia */}
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <BarChart3 className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <BarChart3 className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Kelompok Usia</p>
+                <p className="text-sm font-bold text-slate-800">Kelompok Usia</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Pembagian penduduk berdasarkan rentang usia.
                 </p>
@@ -1643,13 +1664,13 @@ function SettingsContent() {
           </div>
 
           {/* Metadata */}
-          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
-                <Clock className="h-4 w-4 text-[#1b365d]" />
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
+                <Clock className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-slate-800">Sumber & Periode Data</p>
+                <p className="text-sm font-bold text-slate-800">Sumber & Periode Data</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Informasi periode pembaruan dan sumber data yang ditampilkan ke publik.
                 </p>
@@ -1680,9 +1701,9 @@ function SettingsContent() {
           </div>
 
           <Button
-            onClick={handleSaveSite}
+            onClick={() => handleSaveSite("Demografi")}
             disabled={siteLoading}
-            className="bg-[#1b365d] hover:bg-[#152a48] text-white font-bold rounded-xl"
+            className="w-full bg-gradient-to-r from-[#1b365d] to-[#264478] hover:from-[#152a48] hover:to-[#1b365d] text-white font-bold rounded-xl shadow-md shadow-[#1b365d]/15 h-12 text-sm transition-all duration-200"
           >
             <Save className="mr-2 h-4 w-4" /> Simpan Data Demografi
           </Button>
