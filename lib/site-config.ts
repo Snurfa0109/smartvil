@@ -267,15 +267,15 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
 
   // Informasi & Statistik Publik (/data)
   demography: {
-    total: 3840,
-    male: 1948,
-    female: 1892,
-    kk: 1185,
-    ageChildren: 998,
-    ageAdults: 2496,
-    ageSeniors: 346,
+    total: 0,
+    male: 0,
+    female: 0,
+    kk: 0,
+    ageChildren: 0,
+    ageAdults: 0,
+    ageSeniors: 0,
     updatedPeriod: "Semester II Tahun 2026",
-    source: "Rekapitulasi Monografi BPS & Kelurahan Banjar Agung",
+    source: "Data Kependudukan Kelurahan",
   },
   externalLinks: [
     {
