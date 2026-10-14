@@ -70,6 +70,26 @@ const EDUCATION_OPTIONS = [
   "Magister (S2)",
   "Doktor (S3)",
 ] as const;
+const OCCUPATION_OPTIONS = [
+  "Belum/Tidak Bekerja",
+  "Pelajar/Mahasiswa",
+  "PNS/ASN",
+  "TNI/Polri",
+  "Karyawan Swasta",
+  "Wiraswasta/UMKM",
+  "Petani/Pekebun",
+  "Nelayan",
+  "Buruh Harian Lepas",
+  "Pedagang",
+  "Guru/Pendidik",
+  "Tenaga Kesehatan",
+  "Ibu Rumah Tangga",
+  "Pensiunan",
+  "Pekerja Lepas/Freelance",
+  "Sopir/Ojek",
+  "Tukang/Pekerja Bangunan",
+  "Lainnya",
+] as const;
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: "semua", label: "Semua" },
@@ -83,7 +103,7 @@ const EMPTY_FORM = {
   nama: "",
   gender: "Laki-laki",
   address: "",
-  occupation: "",
+  occupation: "Belum/Tidak Bekerja",
   birthDate: "",
   statusKeluarga: "Kepala Keluarga",
   statusPenduduk: "Tetap",
@@ -844,13 +864,11 @@ export default function PendudukDashboardPage() {
                 </legend>
                 <div className="space-y-1.5">
                   <Label htmlFor="occupation" className="text-xs">Pekerjaan</Label>
-                  <Input
+                  <NativeSelect
                     id="occupation"
                     value={formData.occupation}
-                    onChange={(e) => updateField("occupation", e.target.value)}
-                    placeholder="Contoh: Petani, Wiraswasta, Guru, Karyawan Swasta"
-                    className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
-                    required
+                    onChange={(val) => updateField("occupation", val)}
+                    options={OCCUPATION_OPTIONS}
                   />
                 </div>
                 <div className="space-y-1.5">
