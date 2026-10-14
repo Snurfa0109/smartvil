@@ -31,6 +31,8 @@ import {
   Mail,
   FileText,
   Sparkles,
+  BarChart3,
+  Users,
 } from "lucide-react";
 import { BannerManagement } from "@/components/dashboard/banner-management";
 import { useAuth } from "@/contexts/AuthContext";
@@ -326,6 +328,9 @@ function SettingsContent() {
           </TabsTrigger>
           <TabsTrigger value="banners" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
             <Sparkles className="h-3.5 w-3.5" /> Banner
+          </TabsTrigger>
+          <TabsTrigger value="demografi" className="flex items-center gap-1.5 py-1.5 px-3 data-[state=active]:bg-white data-[state=active]:text-[#1b365d] data-[state=active]:shadow-sm rounded-lg font-bold text-[11px]">
+            <BarChart3 className="h-3.5 w-3.5" /> Demografi
           </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-6">
@@ -1526,6 +1531,161 @@ function SettingsContent() {
 
         <TabsContent value="banners" className="space-y-6">
           <BannerManagement />
+        </TabsContent>
+
+        <TabsContent value="demografi" className="space-y-6">
+          {/* Populasi Utama */}
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Users className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Data Populasi</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Jumlah penduduk, jenis kelamin, dan kepala keluarga yang ditampilkan di halaman <code>/data</code>.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="demo-total">Total Penduduk</Label>
+                  <Input
+                    id="demo-total"
+                    type="number"
+                    value={siteForm.demography?.total || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, total: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="demo-male">Laki-Laki</Label>
+                  <Input
+                    id="demo-male"
+                    type="number"
+                    value={siteForm.demography?.male || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, male: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="demo-female">Perempuan</Label>
+                  <Input
+                    id="demo-female"
+                    type="number"
+                    value={siteForm.demography?.female || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, female: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="demo-kk">Jumlah KK</Label>
+                  <Input
+                    id="demo-kk"
+                    type="number"
+                    value={siteForm.demography?.kk || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, kk: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Kelompok Usia */}
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <BarChart3 className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Kelompok Usia</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Pembagian penduduk berdasarkan rentang usia.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="demo-children">Anak-anak (0-17 thn)</Label>
+                  <Input
+                    id="demo-children"
+                    type="number"
+                    value={siteForm.demography?.ageChildren || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, ageChildren: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="demo-adults">Usia Produktif (18-59 thn)</Label>
+                  <Input
+                    id="demo-adults"
+                    type="number"
+                    value={siteForm.demography?.ageAdults || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, ageAdults: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="demo-seniors">Lansia (60+ thn)</Label>
+                  <Input
+                    id="demo-seniors"
+                    type="number"
+                    value={siteForm.demography?.ageSeniors || 0}
+                    onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, ageSeniors: Number(e.target.value) } }))}
+                    disabled={siteLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
+                <Clock className="h-4 w-4 text-[#1b365d]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Sumber & Periode Data</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Informasi periode pembaruan dan sumber data yang ditampilkan ke publik.
+                </p>
+              </div>
+            </div>
+            <div className="p-5 pt-3 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="demo-period">Periode Data</Label>
+                <Input
+                  id="demo-period"
+                  value={siteForm.demography?.updatedPeriod || ""}
+                  onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, updatedPeriod: e.target.value } }))}
+                  disabled={siteLoading}
+                  placeholder="Contoh: Semester II Tahun 2026"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="demo-source">Sumber Data</Label>
+                <Input
+                  id="demo-source"
+                  value={siteForm.demography?.source || ""}
+                  onChange={(e) => setSiteForm((p) => ({ ...p, demography: { ...p.demography!, source: e.target.value } }))}
+                  disabled={siteLoading}
+                  placeholder="Contoh: Rekapitulasi Monografi BPS & Kelurahan Banjar Agung"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSaveSite}
+            disabled={siteLoading}
+            className="bg-[#1b365d] hover:bg-[#152a48] text-white font-bold rounded-xl"
+          >
+            <Save className="mr-2 h-4 w-4" /> Simpan Data Demografi
+          </Button>
         </TabsContent>
 
       </Tabs>
