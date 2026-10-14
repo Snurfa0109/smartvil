@@ -41,42 +41,23 @@ type DataStats = {
   educations: CountEntry[];
 };
 
-const DEFAULT_BANJAR_AGUNG_DEMOGRAPHY: DataStats = {
-  total: 3840,
-  male: 1948,
-  female: 1892,
-  kk: 1185,
+const DEFAULT_EMPTY_STATS: DataStats = {
+  total: 0,
+  male: 0,
+  female: 0,
+  kk: 0,
   ageGroups: {
-    children: 998,   // ~26% (Anak-anak: 0 - 17 tahun)
-    adults: 2496,    // ~65% (Usia Produktif: 18 - 59 tahun)
-    seniors: 346,    // ~9% (Lanjut Usia: 60+ tahun)
+    children: 0,
+    adults: 0,
+    seniors: 0,
   },
-  educations: [
-    { name: "SMA/SMK", count: 1320 },
-    { name: "SMP / MTs", count: 785 },
-    { name: "Sarjana (S1)", count: 640 },
-    { name: "SD Sederajat", count: 590 },
-    { name: "Diploma", count: 295 },
-    { name: "Pascasarjana", count: 95 },
-  ],
-  occupations: [
-    { name: "Karyawan Swasta", count: 960 },
-    { name: "Wiraswasta / UMKM", count: 740 },
-    { name: "PNS / ASN / TNI", count: 380 },
-    { name: "Buruh Harian Lepas", count: 350 },
-    { name: "Guru / Pendidik", count: 190 },
-    { name: "Tenaga Kesehatan", count: 110 },
-  ],
-  religions: [
-    { name: "Islam", count: 3682 },
-    { name: "Kristen Protestan", count: 98 },
-    { name: "Katolik", count: 42 },
-    { name: "Buddha & Hindu", count: 18 },
-  ],
+  educations: [],
+  occupations: [],
+  religions: [],
 };
 
 export default function DataPage() {
-  const [stats, setStats] = useState<DataStats>(DEFAULT_BANJAR_AGUNG_DEMOGRAPHY);
+  const [stats, setStats] = useState<DataStats>(DEFAULT_EMPTY_STATS);
   const [loading, setLoading] = useState(false);
   const [externalLinks, setExternalLinks] = useState<ExternalLinkItem[]>(DEFAULT_SITE_SETTINGS.externalLinks || []);
   const [demographyMeta, setDemographyMeta] = useState({
@@ -169,9 +150,9 @@ export default function DataPage() {
               adults: demo.ageAdults,
               seniors: demo.ageSeniors,
             },
-            educations: DEFAULT_BANJAR_AGUNG_DEMOGRAPHY.educations,
-            occupations: DEFAULT_BANJAR_AGUNG_DEMOGRAPHY.occupations,
-            religions: DEFAULT_BANJAR_AGUNG_DEMOGRAPHY.religions,
+            educations: [],
+            occupations: [],
+            religions: [],
           });
           setLoading(false);
           return;
@@ -246,7 +227,7 @@ export default function DataPage() {
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
-        setStats(DEFAULT_BANJAR_AGUNG_DEMOGRAPHY);
+        setStats(DEFAULT_EMPTY_STATS);
       } finally {
         setLoading(false);
       }
