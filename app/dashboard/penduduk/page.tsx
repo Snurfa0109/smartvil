@@ -925,8 +925,12 @@ function NativeSelect({
   id: string;
   value: string;
   onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  options: readonly string[] | { value: string; label: string }[];
 }) {
+  const normalizedOpts = options.map((opt) =>
+    typeof opt === "string" ? { value: opt, label: opt } : opt
+  );
+  const hasValue = normalizedOpts.some((opt) => opt.value === value);
   return (
     <select
       id={id}
@@ -934,7 +938,10 @@ function NativeSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
-      {options.map((opt) => (
+      {!hasValue && value && (
+        <option value={value}>{value} (data lama)</option>
+      )}
+      {normalizedOpts.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}
         </option>
