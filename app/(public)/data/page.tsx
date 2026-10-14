@@ -155,9 +155,9 @@ export default function DataPage() {
           // ignore
         }
 
-        // Jika data di database adalah sampel uji coba awal (< 50 orang),
-        // gunakan data statistik agregat resmi yang dikelola admin di dashboard
-        if (residents.length < 50) {
+        // Jika belum ada data penduduk di database,
+        // gunakan data statistik agregat yang dikelola admin di Settings > Demografi
+        if (residents.length === 0) {
           const demo = siteConfig?.demography || DEFAULT_SITE_SETTINGS.demography!;
           setStats({
             total: demo.total,
