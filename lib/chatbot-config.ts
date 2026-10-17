@@ -1,9 +1,12 @@
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
+export type AIProvider = "auto" | "groq" | "gemini";
+
 export interface ChatbotSettings {
   enabled: boolean;
   botName: string;
   welcomeMessage: string;
+  provider?: AIProvider;
   selectedModel: string;
   temperature: number;
   allowedTopics: string;
@@ -19,7 +22,8 @@ export const DEFAULT_CHATBOT_SETTINGS: ChatbotSettings = {
   botName: "Arba",
   welcomeMessage:
     "Sugeng rawuh! Saya Arba, asisten virtual Kelurahan Banjar Agung. Ada yang mau ditanyakan soal surat keterangan, pengaduan, atau info layanan lainnya? Saya siap bantu!\n\nKalau perlu layanan langsung, bisa hubungi kami di:\n- WhatsApp: 0813-1505-3901\n- Jam pelayanan: Senin - Jumat, 08.00 - 15.30 WIB",
-  selectedModel: "gemini-3.5-flash",
+  provider: "auto",
+  selectedModel: "llama-3.3-70b-versatile",
   temperature: 0.2,
   allowedTopics:
     "- Informasi profil wilayah, visi, misi, dan struktur organisasi Pemerintah Kelurahan Banjar Agung.\n" +

@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@/lib/chatbot-config";
 import { getSiteSettings } from "@/lib/site-config";
 import { getLetterTypes } from "@/lib/letters";
+import { query } from "@/lib/db";
+
+async function getServerChatbotSettings(): Promise<ChatbotSettings> {
+  try {
+    const rows = await query<{ value: unknown }[]>(
+      "SELECT `value` FROM `settings` WHERE `key` = ? LIMIT 1",
+      ["chatbot"]
+    );
+    if (rows && rows[0]?.value) {
+      const parsed = typeof rows[0].value === "string" ? JSON.parse(rows[0].value) : rows[0].value;
+      return { ...DEFAULT_CHATBOT_SETTINGS, ...parsed };
+    }
+  } catch (err) {
+    console.warn("Could not read chatbot settings directly from DB:", err);
+  }
+  return getChatbotSettings();
+}
 
 interface ChatAction {
   label: string;
@@ -121,7 +138,7 @@ export async function POST(req: NextRequest) {
 
     let settings: ChatbotSettings = DEFAULT_CHATBOT_SETTINGS;
     try {
-      settings = await getChatbotSettings();
+      settings = await getServerChatbotSettings();
     } catch (e) {
       console.warn("Could not fetch chatbot settings from DB, using defaults:", e);
     }
@@ -133,10 +150,38 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const apiKey = settings.customApiKey?.trim() || process.env.GEMINI_API_KEY;
+    const customKey = settings.customApiKey?.trim();
+    const groqEnv = process.env.GROQ_API_KEY?.trim();
+    const geminiEnv = process.env.GEMINI_API_KEY?.trim();
+
+    let provider = settings.provider || "auto";
+    let apiKey = "";
+
+    if (provider === "auto") {
+      if (customKey) {
+        if (customKey.startsWith("gsk_")) {
+          provider = "groq";
+          apiKey = customKey;
+        } else {
+          provider = "gemini";
+          apiKey = customKey;
+        }
+      } else if (groqEnv) {
+        provider = "groq";
+        apiKey = groqEnv;
+      } else if (geminiEnv) {
+        provider = "gemini";
+        apiKey = geminiEnv;
+      }
+    } else if (provider === "groq") {
+      apiKey = customKey || groqEnv || "";
+    } else if (provider === "gemini") {
+      apiKey = customKey || geminiEnv || "";
+    }
+
     if (!apiKey) {
       return NextResponse.json(
-        { error: "API Key Gemini belum dikonfigurasi di sistem." },
+        { error: "API Key AI belum dikonfigurasi. Masukkan Groq API Key atau Gemini API Key di menu Pengaturan Admin." },
         { status: 500 }
       );
     }
@@ -207,85 +252,123 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
 - Untuk urusan yang butuh penanganan langsung, ajak warga datang ke Kantor Kelurahan atau gunakan fitur Layanan Mandiri di website ini.
     `.trim();
 
-    const sanitizedHistory = Array.isArray(history)
-      ? history.slice(-8).map((item) => ({
-          role: item.role === "user" ? "user" : "model",
-          parts: [{ text: item.parts?.[0]?.text || item.text || "" }],
-        }))
-      : [];
-
-    const contents = [
-      ...sanitizedHistory,
-      {
-        role: "user",
-        parts: [{ text: message.trim() }],
-      },
-    ];
-
-    const requestedModel = settings.selectedModel?.trim() || "gemini-3.5-flash";
     const temperature = typeof settings.temperature === "number" ? settings.temperature : 0.2;
-
-    // Fallback antar model saat 503/429.
-    const candidateModels = Array.from(
-      new Set([
-        requestedModel,
-        "gemini-3.5-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-flash-latest",
-        "gemini-3.8-flash",
-      ])
-    );
-
-    let data: { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> } | null = null;
+    let rawReply = "";
     let lastError = "";
 
-    for (const modelName of candidateModels) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-        const geminiRes = await fetch(geminiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: systemInstruction }],
-            },
-            contents,
-            generationConfig: {
-              temperature,
-              maxOutputTokens: 2048,
-            },
-          }),
-        });
+    if (provider === "groq") {
+      const primaryGroq = settings.selectedModel?.trim();
+      const groqDefaults = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
+      const candidateModels = primaryGroq && !groqDefaults.includes(primaryGroq)
+        ? [primaryGroq, ...groqDefaults]
+        : groqDefaults;
 
-        if (geminiRes.ok) {
-          const resJson = await geminiRes.json();
-          if (resJson?.candidates?.[0]?.content?.parts?.length) {
-            data = resJson;
-            break;
+      const messages = [
+        { role: "system", content: systemInstruction },
+        ...(Array.isArray(history)
+          ? history.slice(-8).map((item) => ({
+              role: item.role === "user" ? "user" : "assistant",
+              content: String(item.parts?.[0]?.text || item.text || ""),
+            }))
+          : []),
+        { role: "user", content: message.trim() },
+      ];
+
+      for (const modelName of candidateModels) {
+        try {
+          const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: modelName,
+              messages,
+              temperature,
+              max_tokens: 2048,
+            }),
+          });
+
+          if (groqRes.ok) {
+            const resJson = await groqRes.json();
+            const text = resJson?.choices?.[0]?.message?.content;
+            if (text) {
+              rawReply = text;
+              break;
+            }
+          } else {
+            lastError = await groqRes.text();
+            console.warn(`Groq model ${modelName} returned status ${groqRes.status}:`, lastError);
           }
-        } else {
-          lastError = await geminiRes.text();
-          console.warn(`Gemini model ${modelName} returned status ${geminiRes.status}:`, lastError);
+        } catch (err) {
+          console.warn(`Error attempting Groq model ${modelName}:`, err);
         }
-      } catch (err) {
-        console.warn(`Error attempting Gemini model ${modelName}:`, err);
+      }
+    } else {
+      const primaryGemini = settings.selectedModel?.trim();
+      const geminiDefaults = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
+      const candidateModels = primaryGemini && !geminiDefaults.includes(primaryGemini)
+        ? [primaryGemini, ...geminiDefaults]
+        : geminiDefaults;
+
+      const contents = [
+        ...(Array.isArray(history)
+          ? history.slice(-8).map((item) => ({
+              role: item.role === "user" ? "user" : "model",
+              parts: [{ text: String(item.parts?.[0]?.text || item.text || "") }],
+            }))
+          : []),
+        {
+          role: "user",
+          parts: [{ text: message.trim() }],
+        },
+      ];
+
+      for (const modelName of candidateModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          const geminiRes = await fetch(geminiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: systemInstruction }],
+              },
+              contents,
+              generationConfig: {
+                temperature,
+                maxOutputTokens: 2048,
+              },
+            }),
+          });
+
+          if (geminiRes.ok) {
+            const resJson = await geminiRes.json();
+            const text = resJson?.candidates?.[0]?.content?.parts?.find((p: { text?: string }) => p.text)?.text;
+            if (text) {
+              rawReply = text;
+              break;
+            }
+          } else {
+            lastError = await geminiRes.text();
+            console.warn(`Gemini model ${modelName} returned status ${geminiRes.status}:`, lastError);
+          }
+        } catch (err) {
+          console.warn(`Error attempting Gemini model ${modelName}:`, err);
+        }
       }
     }
 
-    if (!data || !data.candidates?.[0]) {
-      console.error("All Gemini candidate models failed. Last error:", lastError);
+    if (!rawReply) {
+      console.error(`All ${provider} candidate models failed. Last error:`, lastError);
       return NextResponse.json(
-        { error: "Gagal terhubung dengan layanan AI. Silakan coba sesaat lagi." },
+        { error: "Gagal terhubung dengan layanan AI. Silakan periksa API Key atau coba sesaat lagi." },
         { status: 502 }
       );
     }
-
-    const candidate = data.candidates?.[0];
-    const rawReply =
-      candidate?.content?.parts?.find((p: { text?: string }) => p.text)?.text ||
-      "Maaf, saya tidak dapat memproses pesan Anda saat ini.";
 
     // Bersihkan emoji atau simbol dekoratif agar selalu clean
     const cleanReply = rawReply
