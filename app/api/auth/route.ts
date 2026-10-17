@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     const token = signToken({ uid: String(row.id), email: String(row.email), role: String(row.role) });
     return NextResponse.json({ token, profile: toProfile(row) });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Login gagal." }, { status: 500 });
+    console.error("Login error:", err);
+    return NextResponse.json({ error: "Terjadi kesalahan server. Coba lagi." }, { status: 500 });
   }
 }

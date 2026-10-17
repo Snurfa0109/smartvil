@@ -22,7 +22,6 @@ const PUBLIC_READ = new Set<TableName>([
   "letter_types",
   "agenda",
   "settings",
-  "residents",
 ]);
 
 const ANON_INSERT = new Set<TableName>(["complaints", "requests"]);
@@ -60,11 +59,14 @@ export async function listRecords(
   table: TableName,
   opts: { select?: string[]; orderBy?: string; order?: "asc" | "desc"; limit?: number } = {}
 ): Promise<Record<string, unknown>[]> {
-  const cols = opts.select && opts.select.length > 0 ? opts.select.map((c) => `\`${c}\``).join(", ") : selectColumns(table);
+  const allowedCols = TABLE_KEYS[table] || [];
+  const cols =
+    opts.select && opts.select.length > 0
+      ? opts.select.filter((c) => allowedCols.includes(c)).map((c) => `\`${c}\``).join(", ") || selectColumns(table)
+      : selectColumns(table);
   let sql = `SELECT ${cols} FROM \`${table}\``;
-  const allowed = TABLE_KEYS[table];
   if (opts.orderBy) {
-    const orderCol = allowed && allowed.includes(opts.orderBy) ? opts.orderBy : "created_at";
+    const orderCol = allowedCols.includes(opts.orderBy) ? opts.orderBy : "created_at";
     sql += ` ORDER BY \`${orderCol}\` ${opts.order === "asc" ? "ASC" : "DESC"}`;
   }
   if (opts.limit) sql += ` LIMIT ${Math.min(opts.limit, 1000)}`;
@@ -118,6 +120,13 @@ export async function insertRecord(table: TableName, row: Record<string, unknown
   return { ...payload };
 }
 
+export class NotFoundError extends Error {
+  constructor(msg = "Data tidak ditemukan.") {
+    super(msg);
+    this.name = "NotFoundError";
+  }
+}
+
 export async function updateRecord(
   table: TableName,
   id: string,
@@ -128,7 +137,13 @@ export async function updateRecord(
   const keys = Object.keys(patch).filter((k) => allowed.includes(k) && k !== idCol);
   if (keys.length === 0) throw new Error("Tidak ada kolom valid untuk diubah.");
   const set = keys.map((k) => `\`${k}\` = ?`).join(", ");
-  await query(`UPDATE \`${table}\` SET ${set} WHERE \`${idCol}\` = ?`, [...keys.map((k) => toDbValue(patch[k])), id]);
+  const result = await query<unknown>(`UPDATE \`${table}\` SET ${set} WHERE \`${idCol}\` = ?`, [...keys.map((k) => toDbValue(patch[k])), id]);
+  const affected = result && typeof result === "object" && "affectedRows" in result
+    ? Number((result as Record<string, unknown>)["affectedRows"])
+    : 0;
+  if (affected === 0) {
+    throw new NotFoundError();
+  }
 }
 
 export async function deleteRecord(table: TableName, id: string): Promise<void> {

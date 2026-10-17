@@ -10,9 +10,9 @@ export async function GET(req: NextRequest) {
     }
 
     const [
-      [{ c: residentsTotal }],
-      [{ c: newsTotal }],
-      [{ c: pendingComplaints }],
+      residentsRows,
+      newsRows,
+      pendingRows,
       requestBreakdownRows,
       recentComplaints,
       recentRequests,
@@ -24,12 +24,16 @@ export async function GET(req: NextRequest) {
         "SELECT `status`, COUNT(*) AS c FROM `requests` GROUP BY `status`"
       ),
       query<Record<string, unknown>[]>(
-        "SELECT * FROM `complaints` ORDER BY `created_at` DESC LIMIT 6"
+        "SELECT id, ticket_code, nama, category, title, status, created_at FROM `complaints` ORDER BY `created_at` DESC LIMIT 6"
       ),
       query<Record<string, unknown>[]>(
-        "SELECT * FROM `requests` ORDER BY `created_at` DESC LIMIT 6"
+        "SELECT id, ticket_code, type_name, nama, status, created_at FROM `requests` ORDER BY `created_at` DESC LIMIT 6"
       ),
     ]);
+
+    const residentsTotal = residentsRows[0]?.c ?? 0;
+    const newsTotal = newsRows[0]?.c ?? 0;
+    const pendingComplaints = pendingRows[0]?.c ?? 0;
 
     const breakdown: Record<string, number> = { pending: 0, processed: 0, ready: 0, completed: 0 };
     for (const row of requestBreakdownRows) {

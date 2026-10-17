@@ -1,5 +1,6 @@
 // Inisialisasi skema database & superadmin otomatis dari .env.local atau env vars
 const mysql = require('mysql2/promise');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -38,7 +39,7 @@ async function initDB() {
     user,
     password,
     database,
-    ssl: process.env.MYSQL_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+    ssl: process.env.MYSQL_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
   });
   console.log('✅ Terhubung ke MySQL!');
 
@@ -75,7 +76,18 @@ async function initDB() {
   );
 
   if (!existing || existing.length === 0) {
-    const adminPasswordHash = '$2b$10$o9C5PCBTuAoA4Wv3Tat6KO/EB.ODU/8mV..D7chg.Uxgx5p8EDi42'; // admin123
+    const bcrypt = require('bcryptjs');
+    let adminPassword;
+    if (process.env.ADMIN_PASSWORD) {
+      adminPassword = process.env.ADMIN_PASSWORD;
+      if (adminPassword.length < 12) {
+        console.error('❌ ADMIN_PASSWORD harus minimal 12 karakter.');
+        process.exit(1);
+      }
+    } else {
+      adminPassword = crypto.randomBytes(12).toString('base64url').slice(0, 16);
+    }
+    const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
     await conn.execute(
       `INSERT INTO profiles (id, email, display_name, role, active, password_hash)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -90,7 +102,8 @@ async function initDB() {
     );
     console.log('✅ Akun Super Admin dibuat:');
     console.log('   Email: admin@smartvil.id');
-    console.log('   Sandi: admin123');
+    console.log(`   Sandi: ${adminPassword}`);
+    console.log('   ⚠️  Catat sandi ini! Tidak akan ditampilkan lagi.');
   } else {
     console.log('ℹ️  Akun Super Admin sudah ada.');
   }

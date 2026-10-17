@@ -10,8 +10,28 @@ import {
   deleteRecord,
   canPublicRead,
   canAnonInsert,
+  NotFoundError,
 } from "@/lib/records";
 import { getSessionProfile, requireSuperAdmin } from "@/lib/auth-server";
+
+const SENSITIVE_KEY_RE = /key|secret|password/i;
+
+function redactSettingsRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  return rows.map((row) => {
+    if (typeof row.value !== "string") return row;
+    try {
+      const parsed = JSON.parse(row.value);
+      if (typeof parsed === "object" && parsed !== null) {
+        const cleaned: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          if (!SENSITIVE_KEY_RE.test(k)) cleaned[k] = v;
+        }
+        return { ...row, value: JSON.stringify(cleaned) };
+      }
+    } catch { /* not JSON, leave as-is */ }
+    return row;
+  });
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,7 +63,7 @@ export async function GET(req: NextRequest) {
       const value = searchParams.get("value") || "";
       const limit = Number(searchParams.get("limit") || 100);
       const data = await findRecords(table, { column, value }, limit);
-      return NextResponse.json({ data });
+      return NextResponse.json({ data: !isAdmin && table === "settings" ? redactSettingsRows(data) : data });
     }
 
     if (op === "get") {
@@ -53,7 +73,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
       }
       const data = await findOne(table, { column: idCol, value: id });
-      return NextResponse.json({ data });
+      return NextResponse.json({ data: !isAdmin && table === "settings" && data ? redactSettingsRows([data])[0] : data });
     }
 
     if (!canPublicRead(table) && !isAdmin) {
@@ -64,7 +84,7 @@ export async function GET(req: NextRequest) {
       order: (searchParams.get("order") as "asc" | "desc") || "desc",
       limit: Number(searchParams.get("limit") || 200),
     });
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: !isAdmin && table === "settings" ? redactSettingsRows(data) : data });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal membaca data." }, { status: 500 });
   }
@@ -83,6 +103,9 @@ export async function POST(req: NextRequest) {
     if (!session && !canAnonInsert(table)) {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
     }
+    if ((table === "profiles" || table === "audit_logs") && session?.role !== "superadmin") {
+      return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    }
     const data = await insertRecord(table, row);
     return NextResponse.json({ data });
   } catch (err) {
@@ -96,13 +119,22 @@ export async function PUT(req: NextRequest) {
     if (!isValidTable(table) || !id || !patch) {
       return NextResponse.json({ error: "Permintaan tidak valid." }, { status: 400 });
     }
+    if ((table === "requests" || table === "complaints") && patch.nik && !/^\d{16}$/.test(patch.nik)) {
+      return NextResponse.json({ error: "NIK harus 16 digit angka." }, { status: 400 });
+    }
     const session = await getSessionProfile(req);
     if (!session) {
+      return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    }
+    if ((table === "profiles" || table === "audit_logs" || table === "settings") && session.role !== "superadmin") {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
     }
     await updateRecord(table, id, patch);
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return NextResponse.json({ error: err.message }, { status: 404 });
+    }
     return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal mengubah." }, { status: 500 });
   }
 }

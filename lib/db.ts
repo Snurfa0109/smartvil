@@ -7,7 +7,7 @@ const config = {
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
   ssl: process.env.MYSQL_SSL === "true" ? { rejectUnauthorized: true } : false,
-  connectionLimit: 5,
+  connectionLimit: Number(process.env.MYSQL_POOL_LIMIT || 10),
   enableKeepAlive: true,
 };
 
