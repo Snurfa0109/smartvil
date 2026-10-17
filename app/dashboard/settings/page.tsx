@@ -33,6 +33,9 @@ import {
   Sparkles,
   Camera,
   Compass,
+  Eye,
+  EyeOff,
+  ExternalLink,
 } from "lucide-react";
 import { BannerManagement } from "@/components/dashboard/banner-management";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,7 +72,7 @@ function SettingsContent() {
   const [chatbotForm, setChatbotForm] = useState<ChatbotSettings>(DEFAULT_CHATBOT_SETTINGS);
   const [savingChatbot, setSavingChatbot] = useState(false);
   const [chatbotLoading, setChatbotLoading] = useState(true);
-
+  const [showApiKey, setShowApiKey] = useState(false);
   const [accountName, setAccountName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1125,9 +1128,9 @@ function SettingsContent() {
                   <Bot className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-800">Pengaturan Asisten AI (Gemini)</p>
+                  <p className="text-sm font-bold text-slate-800">Pengaturan Asisten AI (Arba)</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
-                    Atur perilaku, instruksi, dan batas ruang lingkup chatbot berbasis Google Gemini untuk warga Banjar Agung.
+                    Atur penyedia AI (Groq / Gemini), API Key, model, instruksi, dan ruang lingkup pelayanan warga Banjar Agung.
                   </p>
                 </div>
               </div>
@@ -1142,7 +1145,7 @@ function SettingsContent() {
               </span>
             </div>
             <div className="p-5 pt-3 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-xl bg-slate-50/50">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-xl bg-slate-50/50">
                 <div className="space-y-2">
                   <Label htmlFor="bot-enabled">Status Chatbot</Label>
                   <select
@@ -1160,7 +1163,26 @@ function SettingsContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bot-model">Model Google Gemini</Label>
+                  <Label htmlFor="bot-provider">Penyedia AI (Provider)</Label>
+                  <select
+                    id="bot-provider"
+                    className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b365d]"
+                    value={chatbotForm.provider || "auto"}
+                    onChange={(e) => {
+                      const p = e.target.value as "auto" | "groq" | "gemini";
+                      const defaultModel = p === "gemini" ? "gemini-2.0-flash" : "llama-3.3-70b-versatile";
+                      setChatbotForm((prev) => ({ ...prev, provider: p, selectedModel: defaultModel }));
+                    }}
+                    disabled={chatbotLoading}
+                  >
+                    <option value="auto">Auto-Detect (Groq / Gemini)</option>
+                    <option value="groq">Groq Cloud (Direkomendasikan - Sangat Cepat)</option>
+                    <option value="gemini">Google Gemini</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bot-model">Model AI</Label>
                   <select
                     id="bot-model"
                     className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b365d]"
@@ -1170,15 +1192,25 @@ function SettingsContent() {
                     }
                     disabled={chatbotLoading}
                   >
-                    <option value="gemini-3.5-flash">Gemini 3.5 Flash (Direkomendasikan - Stabil & Cepat)</option>
-                    <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (Ringan & Hemat Kuota)</option>
-                    <option value="gemini-3.8-flash">Gemini 3.8 Flash (Generasi Terbaru)</option>
-                    <option value="gemini-flash-latest">Gemini Flash (Versi Selalu Terkini)</option>
+                    {chatbotForm.provider !== "gemini" && (
+                      <optgroup label="Groq Cloud (Anti-Limit)">
+                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Paling Pintar & Cepat)</option>
+                        <option value="llama-3.1-8b-instant">Llama 3.1 8B (Super Ringan & Instan)</option>
+                        <option value="mixtral-8x7b-32768">Mixtral 8x7B (Konteks Panjang)</option>
+                      </optgroup>
+                    )}
+                    {chatbotForm.provider !== "groq" && (
+                      <optgroup label="Google Gemini">
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Resmi Terbaru)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stabil)</option>
+                        <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (Hemat Kuota)</option>
+                      </optgroup>
+                    )}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bot-temp">Kreativitas (Temperature: {chatbotForm.temperature})</Label>
+                  <Label htmlFor="bot-temp">Kreativitas (Temp: {chatbotForm.temperature})</Label>
                   <input
                     id="bot-temp"
                     type="range"
@@ -1196,6 +1228,63 @@ function SettingsContent() {
                     disabled={chatbotLoading}
                   />
                 </div>
+              </div>
+
+              <div className="p-4 border rounded-xl bg-amber-50/40 border-amber-200/60 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <Label htmlFor="bot-apikey" className="text-slate-800 font-bold flex items-center gap-1.5">
+                      <KeyRound className="h-4 w-4 text-amber-600" />
+                      Custom API Key (Groq / Gemini)
+                    </Label>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Masukkan API Key dari Groq Cloud (<code className="bg-white px-1 py-0.5 rounded border text-[10px]">gsk_...</code>) atau Google Gemini (<code className="bg-white px-1 py-0.5 rounded border text-[10px]">AIzaSy...</code>).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <a
+                      href="https://console.groq.com/keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#1b365d] hover:underline font-bold flex items-center gap-1"
+                    >
+                      Daftar Groq (Gratis) <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <span className="text-slate-300">|</span>
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#1b365d] hover:underline font-bold flex items-center gap-1"
+                    >
+                      Google AI Studio <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="bot-apikey"
+                    type={showApiKey ? "text" : "password"}
+                    placeholder="Paste API Key Anda di sini (contoh: gsk_... atau AIzaSy...)"
+                    value={chatbotForm.customApiKey || ""}
+                    onChange={(e) =>
+                      setChatbotForm((prev) => ({ ...prev, customApiKey: e.target.value }))
+                    }
+                    disabled={chatbotLoading}
+                    className="pr-10 font-mono text-xs bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                    title={showApiKey ? "Sembunyikan API Key" : "Tampilkan API Key"}
+                  >
+                    {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  * Tersimpan aman di database kelurahan dan tidak dibagikan ke pengunjung publik. Jika dikosongkan, sistem membaca variabel <code className="bg-white px-1 rounded border">GROQ_API_KEY</code> atau <code className="bg-white px-1 rounded border">GEMINI_API_KEY</code> dari server.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
