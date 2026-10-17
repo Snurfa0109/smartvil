@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     if (!email || !password || password.length < 12) {
       return NextResponse.json({ error: "Email dan kata sandi (min. 12 karakter) wajib diisi." }, { status: 400 });
     }
+    const VALID_ROLES = ['admin', 'operator', 'superadmin'];
+    if (role && !VALID_ROLES.includes(role)) {
+      return NextResponse.json({ error: 'Role tidak valid.' }, { status: 400 });
+    }
     const exists = await query<Record<string, unknown>[]>("SELECT id FROM profiles WHERE email = ? LIMIT 1", [
       String(email).trim(),
     ]);
@@ -60,7 +64,7 @@ export async function PUT(req: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
     }
-    const { uid, display_name, password } = await req.json();
+    const { uid, display_name, password, role, department, permissions, active } = await req.json();
     if (!uid) {
       return NextResponse.json({ error: "UID wajib diisi." }, { status: 400 });
     }
@@ -83,6 +87,30 @@ export async function PUT(req: NextRequest) {
       }
       updates.push("password_hash = ?");
       values.push(await hashPassword(String(password)));
+    }
+
+    const VALID_ROLES = ['admin', 'operator', 'superadmin'];
+
+    if (profile.role === 'superadmin' && uid !== profile.uid) {
+      if (role !== undefined) {
+        if (!VALID_ROLES.includes(role)) {
+          return NextResponse.json({ error: 'Role tidak valid.' }, { status: 400 });
+        }
+        updates.push("role = ?");
+        values.push(role);
+      }
+      if (department !== undefined) {
+        updates.push("department = ?");
+        values.push(String(department).trim());
+      }
+      if (permissions !== undefined) {
+        updates.push("permissions = ?");
+        values.push(JSON.stringify(permissions ?? []));
+      }
+      if (active !== undefined) {
+        updates.push("active = ?");
+        values.push(active ? 1 : 0);
+      }
     }
     
     if (updates.length === 0) {
