@@ -97,6 +97,11 @@ export default function DataPage() {
     };
     fetchNews();
   }, []);
+  // Set page title
+  useEffect(() => {
+    document.title = "Data Penduduk | Kelurahan";
+  }, []);
+
 
   useEffect(() => {
     const fetchStats = async () => {

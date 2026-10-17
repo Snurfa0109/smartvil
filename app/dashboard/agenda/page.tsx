@@ -115,7 +115,7 @@ export default function AgendaDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchItems = useCallback(async () => {
-    setLoading(true);
+    if (!items.length) setLoading(true);
     try {
       const rows = await apiList("agenda", { orderBy: "sort_order", order: "asc" });
       setItems(

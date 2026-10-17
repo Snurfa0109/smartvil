@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePolling } from "@/hooks/use-polling";
 import Link from "next/link";
 import {
@@ -18,9 +18,10 @@ import {
   CheckCircle,
   Newspaper,
   Activity,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { apiCount, apiList } from "@/lib/api";
+import { getToken } from "@/lib/api";
 
 interface DashboardStats {
   residents: number;
@@ -67,48 +68,32 @@ export default function DashboardPage() {
   const [selectedPipelineStage, setSelectedPipelineStage] = useState<keyof RequestBreakdown>("pending");
   const [dateLabel, setDateLabel] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [loketActive, setLoketActive] = useState(false);
+
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      const [
-        pendingComplaints,
-        residentsTotal,
-        newsTotal,
-        reqPending,
-        reqProcessed,
-        reqReady,
-        reqCompleted,
-        recentComplaintRows,
-        recentRequestRows,
-      ] = await Promise.all([
-        apiCount("complaints", { column: "status", value: "pending" }),
-        apiCount("residents"),
-        apiCount("news"),
-        apiCount("requests", { column: "status", value: "pending" }),
-        apiCount("requests", { column: "status", value: "processed" }),
-        apiCount("requests", { column: "status", value: "ready" }),
-        apiCount("requests", { column: "status", value: "completed" }),
-        apiList("complaints", { orderBy: "created_at", order: "desc", limit: 6 }),
-        apiList("requests", { orderBy: "created_at", order: "desc", limit: 6 }),
-      ]);
-
-      setStats({
-        residents: residentsTotal,
-        news: newsTotal,
-        complaints: pendingComplaints,
-        requests: reqPending,
+      const token = getToken();
+      const res = await fetch("/api/dashboard-stats", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
       });
+      if (!res.ok) throw new Error(`Gagal memuat data (${res.status})`);
+      const data = await res.json();
 
-      setRequestBreakdown({
-        pending: reqPending,
-        processed: reqProcessed,
-        ready: reqReady,
-        completed: reqCompleted,
-      });
+      setStats(data.stats);
+      setRequestBreakdown(data.requestBreakdown);
 
-      const complaintsList: ActivityItem[] = (recentComplaintRows || []).map((row) => ({
+      const complaintsList: ActivityItem[] = (data.recentComplaints || []).map((row: Record<string, unknown>) => ({
         id: String(row.id),
-        kind: "complaint",
+        kind: "complaint" as const,
         title: String(row.title || row.category || "Pengaduan Warga"),
         detail: String(row.message || ""),
         nama: String(row.nama || "Warga"),
@@ -117,9 +102,9 @@ export default function DashboardPage() {
         createdAt: (row.created_at as string | number | Date) || undefined,
       }));
 
-      const requestsList: ActivityItem[] = (recentRequestRows || []).map((row) => ({
+      const requestsList: ActivityItem[] = (data.recentRequests || []).map((row: Record<string, unknown>) => ({
         id: String(row.id),
-        kind: "request",
+        kind: "request" as const,
         title: String(row.type_name || "Permohonan Surat"),
         detail: String(row.keperluan || "Keperluan administrasi kependudukan"),
         nama: String(row.nama || "Warga"),
@@ -135,12 +120,18 @@ export default function DashboardPage() {
       });
 
       setActivities(merged);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      setError(null);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("Error fetching dashboard data:", err);
+      setError(err instanceof Error ? err.message : "Gagal memuat data dashboard.");
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Cleanup abort on unmount
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   useEffect(() => {
     try {
@@ -155,7 +146,23 @@ export default function DashboardPage() {
       setDateLabel("Pelayanan Aktif");
     }
 
+    // Check if loket is active (08:00–15:30 WIB, Mon–Fri)
+    const checkLoketStatus = () => {
+      const now = new Date();
+      // Convert to WIB (UTC+7)
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const wib = new Date(utc + 7 * 3600000);
+      const day = wib.getDay(); // 0=Sun, 6=Sat
+      const hours = wib.getHours();
+      const minutes = wib.getMinutes();
+      const timeInMinutes = hours * 60 + minutes;
+      setLoketActive(day >= 1 && day <= 5 && timeInMinutes >= 480 && timeInMinutes < 930);
+    };
+    checkLoketStatus();
+    const loketTimer = setInterval(checkLoketStatus, 60_000);
+
     fetchData();
+    return () => clearInterval(loketTimer);
   }, [fetchData]);
 
   usePolling(fetchData, 30_000);
@@ -164,7 +171,8 @@ export default function DashboardPage() {
     requestBreakdown.pending +
     requestBreakdown.processed +
     requestBreakdown.ready +
-    requestBreakdown.completed || 1;
+    requestBreakdown.completed;
+  const totalReqDivisor = totalReq || 1;
 
   const pipelineStages: Array<{
     key: keyof RequestBreakdown;
@@ -233,11 +241,14 @@ export default function DashboardPage() {
     },
   ];
 
-  const filteredActivities = activities.filter((item) => {
-    if (activityTab === "requests") return item.kind === "request";
-    if (activityTab === "complaints") return item.kind === "complaint";
-    return true;
-  });
+  const filteredActivities = useMemo(() =>
+    activities.filter((item) => {
+      if (activityTab === "requests") return item.kind === "request";
+      if (activityTab === "complaints") return item.kind === "complaint";
+      return true;
+    }),
+    [activities, activityTab]
+  );
 
   const activeStageInfo = pipelineStages.find((s) => s.key === selectedPipelineStage) || pipelineStages[0];
 
@@ -257,9 +268,13 @@ export default function DashboardPage() {
                 <Calendar className="h-3 w-3" />
                 {dateLabel || "Kelurahan Banjar Agung"}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-400/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Loket Aktif · 08.00–15.30
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full border ${
+                loketActive
+                  ? "text-emerald-300 bg-emerald-500/15 border-emerald-400/20"
+                  : "text-red-300 bg-red-500/15 border-red-400/20"
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${loketActive ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
+                {loketActive ? "Loket Aktif · 08.00–15.30" : "Loket Tutup"}
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
@@ -289,6 +304,22 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Error Banner ── */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-3">
+          <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700 flex-1">{error}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-red-200 text-red-600 hover:bg-red-100 h-8 text-xs font-bold shrink-0"
+            onClick={() => { setError(null); fetchData(); }}
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Coba Lagi
+          </Button>
+        </div>
+      )}
 
       {/* ── Metric Cards ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -422,7 +453,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden border border-slate-200/80">
               {pipelineStages.map((stage, idx) => {
                 const isActive = selectedPipelineStage === stage.key;
-                const pct = Math.round((stage.count / totalReq) * 100);
+                const pct = Math.round((stage.count / totalReqDivisor) * 100);
                 return (
                   <button
                     key={stage.key}
@@ -605,7 +636,7 @@ export default function DashboardPage() {
                   return (
                     <Link
                       key={`${item.kind}-${item.id}`}
-                      href={isReq ? "/dashboard/layanan" : "/dashboard/pengaduan"}
+                      href={isReq ? `/dashboard/layanan?search=${encodeURIComponent(item.nama)}` : `/dashboard/pengaduan?search=${encodeURIComponent(item.nama)}`}
                       className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-all duration-200"
                     >
                       <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${

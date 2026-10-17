@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePolling } from "@/hooks/use-polling";
 import { apiInsert, apiUpdate, apiDelete, apiList, apiUpload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -75,7 +76,8 @@ export default function LayananDashboardPage() {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(null);
-  const [reqSearch, setReqSearch] = useState("");
+  const searchParams = useSearchParams();
+  const [reqSearch, setReqSearch] = useState(() => searchParams.get("search") || "");
   const [reqStatusFilter, setReqStatusFilter] = useState<"all" | "pending" | "processed" | "ready" | "completed">("all");
 
   const [letterTypes, setLetterTypes] = useState<LetterType[]>([]);
@@ -133,7 +135,7 @@ export default function LayananDashboardPage() {
           typeName: String(row.type_name || ""),
           templateNarrative: String(row.template_narrative || ""),
           requirements: [],
-          formData: typeof row.form_data === "string" ? JSON.parse(row.form_data || "{}") : row.form_data || {},
+          formData: (() => { try { return typeof row.form_data === "string" ? JSON.parse(row.form_data || "{}") : row.form_data || {}; } catch { return {}; } })(),
           status: String(row.status || ""),
           adminNotes: String(row.admin_notes || ""),
           createdAt: row.created_at as string | number | { seconds: number } | null,
@@ -542,7 +544,7 @@ export default function LayananDashboardPage() {
     }
     return result;
   }, [requests, reqStatusFilter, reqSearch]);
-  const filteredTypes = letterTypes.filter((t) => {
+  const filteredTypes = useMemo(() => letterTypes.filter((t) => {
     const q = typeSearch.trim().toLowerCase();
     const matchSearch =
       !q ||
@@ -558,7 +560,7 @@ export default function LayananDashboardPage() {
         ? t.active === false
         : hasTemplate(t);
     return matchSearch && matchFilter;
-  });
+  }), [letterTypes, typeSearch, typeFilter]);
   const activeCount = letterTypes.filter((t) => t.active !== false).length;
   const templateCount = letterTypes.filter(hasTemplate).length;
 

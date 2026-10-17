@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiList, apiUpdate, apiDelete } from "@/lib/api";
 import { CheckCircle, Clock, Trash2, MessageSquare, Image as ImageIcon, Send, X, PhoneCall, Search, RotateCcw, User, AlertTriangle, Inbox } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
@@ -31,7 +32,8 @@ export default function PengaduanDashboardPage() {
   const [replyText, setReplyText] = useState("");
   const [savingReply, setSavingReply] = useState(false);
   const [imageModalUrl, setImageModalUrl] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get("search") || "");
   const [filterPhone, setFilterPhone] = useState<string | null>(null);
 
   const fetchComplaints = useCallback(async () => {

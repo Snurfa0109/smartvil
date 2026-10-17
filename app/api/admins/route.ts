@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
     }
     const { email, password, displayName, role, department, permissions } = await req.json();
-    if (!email || !password || password.length < 6) {
-      return NextResponse.json({ error: "Email dan kata sandi (min. 6 karakter) wajib diisi." }, { status: 400 });
+    if (!email || !password || password.length < 12) {
+      return NextResponse.json({ error: "Email dan kata sandi (min. 12 karakter) wajib diisi." }, { status: 400 });
     }
     const exists = await query<Record<string, unknown>[]>("SELECT id FROM profiles WHERE email = ? LIMIT 1", [
       String(email).trim(),
@@ -77,8 +77,8 @@ export async function PUT(req: NextRequest) {
     }
     
     if (password) {
-      if (String(password).length < 6) {
-        return NextResponse.json({ error: "Password minimal 6 karakter." }, { status: 400 });
+      if (String(password).length < 12) {
+        return NextResponse.json({ error: "Password minimal 12 karakter." }, { status: 400 });
       }
       updates.push("password_hash = ?");
       values.push(await hashPassword(String(password)));

@@ -57,6 +57,11 @@ export default function NewsPage() {
 
     fetchNews();
   }, []);
+  // Set page title
+  useEffect(() => {
+    document.title = "Berita | Kelurahan";
+  }, []);
+
 
   // Reset to page 1 whenever filters change
   const handleCategoryChange = (category: string | null) => {

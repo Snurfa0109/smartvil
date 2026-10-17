@@ -57,6 +57,11 @@ export default function ProfilePage() {
 
     loadProfile();
   }, []);
+  // Set page title
+  useEffect(() => {
+    document.title = `Profil | ${profile.villageName || "Kelurahan"}`;
+  }, [profile.villageName]);
+
 
   const missionItems = profile.mission
     .split("\n")

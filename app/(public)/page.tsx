@@ -112,6 +112,11 @@ export default function Home() {
     };
     fetchSiteConfig();
   }, []);
+  // Set page title
+  useEffect(() => {
+    document.title = siteConfig.villageName || "Beranda";
+  }, [siteConfig.villageName]);
+
 
   // 2. Sinkronisasi Agenda Kegiatan dari Dashboard Agenda
   useEffect(() => {

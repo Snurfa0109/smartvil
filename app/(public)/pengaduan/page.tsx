@@ -62,10 +62,21 @@ export default function ComplaintsPage() {
       console.error("Error reading saved phones:", e);
     }
   }, []);
+  // Set page title
+  useEffect(() => {
+    document.title = "Pengaduan | Kelurahan";
+  }, []);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        warning("Ukuran file terlalu besar. Maksimal 5 MB.");
+        e.target.value = "";
+        return;
+      }
+      if (filePreview) URL.revokeObjectURL(filePreview);
       setSelectedFile(file);
       setFilePreview(URL.createObjectURL(file));
     }
@@ -96,7 +107,7 @@ export default function ComplaintsPage() {
         }
       }
 
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
       const ticketCode = `PGD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
 
       const rawPhone = formData.phone.trim();
