@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
@@ -113,9 +113,10 @@ export default function AgendaDashboardPage() {
   const [form, setForm] = useState<AgendaForm>(EMPTY_FORM);
   const [confirmDelete, setConfirmDelete] = useState<AgendaItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const initialLoadedRef = useRef(false);
 
   const fetchItems = useCallback(async () => {
-    if (!items.length) setLoading(true);
+    if (!initialLoadedRef.current) setLoading(true);
     try {
       const rows = await apiList("agenda", { orderBy: "sort_order", order: "asc" });
       setItems(
@@ -140,6 +141,7 @@ export default function AgendaDashboardPage() {
       console.error("Error fetching agenda:", err);
     } finally {
       setLoading(false);
+      initialLoadedRef.current = true;
     }
   }, []);
 

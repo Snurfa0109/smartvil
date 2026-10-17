@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { apiList } from "@/lib/api";
 import { AuditEntry, AuditAction, AuditModule } from "@/lib/audit";
 import {
@@ -25,9 +25,10 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const [selectedAction, setSelectedAction] = useState<string>("all");
   const [selectedModule, setSelectedModule] = useState<string>("all");
+  const initialLoadedRef = useRef(false);
 
   const fetchLogs = useCallback(async () => {
-    if (!logs.length) setLoading(true);
+    if (!initialLoadedRef.current) setLoading(true);
     try {
       const rows = await apiList("audit_logs", { orderBy: "timestamp", order: "desc", limit: 100 });
       const list: (AuditEntry & { id: string })[] = (rows || []).map((row) => ({
@@ -39,13 +40,14 @@ export default function AuditLogsPage() {
         action: (row.action as AuditAction) || "AKSES_DITOLAK",
         module: (row.module as AuditModule) || "sistem",
         detail: String(row.detail || ""),
-        timestamp: row.timestamp,
+        timestamp: row.timestamp as string | number | Date | undefined,
       }));
       setLogs(list);
     } catch (err) {
       console.error("Error fetching audit logs:", err);
     } finally {
       setLoading(false);
+      initialLoadedRef.current = true;
     }
   }, []);
 

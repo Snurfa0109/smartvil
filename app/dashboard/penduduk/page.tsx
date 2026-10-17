@@ -126,9 +126,10 @@ export default function PendudukDashboardPage() {
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
 
   const modalRef = useRef<HTMLDivElement>(null);
+  const initialLoadedRef = useRef(false);
 
   const fetchResidents = useCallback(async () => {
-    if (!residents.length) setLoading(true);
+    if (!initialLoadedRef.current) setLoading(true);
     try {
       const rows = await apiList("residents", { orderBy: "nama", order: "asc" });
       setResidents(
@@ -152,6 +153,7 @@ export default function PendudukDashboardPage() {
       showError("Gagal memuat data penduduk. Periksa koneksi dan coba lagi.");
     } finally {
       setLoading(false);
+      initialLoadedRef.current = true;
     }
   }, [showError]);
 

@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, UserCheck, Briefcase, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, MapPin, Calendar, ArrowRight, BarChart3, PieChart, TrendingUp } from "lucide-react";
+import { Users, UserCheck, Briefcase, HeartHandshake, ExternalLink, Globe, ShieldCheck, HeartPulse, Banknote, BookOpen, MapPin, Calendar, ArrowRight, BarChart3, PieChart, TrendingUp, LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { stripHtml } from "@/lib/utils";
 import { PageBanner } from "@/components/layout/page-banner";
 import { apiList } from "@/lib/api";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS, ExternalLinkItem } from "@/lib/site-config";
 
-const CATEGORY_STYLES: Record<string, { icon: any; color: string; bg: string; border: string }> = {
+const CATEGORY_STYLES: Record<string, { icon: LucideIcon; color: string; bg: string; border: string }> = {
   "Pemerintah Wilayah": { icon: MapPin, color: "text-[#1b365d]", bg: "bg-[#1b365d]/10", border: "border-[#1b365d]/20" },
   "Bantuan Sosial & Kesejahteraan": { icon: Banknote, color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
   "Kependudukan & Administrasi": { icon: BookOpen, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
@@ -55,6 +55,16 @@ const DEFAULT_EMPTY_STATS: DataStats = {
   occupations: [],
   religions: [],
 };
+interface ResidentRecord {
+  gender?: string;
+  birthDate?: string;
+  occupation?: string;
+  agama?: string;
+  education?: string;
+  status?: string;
+  statusKeluarga?: string;
+}
+
 
 export default function DataPage() {
   const [stats, setStats] = useState<DataStats>(DEFAULT_EMPTY_STATS);
@@ -106,18 +116,18 @@ export default function DataPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        let residents: any[] = [];
+        let residents: ResidentRecord[] = [];
         try {
           const apiData = await apiList("residents");
           if (Array.isArray(apiData) && apiData.length > 0) {
-            residents = apiData.map((row: Record<string, any>) => ({
-              gender: row.gender,
-              birthDate: row.birth_date,
-              occupation: row.occupation,
-              agama: row.agama,
-              education: row.education,
-              status: row.status,
-              statusKeluarga: row.status_keluarga,
+            residents = apiData.map((row: Record<string, unknown>) => ({
+              gender: row.gender as string | undefined,
+              birthDate: row.birth_date as string | undefined,
+              occupation: row.occupation as string | undefined,
+              agama: row.agama as string | undefined,
+              education: row.education as string | undefined,
+              status: row.status as string | undefined,
+              statusKeluarga: row.status_keluarga as string | undefined,
             }));
           }
         } catch {

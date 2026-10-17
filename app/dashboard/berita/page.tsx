@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { usePolling } from "@/hooks/use-polling";
 import { apiList, apiDelete } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
@@ -58,9 +58,10 @@ export default function BeritaDashboardPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const itemsPerPage = viewMode === "grid" ? 9 : 10;
+  const initialLoadedRef = useRef(false);
 
   const fetchNews = useCallback(async () => {
-    if (!news.length) setLoading(true);
+    if (!initialLoadedRef.current) setLoading(true);
     try {
       const rows = await apiList("news", { orderBy: "date", order: "desc" });
       setNews(
@@ -79,6 +80,7 @@ export default function BeritaDashboardPage() {
       console.error("Error fetching news:", error);
     } finally {
       setLoading(false);
+      initialLoadedRef.current = true;
     }
   }, []);
 
