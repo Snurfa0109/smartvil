@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (!email || !password) {
       return NextResponse.json({ error: "Email dan kata sandi wajib diisi." }, { status: 400 });
     }
-    const rows = await query<Record<string, unknown>[]>("SELECT * FROM profiles WHERE email = ? LIMIT 1", [
+    const rows = await query<Record<string, unknown>[]>("SELECT id, email, password_hash, display_name, role, department, permissions, avatar_url, active, last_login FROM profiles WHERE email = ? LIMIT 1", [
       String(email).trim(),
     ]);
     const row = rows[0];

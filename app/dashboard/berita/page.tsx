@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePolling } from "@/hooks/use-polling";
 import { apiList, apiDelete } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
@@ -60,7 +60,7 @@ export default function BeritaDashboardPage() {
   const itemsPerPage = viewMode === "grid" ? 9 : 10;
 
   const fetchNews = useCallback(async () => {
-    setLoading(true);
+    if (!news.length) setLoading(true);
     try {
       const rows = await apiList("news", { orderBy: "date", order: "desc" });
       setNews(
@@ -127,13 +127,16 @@ export default function BeritaDashboardPage() {
 
   const totalViews = news.reduce((sum, n) => sum + Number(n.views || 0), 0);
 
-  const filteredNews = news.filter((n) => {
-    const matchSearch =
-      n.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      n.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCategory = activeCategory === "all" || n.category === activeCategory;
-    return matchSearch && matchCategory;
-  });
+  const filteredNews = useMemo(() =>
+    news.filter((n) => {
+      const matchSearch =
+        n.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        n.category?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchCategory = activeCategory === "all" || n.category === activeCategory;
+      return matchSearch && matchCategory;
+    }),
+    [news, searchTerm, activeCategory]
+  );
 
   const totalPages = Math.ceil(filteredNews.length / itemsPerPage);
   const paginatedNews = filteredNews.slice(

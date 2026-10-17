@@ -95,6 +95,11 @@ function SearchContent() {
   useEffect(() => {
     setInputVal(initialQuery);
   }, [initialQuery]);
+  // Set page title
+  useEffect(() => {
+    document.title = "Cari | Kelurahan";
+  }, []);
+
 
   useEffect(() => {
     getLetterTypes()

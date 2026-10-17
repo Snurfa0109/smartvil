@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Settings as SettingsIcon } from "lucide-react";
@@ -84,6 +84,10 @@ function SettingsContent() {
   const [savingCategories, setSavingCategories] = useState(false);
   const [categoryMsg, setCategoryMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const siteFormDirtyRef = useRef(false);
+  const chatbotFormDirtyRef = useRef(false);
+  const beritaCategoriesFormDirtyRef = useRef(false);
+
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
     if (tabFromUrl) {
@@ -94,8 +98,9 @@ function SettingsContent() {
   const loadData = useCallback(async () => {
     try {
       const config = await getSiteSettings();
-
-      setSiteForm(config);
+      if (!siteFormDirtyRef.current) {
+        setSiteForm(config);
+      }
     } catch (err) {
       console.error("Error loading site settings:", err);
     } finally {
@@ -104,7 +109,9 @@ function SettingsContent() {
 
     try {
       const config = await getChatbotSettings();
-      setChatbotForm((prev) => ({ ...prev, ...config }));
+      if (!chatbotFormDirtyRef.current) {
+        setChatbotForm((prev) => ({ ...prev, ...config }));
+      }
     } catch (err) {
       console.error("Error loading chatbot settings:", err);
     } finally {
@@ -113,7 +120,7 @@ function SettingsContent() {
 
     try {
       const cats = await getBeritaCategories();
-      if (cats && cats.length > 0) {
+      if (cats && cats.length > 0 && !beritaCategoriesFormDirtyRef.current) {
         setBeritaCategories(cats);
       }
     } catch (err) {
@@ -138,6 +145,7 @@ function SettingsContent() {
     try {
       await saveSiteSettings(siteForm);
       invalidateSiteSettings();
+      siteFormDirtyRef.current = false;
       setSiteMsg({
         type: "success",
         text: `Berhasil! ${sectionName} telah diperbarui dan otomatis tampil di halaman website.`,
@@ -165,6 +173,7 @@ function SettingsContent() {
     try {
       const url = await uploadImageToStorage(file, "aparatur");
       setSiteForm((p) => ({ ...p, [field]: url }));
+      siteFormDirtyRef.current = true;
     } catch (err) {
       console.error("Photo upload error:", err);
       showError("Gagal mengunggah foto. Pastikan file tidak melebihi 5MB.");
@@ -181,6 +190,7 @@ function SettingsContent() {
         updatedAt: new Date().toISOString(),
       });
       success("Pengaturan Chatbot AI berhasil disimpan!");
+      chatbotFormDirtyRef.current = false;
     } catch (error) {
       console.error("Error saving chatbot settings:", error);
       showError("Gagal menyimpan pengaturan chatbot.");
@@ -207,8 +217,8 @@ function SettingsContent() {
       }
 
       if (newPassword) {
-        if (newPassword.length < 6) {
-          throw new Error("Password baru minimal harus 6 karakter.");
+        if (newPassword.length < 12) {
+          throw new Error("Password baru minimal harus 12 karakter.");
         }
         if (newPassword !== confirmPassword) {
           throw new Error("Konfirmasi password tidak cocok.");
@@ -331,7 +341,7 @@ function SettingsContent() {
           </TabsTrigger>
 
         </TabsList>
-        <TabsContent value="profile" className="space-y-6">
+        <TabsContent value="profile" className="space-y-6" onInputCapture={() => { siteFormDirtyRef.current = true; }}>
           <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
@@ -836,7 +846,7 @@ function SettingsContent() {
             {savingSite ? "Menyimpan..." : "Simpan Profil Kelurahan"}
           </Button>
         </TabsContent>
-        <TabsContent value="home" className="space-y-6">
+        <TabsContent value="home" className="space-y-6" onInputCapture={() => { siteFormDirtyRef.current = true; }}>
           <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
@@ -1011,7 +1021,7 @@ function SettingsContent() {
             {savingSite ? "Menyimpan..." : "Simpan Beranda & Loket"}
           </Button>
         </TabsContent>
-        <TabsContent value="contact" className="space-y-6">
+        <TabsContent value="contact" className="space-y-6" onInputCapture={() => { siteFormDirtyRef.current = true; }}>
           <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
@@ -1107,7 +1117,7 @@ function SettingsContent() {
             {savingSite ? "Menyimpan..." : "Simpan Kontak & Medsos"}
           </Button>
         </TabsContent>
-        <TabsContent value="chatbot" className="space-y-6">
+        <TabsContent value="chatbot" className="space-y-6" onInputCapture={() => { chatbotFormDirtyRef.current = true; }}>
           <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm dash-card">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1425,6 +1435,7 @@ function SettingsContent() {
                         const trimmed = newCategoryInput.trim();
                         if (!trimmed || beritaCategories.includes(trimmed)) return;
                         setBeritaCategories((prev) => [...prev, trimmed]);
+                        beritaCategoriesFormDirtyRef.current = true;
                         setNewCategoryInput("");
                       }
                     }}
@@ -1435,6 +1446,7 @@ function SettingsContent() {
                       const trimmed = newCategoryInput.trim();
                       if (!trimmed || beritaCategories.includes(trimmed)) return;
                       setBeritaCategories((prev) => [...prev, trimmed]);
+                      beritaCategoriesFormDirtyRef.current = true;
                       setNewCategoryInput("");
                     }}
                     className="bg-[#1b365d] hover:bg-[#152a48] text-white shrink-0"
@@ -1465,6 +1477,7 @@ function SettingsContent() {
                                 const trimmed = editingCategoryVal.trim();
                                 if (!trimmed) return;
                                 setBeritaCategories((prev) => prev.map((c, i) => i === idx ? trimmed : c));
+                                beritaCategoriesFormDirtyRef.current = true;
                                 setEditingCategoryIdx(null);
                               }
                               if (e.key === "Escape") setEditingCategoryIdx(null);
@@ -1487,6 +1500,7 @@ function SettingsContent() {
                               const trimmed = editingCategoryVal.trim();
                               if (!trimmed) return;
                               setBeritaCategories((prev) => prev.map((c, i) => i === idx ? trimmed : c));
+                              beritaCategoriesFormDirtyRef.current = true;
                               setEditingCategoryIdx(null);
                             }}
                           >Simpan</Button>
@@ -1496,6 +1510,7 @@ function SettingsContent() {
                           className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 shrink-0"
                           onClick={() => {
                             setBeritaCategories((prev) => prev.filter((_, i) => i !== idx));
+                            beritaCategoriesFormDirtyRef.current = true;
                             if (editingCategoryIdx === idx) setEditingCategoryIdx(null);
                           }}
                           title="Hapus kategori"
@@ -1516,6 +1531,7 @@ function SettingsContent() {
                   className="text-xs border-slate-300 text-slate-600"
                   onClick={() => {
                     setBeritaCategories(DEFAULT_BERITA_CATEGORIES);
+                    beritaCategoriesFormDirtyRef.current = true;
                     setCategoryMsg(null);
                   }}
                 >
@@ -1527,6 +1543,7 @@ function SettingsContent() {
                     setSavingCategories(true);
                     try {
                       await saveBeritaCategories(beritaCategories);
+                      beritaCategoriesFormDirtyRef.current = false;
                       setCategoryMsg({ type: "success", text: "Kategori berita berhasil disimpan!" });
                       setTimeout(() => setCategoryMsg(null), 3000);
                     } catch {

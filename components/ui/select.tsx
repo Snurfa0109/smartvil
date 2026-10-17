@@ -97,19 +97,22 @@ const SelectContent = React.forwardRef<
   if (!context || !context.open) return null;
 
   return (
-    <div
-      ref={ref}
-      className={cn(
-        "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border border-border/80 shadow-md animate-in fade-in-80 w-full mt-1",
-        "bg-background/70 backdrop-blur-md text-popover-foreground",
-        className
-      )}
-      {...props}
-    >
-      <div className="p-1">
-        {children}
+    <>
+      <div className="fixed inset-0 z-40" onClick={() => context.setOpen(false)} />
+      <div
+        ref={ref}
+        className={cn(
+          "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border border-border/80 shadow-md animate-in fade-in-80 w-full mt-1",
+          "bg-background/70 backdrop-blur-md text-popover-foreground",
+          className
+        )}
+        {...props}
+      >
+        <div className="p-1">
+          {children}
+        </div>
       </div>
-    </div>
+    </>
   );
 });
 SelectContent.displayName = "SelectContent";

@@ -76,6 +76,9 @@ export async function POST(req: NextRequest) {
     if (!isValidTable(table) || !row) {
       return NextResponse.json({ error: "Permintaan tidak valid." }, { status: 400 });
     }
+    if ((table === "requests" || table === "complaints") && row.nik && !/^\d{16}$/.test(row.nik)) {
+      return NextResponse.json({ error: "NIK harus 16 digit angka." }, { status: 400 });
+    }
     const session = await getSessionProfile(req);
     if (!session && !canAnonInsert(table)) {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });

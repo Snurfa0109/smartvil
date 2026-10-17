@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiList, apiUpdate, getToken } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
@@ -78,7 +78,7 @@ export default function AdminsManagementPage() {
   const [successMsg, setSuccessMsg] = useState("");
 
   const fetchAdmins = useCallback(async () => {
-    setLoading(true);
+    if (!admins.length) setLoading(true);
     try {
       const rows = await apiList("profiles");
       const list: AdminUser[] = (rows || []).map((row) => ({
@@ -153,8 +153,8 @@ export default function AdminsManagementPage() {
       setErrorMsg("Nama, email, dan kata sandi wajib diisi.");
       return;
     }
-    if (formData.password.length < 6) {
-      setErrorMsg("Kata sandi minimal 6 karakter.");
+    if (formData.password.length < 12) {
+      setErrorMsg("Kata sandi minimal 12 karakter.");
       return;
     }
 
@@ -323,14 +323,17 @@ export default function AdminsManagementPage() {
     }
   };
 
-  const filteredAdmins = admins.filter((a) => {
-    const matchSearch =
-      a.displayName.toLowerCase().includes(search.toLowerCase()) ||
-      a.email.toLowerCase().includes(search.toLowerCase()) ||
-      (a.department && a.department.toLowerCase().includes(search.toLowerCase()));
-    const matchRole = roleFilter === "all" || a.role === roleFilter;
-    return matchSearch && matchRole;
-  });
+  const filteredAdmins = useMemo(() =>
+    admins.filter((a) => {
+      const matchSearch =
+        a.displayName.toLowerCase().includes(search.toLowerCase()) ||
+        a.email.toLowerCase().includes(search.toLowerCase()) ||
+        (a.department && a.department.toLowerCase().includes(search.toLowerCase()));
+      const matchRole = roleFilter === "all" || a.role === roleFilter;
+      return matchSearch && matchRole;
+    }),
+    [admins, search, roleFilter]
+  );
 
   const superadminCount = admins.filter((a) => a.role === "superadmin").length;
   const adminCount = admins.filter((a) => a.role === "admin").length;
@@ -763,7 +766,7 @@ export default function AdminsManagementPage() {
                     <input
                       type="password"
                       required
-                      placeholder="Minimal 6 karakter"
+                      placeholder="Minimal 12 karakter"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1b365d] focus:ring-offset-1"

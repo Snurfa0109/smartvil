@@ -128,7 +128,7 @@ export default function PendudukDashboardPage() {
   const modalRef = useRef<HTMLDivElement>(null);
 
   const fetchResidents = useCallback(async () => {
-    setLoading(true);
+    if (!residents.length) setLoading(true);
     try {
       const rows = await apiList("residents", { orderBy: "nama", order: "asc" });
       setResidents(
@@ -278,6 +278,8 @@ export default function PendudukDashboardPage() {
       return;
     }
 
+    const sanitizeCSV = (val: string) =>
+      /^[=+\-@]/.test(val) ? `'${val}` : val;
     const headers = [
       "NIK",
       "Nama Lengkap",
@@ -291,16 +293,16 @@ export default function PendudukDashboardPage() {
       "Alamat",
     ];
     const rows = residents.map((r) => [
-      `"${r.nik || ""}"`,
-      `"${r.nama || ""}"`,
-      `"${r.gender || ""}"`,
-      `"${r.birthDate || ""}"`,
-      `"${r.agama || ""}"`,
-      `"${r.education || ""}"`,
-      `"${r.occupation || ""}"`,
-      `"${r.statusKeluarga || (r.status === "Kepala Keluarga" ? "Kepala Keluarga" : "Anggota")}"`,
-      `"${r.statusPenduduk || (r.status !== "Kepala Keluarga" ? r.status : "Tetap") || "Tetap"}"`,
-      `"${(r.address || "").replace(/"/g, '""')}"`,
+      `"${sanitizeCSV(r.nik || "")}"`,
+      `"${sanitizeCSV(r.nama || "")}"`,
+      `"${sanitizeCSV(r.gender || "")}"`,
+      `"${sanitizeCSV(r.birthDate || "")}"`,
+      `"${sanitizeCSV(r.agama || "")}"`,
+      `"${sanitizeCSV(r.education || "")}"`,
+      `"${sanitizeCSV(r.occupation || "")}"`,
+      `"${sanitizeCSV(r.statusKeluarga || (r.status === "Kepala Keluarga" ? "Kepala Keluarga" : "Anggota"))}"`,
+      `"${sanitizeCSV(r.statusPenduduk || (r.status !== "Kepala Keluarga" ? r.status : "Tetap") || "Tetap")}"`,
+      `"${sanitizeCSV((r.address || "").replace(/"/g, '""'))}"`,
     ]);
 
     const csvContent =
@@ -316,11 +318,17 @@ export default function PendudukDashboardPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    if (formData.nik && !/^\d{16}$/.test(formData.nik)) {
+      showError("NIK harus 16 digit angka");
+      setSaving(false);
+      return;
+    }
     try {
       const payload = {
         nik: formData.nik,
@@ -766,6 +774,8 @@ export default function PendudukDashboardPage() {
                       onChange={(e) => updateField("nik", e.target.value)}
                       placeholder="Contoh: 320101..."
                       className="rounded-xl border-slate-200 focus-visible:ring-[#1b365d]"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       required
                     />
                   </div>

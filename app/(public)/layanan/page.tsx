@@ -81,6 +81,11 @@ export default function ServicesPage() {
   useEffect(() => {
     getSiteSettings().then((s) => setVillagePhone(s.villagePhone)).catch(() => undefined);
   }, []);
+  // Set page title
+  useEffect(() => {
+    document.title = "Layanan Surat | Kelurahan";
+  }, []);
+
 
   useEffect(() => {
     try {
@@ -151,10 +156,14 @@ export default function ServicesPage() {
       warning(`Lengkapi data wajib: ${requiredMissing.map((f) => f.label).join(", ")}`);
       return;
     }
+    if (!/^\d{16}$/.test(formData.nik)) {
+      warning("NIK harus 16 digit angka");
+      return;
+    }
     setLoading(true);
 
     try {
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
       const ticketCode = `SRT-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
       const letterObj = activeLetterObj;
       const letterName = letterObj?.name || "Surat Keterangan";
@@ -679,6 +688,8 @@ export default function ServicesPage() {
                           type="text"
                           required
                           maxLength={16}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d] focus:bg-white transition-all"
                           placeholder="367305xxxxxxxxxx"
                           value={formData.nik}

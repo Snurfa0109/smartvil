@@ -279,6 +279,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editor) return;
+    if (!title.trim()) { warning("Judul berita wajib diisi."); return; }
     if (!category) {
       warning("Pilih kategori berita.");
       return;
