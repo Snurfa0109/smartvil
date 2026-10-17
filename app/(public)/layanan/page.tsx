@@ -13,13 +13,10 @@ import {
   Copy,
   ArrowRight,
   ShieldCheck,
-  CheckSquare,
   HelpCircle,
   FileCheck,
   History,
   MessageSquare,
-  ExternalLink,
-  RotateCcw,
   User,
   CreditCard,
   Phone,
@@ -32,7 +29,7 @@ import {
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert, apiFind } from "@/lib/api";
-import { LetterType, getLetterTypes, DEFAULT_LETTER_TYPES } from "@/lib/letters";
+import { LetterType, getLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
 
@@ -43,9 +40,25 @@ interface StoredTicket {
   phone: string;
   date: string;
 }
+interface TrackedRequestItem {
+  id: string | number;
+  ticketCode: string;
+  nama: string;
+  nik: string;
+  phone: string;
+  type: string;
+  typeName: string;
+  keperluan: string;
+  formData: Record<string, unknown>;
+  templateNarrative?: string;
+  status: string;
+  adminNotes?: string;
+  createdAt: string;
+}
+
 
 export default function ServicesPage() {
-  const { success, error: showError, warning } = useToast();
+  const { error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
@@ -68,7 +81,7 @@ export default function ServicesPage() {
 
   const [trackInput, setTrackInput] = useState("");
   const [trackLoading, setTrackLoading] = useState(false);
-  const [trackedRequests, setTrackedRequests] = useState<any[] | null>(null);
+  const [trackedRequests, setTrackedRequests] = useState<TrackedRequestItem[] | null>(null);
   const [recentTickets, setRecentTickets] = useState<StoredTicket[]>([]);
   const [copied, setCopied] = useState(false);
   const [villagePhone, setVillagePhone] = useState(DEFAULT_SITE_SETTINGS.villagePhone);
@@ -222,22 +235,22 @@ export default function ServicesPage() {
 
     setTrackLoading(true);
     try {
-      const toItem = (row: Record<string, any>) => ({
-        id: row.id,
-        ticketCode: row.ticket_code,
-        nama: row.nama,
-        nik: row.nik,
-        phone: row.phone,
-        type: row.type,
-        typeName: row.type_name,
-        keperluan: row.keperluan,
-        formData: row.form_data || {},
-        templateNarrative: row.template_narrative,
-        status: row.status,
-        adminNotes: row.admin_notes,
-        createdAt: row.created_at,
+      const toItem = (row: Record<string, unknown>): TrackedRequestItem => ({
+        id: row.id as string | number,
+        ticketCode: String(row.ticket_code || ""),
+        nama: String(row.nama || ""),
+        nik: String(row.nik || ""),
+        phone: String(row.phone || ""),
+        type: String(row.type || ""),
+        typeName: String(row.type_name || ""),
+        keperluan: String(row.keperluan || ""),
+        formData: (row.form_data as Record<string, unknown>) || {},
+        templateNarrative: row.template_narrative as string | undefined,
+        status: String(row.status || ""),
+        adminNotes: row.admin_notes as string | undefined,
+        createdAt: String(row.created_at || ""),
       });
-      let results: any[] = [];
+      const results: TrackedRequestItem[] = [];
       const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
       const cleanedDigits = rawSearch.replace(/\D/g, "");
 
@@ -254,7 +267,7 @@ export default function ServicesPage() {
       }
 
       if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
-        let phoneVariations = [cleanedDigits];
+        const phoneVariations = [cleanedDigits];
         if (cleanedDigits.startsWith("0")) {
           phoneVariations.push("62" + cleanedDigits.substring(1));
           phoneVariations.push("+62" + cleanedDigits.substring(1));

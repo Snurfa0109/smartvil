@@ -17,11 +17,8 @@ import {
   Save, 
   RotateCcw, 
   CheckCircle2, 
-  Calendar, 
   Eye, 
-  ArrowRight,
-  ImageIcon,
-  Flag
+  ArrowRight
 } from "lucide-react";
 import { 
   BannerPages, 
@@ -106,7 +103,6 @@ const PRESET_PHOTOS: Record<BannerPages, { label: string; url: string; meaning: 
 export function BannerManagement() {
   const [banners, setBanners] = useState<Record<BannerPages, PageBannerData>>(DEFAULT_PAGE_BANNERS);
   const [activeMenu, setActiveMenu] = useState<BannerPages>("beranda");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -114,8 +110,7 @@ export function BannerManagement() {
   useEffect(() => {
     getAllBanners()
       .then((data) => setBanners(data))
-      .catch((err) => console.error("Error loading banners in management:", err))
-      .finally(() => setLoading(false));
+      .catch((err) => console.error("Error loading banners in management:", err));
   }, []);
 
   const currentBanner = banners[activeMenu] || DEFAULT_PAGE_BANNERS[activeMenu];
@@ -141,7 +136,7 @@ export function BannerManagement() {
       const downloadUrl = await uploadImageToStorage(file, "banners");
       updateCurrent({ imageUrl: downloadUrl });
       setStatusMsg({ type: "success", text: "Foto banner berhasil diunggah. Klik 'Simpan Banner' di bawah untuk menerapkan perubahan." });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Upload error:", err);
       setStatusMsg({ type: "error", text: "Gagal mengunggah foto. Pastikan ukuran file tidak melebihi 5MB." });
     } finally {
@@ -159,9 +154,9 @@ export function BannerManagement() {
         text: `Pengaturan banner untuk menu "${activeMenuConfig.title}" berhasil disimpan dan langsung diperbarui di website.`,
       });
       setTimeout(() => setStatusMsg(null), 5000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Save error:", err);
-      setStatusMsg({ type: "error", text: err.message || "Gagal menyimpan perubahan banner." });
+      setStatusMsg({ type: "error", text: err instanceof Error ? err.message : "Gagal menyimpan perubahan banner." });
     } finally {
       setSaving(false);
     }

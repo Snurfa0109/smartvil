@@ -20,7 +20,7 @@ export interface AuditEntry {
   action: AuditAction;
   module: AuditModule;
   detail: string;
-  timestamp?: any;
+  timestamp?: string | number | Date;
 }
 
 export async function writeAuditLog(

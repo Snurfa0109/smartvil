@@ -127,7 +127,7 @@ function SearchContent() {
           apiList("agenda", { orderBy: "date_start", order: "desc" }).catch(() => []),
         ]);
 
-        const mappedNews: SearchItem[] = (newsRows || []).map((row: any) => ({
+        const mappedNews: SearchItem[] = (newsRows || []).map((row: Record<string, unknown>) => ({
           id: `news-${row.id}`,
           title: String(row.title || "Berita Kelurahan"),
           category: "berita" as const,
@@ -137,7 +137,7 @@ function SearchContent() {
         }));
         setNewsItems(mappedNews);
 
-        const mappedAgenda: SearchItem[] = (agendaRows || []).map((row: any) => ({
+        const mappedAgenda: SearchItem[] = (agendaRows || []).map((row: Record<string, unknown>) => ({
           id: `agenda-${row.id}`,
           title: String(row.title || "Agenda Kelurahan"),
           category: "agenda" as const,

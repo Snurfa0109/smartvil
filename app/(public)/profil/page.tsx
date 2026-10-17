@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Users,
-  MapPin,
   History,
   Target,
   ShieldCheck,
@@ -41,7 +40,6 @@ const RW_DATA = [
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -50,8 +48,6 @@ export default function ProfilePage() {
         setProfile(data);
       } catch (error) {
         console.error("Error loading profile settings:", error);
-      } finally {
-        setLoading(false);
       }
     };
 

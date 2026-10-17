@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiList, apiUpdate, getToken } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
@@ -76,9 +76,10 @@ export default function AdminsManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const initialLoadedRef = useRef(false);
 
   const fetchAdmins = useCallback(async () => {
-    if (!admins.length) setLoading(true);
+    if (!initialLoadedRef.current) setLoading(true);
     try {
       const rows = await apiList("profiles");
       const list: AdminUser[] = (rows || []).map((row) => ({
@@ -107,6 +108,7 @@ export default function AdminsManagementPage() {
       console.error("Error fetching admins:", err);
     } finally {
       setLoading(false);
+      initialLoadedRef.current = true;
     }
   }, []);
 

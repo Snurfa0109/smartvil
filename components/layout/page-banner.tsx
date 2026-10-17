@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   ArrowRight, 
-  Calendar, 
-  Flame 
+  Calendar 
 } from "lucide-react";
 import { 
   BannerPages, 

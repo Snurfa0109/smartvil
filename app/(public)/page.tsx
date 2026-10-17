@@ -16,11 +16,8 @@ import {
   FileCheck2,
   Inbox,
   ShieldCheck,
-  MapPin,
   Search,
   AlertCircle,
-  HelpCircle,
-  ExternalLink,
   MessageSquare,
   Loader2,
   X
@@ -128,7 +125,7 @@ export default function Home() {
             id: String(row.id),
             title: String(row.title || ""),
             category: String(row.category || ""),
-            categoryColor: (row.category_color as any) || "blue",
+            categoryColor: (row.category_color as AgendaItem["categoryColor"]) || "blue",
             schedule: String(row.schedule || ""),
             description: String(row.description || ""),
             timeLocation: String(row.time_location || ""),
@@ -264,10 +261,9 @@ export default function Home() {
     setTrackLoading(true);
     setTrackSearched(true);
     setTrackResult(null);
-
     try {
       const cleanDigits = query.replace(/\D/g, "");
-      let foundRows: any[] = [];
+      let foundRows: Record<string, unknown>[] = [];
 
       // 1. Cari berdasarkan kode tiket (misal: SRT-xxxx)
       try {
@@ -310,9 +306,9 @@ export default function Home() {
         letterName: String(r.type_name || r.typeName || "Surat Keterangan"),
         nama: String(r.nama || r.applicantName || "Pemohon"),
         phone: String(r.phone || ""),
-        status: (r.status as any) || "pending",
-        createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString("id-ID") : undefined,
-        rejectionReason: r.admin_notes || undefined,
+        status: (r.status as TrackedRequestItem["status"]) || "pending",
+        createdAt: r.created_at ? new Date(String(r.created_at)).toLocaleDateString("id-ID") : undefined,
+        rejectionReason: (r.admin_notes as string) || undefined,
       }));
 
       setTrackResult(mapped);
