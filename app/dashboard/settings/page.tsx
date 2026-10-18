@@ -1170,7 +1170,7 @@ function SettingsContent() {
                     value={chatbotForm.provider || "auto"}
                     onChange={(e) => {
                       const p = e.target.value as "auto" | "groq" | "gemini";
-                      const defaultModel = p === "gemini" ? "gemini-2.0-flash" : "llama-3.3-70b-versatile";
+                      const defaultModel = p === "gemini" ? "gemini-2.0-flash" : "openai/gpt-oss-20b";
                       setChatbotForm((prev) => ({ ...prev, provider: p, selectedModel: defaultModel }));
                     }}
                     disabled={chatbotLoading}
@@ -1193,10 +1193,10 @@ function SettingsContent() {
                     disabled={chatbotLoading}
                   >
                     {chatbotForm.provider !== "gemini" && (
-                      <optgroup label="Groq Cloud (Anti-Limit)">
-                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Paling Pintar & Cepat)</option>
-                        <option value="llama-3.1-8b-instant">Llama 3.1 8B (Super Ringan & Instan)</option>
-                        <option value="mixtral-8x7b-32768">Mixtral 8x7B (Konteks Panjang)</option>
+                      <optgroup label="Groq Cloud">
+                        <option value="openai/gpt-oss-20b">GPT-OSS 20B (Direkomendasikan - Super Cepat & Murah)</option>
+                        <option value="openai/gpt-oss-120b">GPT-OSS 120B (Paling Pintar - 500 t/s)</option>
+                        <option value="qwen/qwen3.8-27b">Qwen 3.8 27B (Reasoning & Vision)</option>
                       </optgroup>
                     )}
                     {chatbotForm.provider !== "groq" && (
