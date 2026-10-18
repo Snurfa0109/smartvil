@@ -23,7 +23,7 @@ export const DEFAULT_CHATBOT_SETTINGS: ChatbotSettings = {
   welcomeMessage:
     "Sugeng rawuh! Saya Arba, asisten virtual Kelurahan Banjar Agung. Ada yang mau ditanyakan soal surat keterangan, pengaduan, atau info layanan lainnya? Saya siap bantu!\n\nKalau perlu layanan langsung, bisa hubungi kami di:\n- WhatsApp: 0813-1505-3901\n- Jam pelayanan: Senin - Jumat, 08.00 - 15.30 WIB",
   provider: "auto",
-  selectedModel: "llama-3.3-70b-versatile",
+  selectedModel: "openai/gpt-oss-20b",
   temperature: 0.2,
   allowedTopics:
     "- Informasi profil wilayah, visi, misi, dan struktur organisasi Pemerintah Kelurahan Banjar Agung.\n" +
