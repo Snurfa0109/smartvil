@@ -20,12 +20,15 @@ import {
   AlertCircle,
   MessageSquare,
   Loader2,
-  X
+  X,
+  CalendarPlus,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
 import { stripHtml } from "@/lib/utils";
 import { PageBanner } from "@/components/layout/page-banner";
+import { generateGoogleCalendarUrl, downloadIcsFile } from "@/lib/calendar";
 
 type LandingNewsItem = {
   id: string;
@@ -53,6 +56,11 @@ type AgendaItem = {
   timeLocation: string;
   active: boolean;
   order: number;
+  dateStart?: string;
+  dateEnd?: string;
+  timeStart?: string;
+  timeEnd?: string;
+  location?: string;
 };
 
 type TrackedRequestItem = {
@@ -129,11 +137,16 @@ export default function Home() {
             schedule: String(row.schedule || ""),
             description: String(row.description || ""),
             timeLocation: String(row.time_location || ""),
+            dateStart: String(row.date_start || ""),
+            dateEnd: String(row.date_end || ""),
+            timeStart: String(row.time_start || ""),
+            timeEnd: String(row.time_end || ""),
+            location: String(row.location || ""),
             active: Number(row.active) !== 0,
             order: Number(row.sort_order ?? 0),
           }))
           .filter((item) => item.active)
-          .slice(0, 3);
+          .slice(0, 4);
 
         if (activeItems.length > 0) {
           setAgendaItems(activeItems);
@@ -880,7 +893,7 @@ export default function Home() {
       </section>
 
       {/* 7. AGENDA & PROGRAM KEGIATAN KELURAHAN (SINKRON DARI DATABASE AGENDA ADMIN) */}
-      <section className="container mx-auto px-6 md:px-12">
+      <section id="agenda" className="container mx-auto px-6 md:px-12 scroll-mt-20">
         <div className="border border-slate-200 rounded-2xl p-6 md:p-8 bg-slate-50/70 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div>
@@ -896,9 +909,9 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {agendaLoading
-              ? Array.from({ length: 3 }).map((_, i) => (
+              ? Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 space-y-2 animate-pulse">
                     <div className="h-4 w-28 bg-slate-200 rounded" />
                     <div className="h-5 w-3/4 bg-slate-200 rounded" />
@@ -906,24 +919,79 @@ export default function Home() {
                   </div>
                 ))
               : agendaItems.map((item, idx) => (
-                  <div key={item.id || idx} className="bg-white p-5 rounded-xl border border-slate-200 space-y-2 shadow-2xs hover:shadow-xs transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-0.5 rounded border ${
-                          AGENDA_BADGE[item.categoryColor] || "text-slate-700 bg-slate-50 border-slate-200"
-                        }`}
-                      >
-                        {item.category}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">{item.schedule}</span>
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-900">{item.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
-                    {item.timeLocation && (
-                      <div className="text-[11px] text-slate-500 flex items-center gap-1 pt-1 border-t border-slate-100">
-                        <Clock className="h-3.5 w-3.5 text-slate-400" /> {item.timeLocation}
+                  <div key={item.id || idx} className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col justify-between space-y-3 shadow-2xs hover:shadow-xs transition-shadow">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-0.5 rounded border ${
+                            AGENDA_BADGE[item.categoryColor] || "text-slate-700 bg-slate-50 border-slate-200"
+                          }`}
+                        >
+                          {item.category}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium truncate">{item.schedule}</span>
                       </div>
-                    )}
+                      <h3 className="font-bold text-sm text-slate-900 leading-snug">{item.title}</h3>
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">{item.description}</p>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      {item.timeLocation && (
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{item.timeLocation}</span>
+                        </div>
+                      )}
+
+                      {/* Add to Calendar Action */}
+                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-50">
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                          Simpan:
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={generateGoogleCalendarUrl({
+                              title: item.title,
+                              description: `${item.description}\nJadwal: ${item.schedule}`,
+                              location: item.location || item.timeLocation,
+                              dateStart: item.dateStart,
+                              dateEnd: item.dateEnd,
+                              timeStart: item.timeStart,
+                              timeEnd: item.timeEnd,
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                            title="Simpan jadwal ke Google Calendar"
+                          >
+                            <CalendarPlus className="w-3 h-3 text-blue-600" />
+                            <span>Google</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              downloadIcsFile(
+                                {
+                                  title: item.title,
+                                  description: `${item.description}\nJadwal: ${item.schedule}`,
+                                  location: item.location || item.timeLocation,
+                                  dateStart: item.dateStart,
+                                  dateEnd: item.dateEnd,
+                                  timeStart: item.timeStart,
+                                  timeEnd: item.timeEnd,
+                                },
+                                `agenda-${item.title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 30)}.ics`
+                              )
+                            }
+                            className="inline-flex items-center gap-1 px-2 py-0.8 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
+                            title="Download file kalender (.ics) untuk Apple Calendar / HP"
+                          >
+                            <Download className="w-3 h-3 text-slate-500" />
+                            <span>iCal</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
           </div>

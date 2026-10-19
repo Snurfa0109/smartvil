@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/", label: "Beranda" },
   { href: "/profil", label: "Profil" },
   { href: "/data", label: "Informasi" },
+  { href: "/berita", label: "Berita" },
   { href: "/layanan", label: "Layanan Surat" },
   { href: "/pengaduan", label: "Pengaduan" },
 ];

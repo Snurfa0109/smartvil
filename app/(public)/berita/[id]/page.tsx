@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { apiGet } from "@/lib/api";
-import { Calendar, ArrowLeft } from "lucide-react";
+import { apiGet, apiList } from "@/lib/api";
+import { Calendar, ArrowLeft, ArrowRight, Tag } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DOMPurify from "dompurify";
+import { SocialShare } from "@/components/berita/social-share";
 
 type BeritaItem = {
   id: string;
@@ -22,6 +23,7 @@ export default function BeritaDetailPage() {
   const id = typeof params?.id === "string" ? params.id : null;
 
   const [item, setItem] = useState<BeritaItem | null>(null);
+  const [relatedItems, setRelatedItems] = useState<BeritaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -53,6 +55,25 @@ export default function BeritaDetailPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
         }).catch(() => {});
+
+        // Fetch related / other news
+        try {
+          const rows = await apiList("news", { orderBy: "date", order: "desc", limit: 4 });
+          const others = (rows || [])
+            .filter((r) => String(r.id) !== id)
+            .slice(0, 3)
+            .map((r) => ({
+              id: String(r.id),
+              title: String(r.title || ""),
+              content: String(r.content || ""),
+              date: String(r.date || ""),
+              category: String(r.category || ""),
+              imageUrl: String(r.image_url || ""),
+            }));
+          setRelatedItems(others);
+        } catch {
+          // ignore
+        }
       } catch (error) {
         console.error("Error fetching berita:", error);
         setNotFound(true);
@@ -157,7 +178,7 @@ export default function BeritaDetailPage() {
           </div>
 
           <div
-            className="prose prose-orange max-w-none berita-detail-content text-muted-foreground"
+            className="prose prose-orange max-w-none berita-detail-content text-slate-700 leading-relaxed pt-2"
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(
                 typeof item.content === "string" && item.content
@@ -166,7 +187,51 @@ export default function BeritaDetailPage() {
               ),
             }}
           />
+
+          {/* Social Share Bar */}
+          <div className="pt-4 border-t border-slate-200">
+            <SocialShare title={item.title || "Berita Kelurahan Banjar Agung"} />
+          </div>
         </article>
+
+        {/* Warta Lainnya */}
+        {relatedItems.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Warta Terkait Lainnya</h2>
+              <Link href="/berita" className="text-xs font-semibold text-[#1b365d] hover:underline flex items-center gap-1">
+                Lihat Semua <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {relatedItems.map((r) => (
+                <Link key={r.id} href={`/berita/${r.id}`} className="group block bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-[#1b365d] hover:shadow-xs transition-all">
+                  <div className="aspect-[16/10] bg-slate-100 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={r.imageUrl || "/images/default-news.jpg"}
+                      alt={r.title || "Warta"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/images/default-news.jpg";
+                      }}
+                    />
+                  </div>
+                  <div className="p-3.5 space-y-1.5">
+                    {r.category && (
+                      <span className="text-[10px] font-semibold text-[#1b365d] bg-[#1b365d]/8 px-2 py-0.5 rounded">
+                        {r.category}
+                      </span>
+                    )}
+                    <h3 className="text-xs font-bold text-slate-900 group-hover:text-[#1b365d] line-clamp-2 leading-snug">
+                      {r.title}
+                    </h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

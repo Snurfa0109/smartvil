@@ -80,16 +80,51 @@ export async function POST(req: NextRequest) {
       logs.push(
         await seedIfEmpty("news", async () => {
           const news = [
-            ["Penyaluran Bantuan Pangan Beras CPP Tahap I untuk Warga Prasejahtera", "Pengumuman", "Pemerintah Kelurahan Banjar Agung menyalurkan bantuan cadangan pangan pemerintah (CPP) berupa beras 10 kg kepada keluarga penerima manfaat di aula kelurahan.", "2026-09-24"],
-            ["Gerakan 'Rabu Asri' Bersama Warga di Lingkungan RW 03 dan RW 05", "Kegiatan", "Aparatur kelurahan, pengurus RT/RW, dan warga melaksanakan gotong royong kebersihan drainase dan pemangkasan dahan pohon.", "2026-09-23"],
-            ["Jadwal Posyandu Balita & Skrining PTM Puskesmas Banjar Agung", "Kesehatan", "Jadwal penimbangan balita, imunisasi dasar, serta pemeriksaan penyakit tidak menular bagi lansia di seluruh posyandu RW 01 hingga RW 10.", "2026-09-21"],
-            ["Musrenbang Kelurahan Banjar Agung TA 2027", "Pemerintahan", "Musrenbang tingkat kelurahan digelar dengan fokus drainase perumahan, perbaikan jalan lingkungan, dan pemberdayaan ekonomi perempuan.", "2026-09-15"],
-            ["Pelatihan Pemasaran Digital bagi UMKM Perumahan BAP", "Pelatihan", "Puluhan pelaku usaha rumahan mendapatkan pelatihan promosi media sosial dan sertifikasi halal bersama Dinas Koperasi dan UMKM.", "2026-09-12"],
+            [
+              "Penyaluran Cadangan Beras Pangan (CPP) Tahap II untuk 450 KPM Warga Banjar Agung Berjalan Tertib",
+              "Pengumuman",
+              "<p>Pemerintah Kelurahan Banjar Agung bekerja sama dengan Perum BULOG Kantor Cabang Serang dan Dinas Ketahanan Pangan Kota Serang kembali menyalurkan bantuan <strong>Cadangan Pangan Pemerintah (CPP)</strong> berupa beras kualitas medium seberat 10 kg kepada 450 Keluarga Penerima Manfaat (KPM) prasejahtera.</p><h3>Ketentuan & Jadwal Pengambilan</h3><p>Penyaluran dilaksanakan terpusat di Aula Kantor Kelurahan Banjar Agung dengan pembagian jadwal per RW guna menjaga kelancaran antrean.</p>",
+              "2026-10-15",
+              "/images/banner-beranda-bogeg.jpg",
+              142,
+            ],
+            [
+              "Musrenbang Kelurahan Banjar Agung TA 2027 Rumuskan Prioritas Drainase & Pemberdayaan UMKM",
+              "Pemerintahan",
+              "<p>Kelurahan Banjar Agung telah sukses menggelar Musyawarah Perencanaan Pembangunan (Musrenbang) tingkat kelurahan Tahun Anggaran 2027 dihadiri oleh seluruh Ketua RT/RW dan tokoh masyarakat dengan fokus penanganan drainase dan pelatihan UMKM.</p>",
+              "2026-10-11",
+              "/images/banner-profil.jpg",
+              98,
+            ],
+            [
+              "Gerakan 'Rabu Asri' Bersama Warga: Kompak Bersihkan Saluran Drainase Antisipasi Musim Hujan",
+              "Kegiatan",
+              "<p>Aparatur Kelurahan Banjar Agung bersama pengurus RW 03 dan RW 05 menggelar aksi gotong royong rutin membersihkan sampah sedimentasi drainase dan pemangkasan dahan pohon rawan tumbang.</p>",
+              "2026-10-08",
+              "/images/jembatan-aria-wangsakara.png",
+              76,
+            ],
+            [
+              "Jadwal Posyandu Balita & Skrining PTM Puskesmas Pembantu Banjar Agung Bulan Ini",
+              "Kesehatan",
+              "<p>Puskesmas Pembantu Banjar Agung mengumumkan jadwal operasional posyandu balita dan layanan posbindu Penyakit Tidak Menular (PTM) untuk seluruh posyandu di wilayah RW 01 hingga RW 10.</p>",
+              "2026-10-04",
+              "/images/banner-informasi.jpg",
+              115,
+            ],
+            [
+              "Pelatihan Pemasaran Digital bagi Pelaku UMKM Perumahan Banjar Agung Indah (BAP)",
+              "Pelatihan",
+              "<p>Sebanyak 35 pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) di lingkungan Kelurahan Banjar Agung mengikuti bimbingan teknis pemasaran digital dan fasilitasi sertifikasi halal produk lokal.</p>",
+              "2026-09-28",
+              "/images/banner-pengaduan.jpg",
+              89,
+            ],
           ];
-          for (const [title, category, content, date] of news) {
+          for (const [title, category, content, date, img, views] of news) {
             await query(
-              "INSERT INTO news (id, title, category, content, date, image_url) VALUES (?, ?, ?, ?, ?, ?)",
-              [randomUUID(), title, category, content, date, "/images/default-news.jpg"]
+              "INSERT INTO news (id, title, category, content, date, image_url, views) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              [randomUUID(), title, category, content, date, img, views]
             );
           }
         })
@@ -148,15 +183,16 @@ export async function POST(req: NextRequest) {
       logs.push(
         await seedIfEmpty("agenda", async () => {
           const agenda = [
-            ['Gerakan "Rabu Asri" Kelurahan', "Program Lingkungan", "blue", "Setiap Rabu", "Kerja bakti kebersihan drainase, penghijauan lingkungan, dan penataan pemukiman bersama RT/RW se-Kelurahan Banjar Agung.", "07:30 WIB - Selesai • Seluruh Lingkungan RW"],
-            ["Penyaluran Beras Bantuan Pangan Kemensos RI", "Bantuan Sosial", "emerald", "Sesuai Jadwal", "Penyaluran Cadangan Beras Pangan Pemerintah (CPP) bagi Keluarga Penerima Manfaat (KPM) warga Kelurahan Banjar Agung.", "Aula Kantor Kelurahan Banjar Agung"],
-            ["Posyandu Balita & Lansia Puskesmas Banjar Agung", "Kesehatan Warga", "amber", "Jadwal Posyandu", "Pemeriksaan kesehatan tumbuh kembang balita, imunisasi dasar, penimbangan, dan pemeriksaan tekanan darah lansia.", "08:30 - 11:30 WIB • Posyandu BAP & Lingkungan RW"],
+            ['Gerakan "Rabu Asri" Kerja Bakti Bersih Lingkungan', "Program Lingkungan", "blue", "Setiap Rabu", "Kerja bakti pembersihan drainase pemukiman, penataan tanaman lingkungan, dan edukasi pilah sampah rumah tangga bersama warga.", "07:30 - 11:00 WIB • Lingkungan RW 03 & RW 05", "2026-10-21", "2026-10-21", "07:30", "11:00", "Lingkungan RW 03 & RW 05 Kelurahan Banjar Agung"],
+            ["Posyandu Terpadu Balita & Skrining Lansia Sehat", "Kesehatan Warga", "emerald", "Jumat, 23 Okt 2026", "Pemeriksaan tumbuh kembang balita, imunisasi dasar lengkap, serta pemeriksaan tensi dan gula darah lansia.", "08:30 - 11:30 WIB • Posyandu BAP RW 07", "2026-10-23", "2026-10-23", "08:30", "11:30", "Posyandu BAP RW 07, Banjar Agung"],
+            ["Penyaluran Beras Bantuan Pangan Kemensos RI Tahap II", "Bantuan Sosial", "amber", "Senin, 26 Okt 2026", "Penyaluran Cadangan Beras Pangan Pemerintah (CPP) bagi 450 KPM terdaftar dengan membawa KTP dan KK asli.", "08:30 - 15:00 WIB • Aula Kantor Kelurahan", "2026-10-26", "2026-10-26", "08:30", "15:00", "Aula Kantor Kelurahan Banjar Agung"],
+            ["Layanan Jemput Bola Aktivasi Identitas Kependudukan Digital (IKD)", "Layanan Publik", "violet", "Kamis, 29 Okt 2026", "Aktivasi aplikasi IKD di smartphone warga oleh petugas Disdukcapil bersama seksi pelayanan umum kelurahan.", "09:00 - 14:00 WIB • Ruang Pelayanan Terpadu", "2026-10-29", "2026-10-29", "09:00", "14:00", "Ruang Pelayanan Terpadu Kelurahan Banjar Agung"],
           ];
           for (let i = 0; i < agenda.length; i++) {
-            const [title, category, color, schedule, description, timeLocation] = agenda[i];
+            const [title, category, color, schedule, description, timeLocation, dStart, dEnd, tStart, tEnd, loc] = agenda[i];
             await query(
-              "INSERT INTO agenda (id, title, category, category_color, schedule, description, time_location, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",
-              [randomUUID(), title, category, color, schedule, description, timeLocation, i]
+              "INSERT INTO agenda (id, title, category, category_color, schedule, description, time_location, date_start, date_end, time_start, time_end, location, active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)",
+              [randomUUID(), title, category, color, schedule, description, timeLocation, dStart, dEnd, tStart, tEnd, loc, i]
             );
           }
         })

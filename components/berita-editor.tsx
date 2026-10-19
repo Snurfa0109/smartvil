@@ -238,7 +238,8 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
         if (data) {
           setTitle(String(data.title ?? ""));
           setCategory(String(data.category ?? ""));
-          setDate(String(data.date ?? new Date().toISOString().split("T")[0]));
+          const rawDate = data.date ? String(data.date).slice(0, 10) : new Date().toISOString().split("T")[0];
+          setDate(rawDate);
           setImageUrl(String(data.image_url ?? ""));
           const content = String(data.content ?? "");
           setLoadedContent(content || "<p></p>");

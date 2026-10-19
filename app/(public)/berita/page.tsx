@@ -17,6 +17,33 @@ interface NewsItem {
 
 const ITEMS_PER_PAGE = 9;
 
+const FALLBACK_NEWS: NewsItem[] = [
+  {
+    id: "d2518441-f23c-46e8-a787-41a758557a36",
+    title: "Penyaluran Cadangan Beras Pangan (CPP) Tahap II untuk 450 KPM Warga Banjar Agung Berjalan Tertib",
+    category: "Pengumuman",
+    date: "2026-10-15",
+    imageUrl: "/images/banner-beranda-bogeg.jpg",
+    content: "Pemerintah Kelurahan Banjar Agung menyalurkan bantuan beras cadangan pangan pemerintah seberat 10 kg kepada 450 keluarga penerima manfaat di aula kelurahan.",
+  },
+  {
+    id: "85dc853b-0e45-4ff4-b761-831695873427",
+    title: "Musrenbang Kelurahan Banjar Agung TA 2027 Rumuskan Prioritas Drainase & Pemberdayaan UMKM",
+    category: "Pemerintahan",
+    date: "2026-10-11",
+    imageUrl: "/images/banner-profil.jpg",
+    content: "Musyawarah Perencanaan Pembangunan tingkat kelurahan digelar bersama Ketua RT/RW memprioritaskan drainase dan penguatan ekonomi perempuan.",
+  },
+  {
+    id: "bf11e10b-2847-4ca6-9d04-4789807ba656",
+    title: "Gerakan 'Rabu Asri' Bersama Warga: Kompak Bersihkan Saluran Drainase Antisipasi Musim Hujan",
+    category: "Kegiatan",
+    date: "2026-10-08",
+    imageUrl: "/images/jembatan-aria-wangsakara.png",
+    content: "Aparatur kelurahan bersama warga RW 03 dan RW 05 melaksanakan gotong royong pembersihan saluran drainase dan perapian lingkungan pemukiman.",
+  },
+];
+
 export default function NewsPage() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +72,10 @@ export default function NewsPage() {
           }
         } catch {
           // fallback
+        }
+
+        if (loaded.length === 0) {
+          loaded = FALLBACK_NEWS;
         }
 
         setNewsItems(loaded);

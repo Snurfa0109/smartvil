@@ -45,3 +45,6 @@ scripts/*-service-account.json
 next-env.d.ts
 tsconfig.tsbuildinfo
 SURAT KETERANGAN SUAMI ISTRI.docx
+proposal_extracted.txt
+scripts/test_features.js
+
