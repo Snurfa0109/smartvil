@@ -47,4 +47,5 @@ tsconfig.tsbuildinfo
 SURAT KETERANGAN SUAMI ISTRI.docx
 proposal_extracted.txt
 scripts/test_features.js
+scripts/run_whitebox_test.js
 
