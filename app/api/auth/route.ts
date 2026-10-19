@@ -43,9 +43,23 @@ export async function POST(req: NextRequest) {
     }
     await query("UPDATE profiles SET last_login = NOW() WHERE id = ?", [row.id]);
     const token = signToken({ uid: String(row.id), email: String(row.email), role: String(row.role) });
-    return NextResponse.json({ token, profile: toProfile(row) });
+    const response = NextResponse.json({ token, profile: toProfile(row) });
+    response.cookies.set("smartvil_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 4 * 60 * 60,
+    });
+    return response;
   } catch (err) {
     console.error("Login error:", err);
     return NextResponse.json({ error: "Terjadi kesalahan server. Coba lagi." }, { status: 500 });
   }
+}
+
+export async function DELETE() {
+  const response = NextResponse.json({ ok: true });
+  response.cookies.delete("smartvil_token");
+  return response;
 }

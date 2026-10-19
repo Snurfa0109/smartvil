@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { apiList, apiCount, apiFind } from "@/lib/api";
+import { apiList, apiCount } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -64,11 +64,9 @@ type AgendaItem = {
 };
 
 type TrackedRequestItem = {
-  id: string;
   ticketCode: string;
   letterName: string;
   nama: string;
-  phone: string;
   status: "pending" | "processed" | "ready_for_pickup" | "rejected";
   createdAt?: string;
   rejectionReason?: string;
@@ -275,50 +273,14 @@ export default function Home() {
     setTrackSearched(true);
     setTrackResult(null);
     try {
-      const cleanDigits = query.replace(/\D/g, "");
-      let foundRows: Record<string, unknown>[] = [];
+      const res = await fetch(`/api/track/requests?q=${encodeURIComponent(query)}`);
+      const body: Record<string, unknown> = await res.json().catch(() => ({}));
+      const rows = (Array.isArray(body.data) ? body.data : []) as Record<string, unknown>[];
 
-      // 1. Cari berdasarkan kode tiket (misal: SRT-xxxx)
-      try {
-        const byTicket = await apiFind("requests", { column: "ticket_code", value: query }, 10);
-        if (Array.isArray(byTicket) && byTicket.length > 0) {
-          foundRows = byTicket;
-        }
-      } catch {}
-
-      // 2. Jika belum ketemu, cari berdasarkan NIK
-      if (foundRows.length === 0 && cleanDigits.length >= 15) {
-        try {
-          const byNik = await apiFind("requests", { column: "nik", value: cleanDigits }, 10);
-          if (Array.isArray(byNik) && byNik.length > 0) {
-            foundRows = byNik;
-          }
-        } catch {}
-      }
-
-      // 3. Jika belum ketemu, cari berdasarkan nomor telepon WhatsApp
-      if (foundRows.length === 0 && cleanDigits.length >= 8) {
-        const phoneVariants = [cleanDigits];
-        if (cleanDigits.startsWith("0")) phoneVariants.push("62" + cleanDigits.substring(1));
-        if (cleanDigits.startsWith("62")) phoneVariants.push("0" + cleanDigits.substring(2));
-
-        for (const pVal of phoneVariants) {
-          try {
-            const byPhone = await apiFind("requests", { column: "phone", value: pVal }, 10);
-            if (Array.isArray(byPhone) && byPhone.length > 0) {
-              foundRows = byPhone;
-              break;
-            }
-          } catch {}
-        }
-      }
-
-      const mapped: TrackedRequestItem[] = foundRows.map((r) => ({
-        id: String(r.id),
-        ticketCode: String(r.ticket_code || r.ticketCode || "SRT-000"),
-        letterName: String(r.type_name || r.typeName || "Surat Keterangan"),
-        nama: String(r.nama || r.applicantName || "Pemohon"),
-        phone: String(r.phone || ""),
+      const mapped: TrackedRequestItem[] = rows.map((r) => ({
+        ticketCode: String(r.ticket_code || "SRT-000"),
+        letterName: String(r.type_name || "Surat Keterangan"),
+        nama: String(r.nama || "Pemohon"),
         status: (r.status as TrackedRequestItem["status"]) || "pending",
         createdAt: r.created_at ? new Date(String(r.created_at)).toLocaleDateString("id-ID") : undefined,
         rejectionReason: (r.admin_notes as string) || undefined,
@@ -662,7 +624,7 @@ export default function Home() {
                         const badge = getStatusBadge(item.status);
                         return (
                           <div
-                            key={item.id}
+                            key={item.ticketCode}
                             className="bg-white text-slate-900 rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3"
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">

@@ -44,7 +44,10 @@ function verifyToken(token: string): { uid: string; email: string; role: string 
 function getBearerToken(req: Request): string | null {
   const h = req.headers.get("authorization") || "";
   if (h.toLowerCase().startsWith("bearer ")) return h.slice(7).trim() || null;
-  return null;
+  // Fallback: read from cookie header
+  const cookies = req.headers.get("cookie") || "";
+  const match = cookies.match(/(?:^|;\s*)smartvil_token=([^;]+)/);
+  return match ? match[1] : null;
 }
 
 export async function getSessionProfile(req: Request): Promise<SessionProfile | null> {

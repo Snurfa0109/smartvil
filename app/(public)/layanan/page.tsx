@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
-import { apiInsert, apiFind } from "@/lib/api";
+import { apiInsert } from "@/lib/api";
 import { LetterType, getLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
@@ -41,16 +41,9 @@ interface StoredTicket {
   date: string;
 }
 interface TrackedRequestItem {
-  id: string | number;
   ticketCode: string;
-  nama: string;
-  nik: string;
-  phone: string;
-  type: string;
   typeName: string;
-  keperluan: string;
-  formData: Record<string, unknown>;
-  templateNarrative?: string;
+  nama: string;
   status: string;
   adminNotes?: string;
   createdAt: string;
@@ -235,56 +228,17 @@ export default function ServicesPage() {
 
     setTrackLoading(true);
     try {
-      const toItem = (row: Record<string, unknown>): TrackedRequestItem => ({
-        id: row.id as string | number,
+      const res = await fetch(`/api/track/requests?q=${encodeURIComponent(rawSearch)}`);
+      const body: Record<string, unknown> = await res.json().catch(() => ({}));
+      const rows = (Array.isArray(body.data) ? body.data : []) as Record<string, unknown>[];
+      const results: TrackedRequestItem[] = rows.map((row) => ({
         ticketCode: String(row.ticket_code || ""),
-        nama: String(row.nama || ""),
-        nik: String(row.nik || ""),
-        phone: String(row.phone || ""),
-        type: String(row.type || ""),
         typeName: String(row.type_name || ""),
-        keperluan: String(row.keperluan || ""),
-        formData: (row.form_data as Record<string, unknown>) || {},
-        templateNarrative: row.template_narrative as string | undefined,
+        nama: String(row.nama || ""),
         status: String(row.status || ""),
         adminNotes: row.admin_notes as string | undefined,
         createdAt: String(row.created_at || ""),
-      });
-      const results: TrackedRequestItem[] = [];
-      const isDigitsOnly = /^\d+$/.test(rawSearch.replace(/\D/g, ""));
-      const cleanedDigits = rawSearch.replace(/\D/g, "");
-
-      const codeRows = await apiFind("requests", { column: "ticket_code", value: rawSearch }).catch(() => []);
-      (codeRows || []).forEach((row) => results.push(toItem(row)));
-
-      if (isDigitsOnly && cleanedDigits.length >= 15) {
-        const nikRows = await apiFind("requests", { column: "nik", value: cleanedDigits }).catch(() => []);
-        (nikRows || []).forEach((row) => {
-          if (!results.some((r) => r.id === row.id)) {
-            results.push(toItem(row));
-          }
-        });
-      }
-
-      if (isDigitsOnly && cleanedDigits.length >= 8 && cleanedDigits.length <= 14) {
-        const phoneVariations = [cleanedDigits];
-        if (cleanedDigits.startsWith("0")) {
-          phoneVariations.push("62" + cleanedDigits.substring(1));
-          phoneVariations.push("+62" + cleanedDigits.substring(1));
-        } else if (cleanedDigits.startsWith("62")) {
-          phoneVariations.push("0" + cleanedDigits.substring(2));
-        }
-
-        for (const phoneVal of phoneVariations) {
-          const phoneRows = await apiFind("requests", { column: "phone", value: phoneVal }).catch(() => []);
-          (phoneRows || []).forEach((row) => {
-            if (!results.some((r) => r.id === row.id)) {
-              results.push(toItem(row));
-            }
-          });
-        }
-      }
-
+      }));
       setTrackedRequests(results);
     } catch (err) {
       console.error("Error tracking request:", err);
@@ -1017,14 +971,14 @@ export default function ServicesPage() {
                   const currentIdx = stepIndexMap[item.status as keyof typeof stepIndexMap] ?? 0;
 
                   return (
-                    <Card key={item.id} className="overflow-hidden border-slate-200 shadow-2xs">
+                    <Card key={item.ticketCode} className="overflow-hidden border-slate-200 shadow-2xs">
                       <CardHeader className="bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-3 px-5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-mono font-bold bg-white border border-slate-300 px-2 py-0.5 rounded text-[#1b365d]">
                             {item.ticketCode || "Tiket Pelayanan"}
                           </span>
                           <span className="text-xs text-slate-600">
-                            Pemohon: <strong>{item.nama}</strong> ({item.nik ? item.nik.slice(0, 6) + "******" + item.nik.slice(-4) : "-"})
+                            Pemohon: <strong>{item.nama}</strong>
                           </span>
                         </div>
                         <div
@@ -1054,13 +1008,8 @@ export default function ServicesPage() {
                             <FileText className="h-4 w-4 text-[#1b365d]" /> {item.typeName}
                           </h3>
                           <p className="text-xs text-slate-500 mt-1">
-                            Tujuan / Keperluan: <span className="text-slate-800 font-medium">{item.keperluan}</span>
+                            Diajukan: <span className="text-slate-800 font-medium">{item.createdAt ? new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}</span>
                           </p>
-                          {item.phone && (
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              No. WhatsApp: <span className="font-mono text-slate-700">{item.phone}</span>
-                            </p>
-                          )}
                         </div>
 
                         <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">

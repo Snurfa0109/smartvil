@@ -15,16 +15,14 @@ export const TABLES = [
 
 export type TableName = (typeof TABLES)[number];
 
-const PUBLIC_READ = new Set<TableName>([
-  "news",
-  "complaints",
-  "requests",
-  "letter_types",
-  "agenda",
-  "settings",
-]);
+const PUBLIC_READ: Record<string, true> = {
+  news: true,
+  letter_types: true,
+  agenda: true,
+  settings: true,
+};
 
-const ANON_INSERT = new Set<TableName>(["complaints", "requests"]);
+const ANON_INSERT: Record<string, true> = { complaints: true, requests: true };
 
 const TABLE_KEYS: Record<string, string[]> = {
   profiles: ["id", "email", "display_name", "role", "active", "department", "permissions", "last_login"],
@@ -65,11 +63,13 @@ export async function listRecords(
       ? opts.select.filter((c) => allowedCols.includes(c)).map((c) => `\`${c}\``).join(", ") || selectColumns(table)
       : selectColumns(table);
   let sql = `SELECT ${cols} FROM \`${table}\``;
+  const defaultOrder = allowedCols.includes("created_at") ? "created_at" : allowedCols[0];
   if (opts.orderBy) {
-    const orderCol = allowedCols.includes(opts.orderBy) ? opts.orderBy : "created_at";
+    const orderCol = allowedCols.includes(opts.orderBy) ? opts.orderBy : defaultOrder;
     sql += ` ORDER BY \`${orderCol}\` ${opts.order === "asc" ? "ASC" : "DESC"}`;
   }
-  if (opts.limit) sql += ` LIMIT ${Math.min(opts.limit, 1000)}`;
+  const safeLimit = Math.max(1, Math.min(Math.trunc(Number(opts.limit) || 200), 1000));
+  sql += ` LIMIT ${safeLimit}`;
   return query<Record<string, unknown>[]>(sql);
 }
 
@@ -94,7 +94,7 @@ export async function findRecords(
   const allowed = TABLE_KEYS[table];
   if (!allowed || !allowed.includes(where.column)) return [];
   return query<Record<string, unknown>[]>(
-    `SELECT ${selectColumns(table)} FROM \`${table}\` WHERE \`${where.column}\` = ? LIMIT ${Math.min(limit, 1000)}`,
+    `SELECT ${selectColumns(table)} FROM \`${table}\` WHERE \`${where.column}\` = ? LIMIT ${Math.max(1, Math.min(Math.trunc(limit || 100), 1000))}`,
     [toDbValue(where.value)]
   );
 }
@@ -152,9 +152,9 @@ export async function deleteRecord(table: TableName, id: string): Promise<void> 
 }
 
 export function canPublicRead(table: TableName): boolean {
-  return PUBLIC_READ.has(table);
+  return PUBLIC_READ[table] === true;
 }
 
 export function canAnonInsert(table: TableName): boolean {
-  return ANON_INSERT.has(table);
+  return ANON_INSERT[table] === true;
 }

@@ -15,6 +15,7 @@ async function req(path: string, init: RequestInit = {}) {
   const token = getToken();
   const res = await fetch(path, {
     ...init,
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -69,6 +70,7 @@ export async function apiUpload(file: File, folder = "news"): Promise<string> {
   fd.append("folder", folder);
   const res = await fetch("/api/upload", {
     method: "POST",
+    credentials: "same-origin",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: fd,
   });
