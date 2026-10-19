@@ -18,20 +18,34 @@ const SENSITIVE_KEY_RE = /key|secret|password/i;
 
 function redactSettingsRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
   return rows.map((row) => {
-    if (typeof row.value !== "string") return row;
-    try {
-      const parsed = JSON.parse(row.value);
-      if (typeof parsed === "object" && parsed !== null) {
-        const cleaned: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(parsed)) {
-          if (!SENSITIVE_KEY_RE.test(k)) cleaned[k] = v;
-        }
-        return { ...row, value: JSON.stringify(cleaned) };
+    let parsed: unknown = row.value;
+    if (typeof parsed === "string") {
+      try { parsed = JSON.parse(parsed); } catch { return row; }
+    }
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      const cleaned: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (!SENSITIVE_KEY_RE.test(k)) cleaned[k] = v;
       }
-    } catch { /* not JSON, leave as-is */ }
+      return { ...row, value: JSON.stringify(cleaned) };
+    }
     return row;
   });
 }
+
+const ANON_ALLOWED_FIELDS: Record<string, string[]> = {
+  requests: ["ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "form_data"],
+  complaints: ["ticket_code", "nama", "phone", "email", "category", "title", "message", "photo_url"],
+};
+
+const TABLE_PERMISSION: Record<string, string> = {
+  news: "berita",
+  residents: "penduduk",
+  complaints: "pengaduan",
+  requests: "layanan",
+  agenda: "agenda",
+  letter_types: "layanan",
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -106,6 +120,18 @@ export async function POST(req: NextRequest) {
     if ((table === "profiles" || table === "audit_logs") && session?.role !== "superadmin") {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
     }
+    if (!session && canAnonInsert(table)) {
+      const allowed = ANON_ALLOWED_FIELDS[table];
+      if (allowed) {
+        const sanitized: Record<string, unknown> = {};
+        for (const key of allowed) {
+          if (key in row) sanitized[key] = row[key];
+        }
+        sanitized.status = "pending";
+        const data = await insertRecord(table, sanitized);
+        return NextResponse.json({ data });
+      }
+    }
     const data = await insertRecord(table, row);
     return NextResponse.json({ data });
   } catch (err) {
@@ -128,6 +154,10 @@ export async function PUT(req: NextRequest) {
     }
     if ((table === "profiles" || table === "audit_logs" || table === "settings") && session.role !== "superadmin") {
       return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    }
+    const requiredPerm = TABLE_PERMISSION[table];
+    if (requiredPerm && session.permissions && !session.permissions.includes(requiredPerm)) {
+      return NextResponse.json({ error: "Anda tidak memiliki izin untuk mengubah data ini." }, { status: 403 });
     }
     await updateRecord(table, id, patch);
     return NextResponse.json({ ok: true });

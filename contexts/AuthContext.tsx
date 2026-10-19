@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
+    try { await fetch("/api/auth", { method: "DELETE", credentials: "same-origin" }); } catch { /* ignore */ }
     setToken(null);
     setUser(null);
     setRole(null);

@@ -1,4 +1,5 @@
 "use client";
+import DOMPurify from "dompurify";
 
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -407,7 +408,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
                   <div
                     className="berita-preview max-w-none min-h-[300px] p-5 border border-slate-200 rounded-xl bg-slate-50/50"
                     dangerouslySetInnerHTML={{
-                      __html: editor?.getHTML() || "<p><em>Belum ada konten.</em></p>",
+                      __html: DOMPurify.sanitize(editor?.getHTML() || "<p><em>Belum ada konten.</em></p>"),
                     }}
                   />
                 ) : (

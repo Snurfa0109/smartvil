@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
-import { apiInsert, apiFind } from "@/lib/api";
+import { apiInsert } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { PageBanner } from "@/components/layout/page-banner";
 
@@ -24,10 +24,8 @@ interface StoredPhone {
   lastDate: string;
 }
 interface TrackedComplaintItem {
-  id: string | number;
   ticketCode: string;
   nama: string;
-  email: string;
   phone: string;
   category: string;
   title: string;
@@ -190,11 +188,12 @@ export default function ComplaintsPage() {
 
     setTrackingLoading(true);
     try {
-      const toItem = (row: Record<string, unknown>): TrackedComplaintItem => ({
-        id: row.id as string | number,
+      const res = await fetch(`/api/track/complaints?q=${encodeURIComponent(rawSearch)}`);
+      const body: Record<string, unknown> = await res.json().catch(() => ({}));
+      const rows = (Array.isArray(body.data) ? body.data : []) as Record<string, unknown>[];
+      const results: TrackedComplaintItem[] = rows.map((row) => ({
         ticketCode: String(row.ticket_code || ""),
         nama: String(row.nama || ""),
-        email: String(row.email || ""),
         phone: String(row.phone || ""),
         category: String(row.category || ""),
         title: String(row.title || ""),
@@ -205,41 +204,7 @@ export default function ComplaintsPage() {
         status: String(row.status || ""),
         adminResponse: row.admin_response as string | undefined,
         createdAt: String(row.created_at || ""),
-      });
-      const digitsOnly = rawSearch.replace(/\D/g, "");
-
-      // Generate phone variations (08xxx, 628xxx, +628xxx)
-      const phoneCandidates = [rawSearch];
-      if (digitsOnly.length >= 8) {
-        phoneCandidates.push(digitsOnly);
-        if (digitsOnly.startsWith("0")) {
-          phoneCandidates.push("62" + digitsOnly.slice(1));
-          phoneCandidates.push("+62" + digitsOnly.slice(1));
-        } else if (digitsOnly.startsWith("62")) {
-          phoneCandidates.push("0" + digitsOnly.slice(2));
-          phoneCandidates.push("+" + digitsOnly);
-        }
-      }
-
-      // Also support legacy search by exact ticketCode if user happens to enter one
-      const results: TrackedComplaintItem[] = await apiFind("complaints", { column: "ticket_code", value: rawSearch }).then(rows => rows.map(toItem)).catch(() => []);
-
-      for (const phoneVal of Array.from(new Set(phoneCandidates))) {
-        const phoneRows = await apiFind("complaints", { column: "phone", value: phoneVal }).catch(() => []);
-        (phoneRows || []).forEach((row) => {
-          const item = toItem(row);
-          if (!results.some((r) => r.id === item.id)) {
-            results.push(item);
-          }
-        });
-      }
-
-      results.sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
-      });
-
+      }));
       setTrackedComplaints(results);
     } catch (err) {
       console.error("Error tracking complaint by phone:", err);
@@ -669,7 +634,7 @@ export default function ComplaintsPage() {
 
                   <div className="space-y-4">
                     {trackedComplaints.map((item, idx) => (
-                      <Card key={item.id} className="border-slate-200/90 shadow-xs overflow-hidden">
+                      <Card key={item.ticketCode || idx} className="border-slate-200/90 shadow-xs overflow-hidden">
                         <CardHeader className="bg-slate-50/80 border-b border-slate-100 py-3.5 px-5 flex flex-row items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md">

@@ -42,8 +42,10 @@ export class RateLimiter {
   }
 }
 
-/** Extract client IP from request headers (x-forwarded-for → fallback "unknown"). */
+/** Extract client IP from request headers (x-real-ip → x-forwarded-for → fallback "unknown"). */
 export function clientIp(req: Request): string {
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
   const xff = (req.headers.get("x-forwarded-for") || "").split(",")[0]?.trim();
   return xff || "unknown";
 }

@@ -156,10 +156,13 @@ export async function POST(req: NextRequest) {
     interface HistoryPart { text?: string }
     interface HistoryItem { role?: string; text?: string; parts?: HistoryPart[] }
     const safeHistory = Array.isArray(history)
-      ? (history as HistoryItem[]).slice(-8).map((item) => ({
-          role: item.role === "user" ? "user" : "assistant",
-          content: String(item.parts?.[0]?.text || item.text || "").slice(0, 2000),
-        }))
+      ? (history as HistoryItem[])
+          .filter((item) => item.role === "user")
+          .slice(-8)
+          .map((item) => ({
+            role: "user" as const,
+            content: String(item.parts?.[0]?.text || item.text || "").slice(0, 2000),
+          }))
       : [];
 
     let settings: ChatbotSettings = DEFAULT_CHATBOT_SETTINGS;
@@ -335,7 +338,7 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
 
       const contents = [
         ...safeHistory.map((item) => ({
-          role: item.role === "user" ? "user" : "model",
+          role: "user" as const,
           parts: [{ text: item.content.slice(0, 2000) }],
         })),
         {
