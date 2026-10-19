@@ -218,7 +218,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ logs, at: now().toISOString() });
   } catch (err) {
     console.error("Seed error detail:", err);
-    const msg = err instanceof Error ? err.message : "Seed gagal.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "Seed gagal." }, { status: 500 });
   }
 }

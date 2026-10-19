@@ -3,9 +3,12 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
 import { getSessionProfile } from "@/lib/auth-server";
+import { RateLimiter, clientIp } from "@/lib/rate-limit";
 
 const ALLOWED_FOLDERS = ["templates", "news", "news-covers", "complaints", "aparatur"];
 const MAX_BYTES = 5 * 1024 * 1024;
+
+const uploadLimiter = new RateLimiter({ max: 5, windowMs: 60_000 });
 const BLOCKED_EXTENSIONS = [".svg", ".html", ".htm"];
 const ALLOWED_MIME: Record<string, string[]> = {
   ".jpg": ["image/jpeg"],
@@ -41,6 +44,10 @@ export async function POST(req: NextRequest) {
     if (folder !== "complaints") {
       const session = await getSessionProfile(req);
       if (!session) return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    } else {
+      if (!uploadLimiter.check(clientIp(req))) {
+        return NextResponse.json({ error: "Terlalu banyak upload. Coba lagi dalam 1 menit." }, { status: 429 });
+      }
     }
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const name = `${Date.now()}_${randomUUID().slice(0, 8)}_${safeName}`;
@@ -50,6 +57,6 @@ export async function POST(req: NextRequest) {
     await writeFile(join(dir, name), bytes);
     return NextResponse.json({ url: `/uploads/${folder}/${name}` });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Upload gagal." }, { status: 500 });
+    return NextResponse.json({ error: "Upload gagal." }, { status: 500 });
   }
 }

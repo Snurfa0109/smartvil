@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json({ data: !isAdmin && table === "settings" ? redactSettingsRows(data) : data });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal membaca data." }, { status: 500 });
+    return NextResponse.json({ error: "Gagal membaca data." }, { status: 500 });
   }
 }
 
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     const data = await insertRecord(table, row);
     return NextResponse.json({ data });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal menyimpan." }, { status: 500 });
+    return NextResponse.json({ error: "Gagal menyimpan." }, { status: 500 });
   }
 }
 
@@ -135,7 +135,7 @@ export async function PUT(req: NextRequest) {
     if (err instanceof NotFoundError) {
       return NextResponse.json({ error: err.message }, { status: 404 });
     }
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal mengubah." }, { status: 500 });
+    return NextResponse.json({ error: "Gagal mengubah." }, { status: 500 });
   }
 }
 
@@ -154,6 +154,6 @@ export async function DELETE(req: NextRequest) {
     await deleteRecord(table, id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal menghapus." }, { status: 500 });
+    return NextResponse.json({ error: "Gagal menghapus." }, { status: 500 });
   }
 }

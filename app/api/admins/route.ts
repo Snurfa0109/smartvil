@@ -5,16 +5,15 @@ import { randomUUID } from "crypto";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSessionProfile(req);
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await requireSuperAdmin(req);
+    if (!admin) return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
 
     const rows = await query<Record<string, unknown>[]>(
       "SELECT id, email, display_name, role, active, department, permissions, last_login, created_at FROM profiles ORDER BY created_at DESC"
     );
     return NextResponse.json(rows);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Gagal memuat data admin." }, { status: 500 });
   }
 }
 

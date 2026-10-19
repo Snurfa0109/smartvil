@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Gagal memuat statistik." },
+      { error: "Gagal memuat statistik." },
       { status: 500 }
     );
   }
