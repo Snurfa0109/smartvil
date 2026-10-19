@@ -3,6 +3,9 @@ import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@
 import { getSiteSettings } from "@/lib/site-config";
 import { getLetterTypes } from "@/lib/letters";
 import { query } from "@/lib/db";
+import { RateLimiter, clientIp } from "@/lib/rate-limit";
+
+const chatLimiter = new RateLimiter({ max: 10, windowMs: 60_000 });
 
 async function getServerChatbotSettings(): Promise<ChatbotSettings> {
   try {
@@ -130,11 +133,34 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!chatLimiter.check(clientIp(req))) {
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." },
+        { status: 429 }
+      );
+    }
+
     const { message, history } = await req.json();
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Pesan tidak valid." }, { status: 400 });
     }
+
+    if (message.length > 1000) {
+      return NextResponse.json(
+        { error: "Pesan terlalu panjang (maks 1000 karakter)." },
+        { status: 400 }
+      );
+    }
+
+    interface HistoryPart { text?: string }
+    interface HistoryItem { role?: string; text?: string; parts?: HistoryPart[] }
+    const safeHistory = Array.isArray(history)
+      ? (history as HistoryItem[]).slice(-8).map((item) => ({
+          role: item.role === "user" ? "user" : "assistant",
+          content: String(item.parts?.[0]?.text || item.text || "").slice(0, 2000),
+        }))
+      : [];
 
     let settings: ChatbotSettings = DEFAULT_CHATBOT_SETTINGS;
     try {
@@ -265,12 +291,7 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
 
       const messages = [
         { role: "system", content: systemInstruction },
-        ...(Array.isArray(history)
-          ? history.slice(-8).map((item) => ({
-              role: item.role === "user" ? "user" : "assistant",
-              content: String(item.parts?.[0]?.text || item.text || ""),
-            }))
-          : []),
+        ...safeHistory,
         { role: "user", content: message.trim() },
       ];
 
@@ -313,12 +334,10 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
         : geminiDefaults;
 
       const contents = [
-        ...(Array.isArray(history)
-          ? history.slice(-8).map((item) => ({
-              role: item.role === "user" ? "user" : "model",
-              parts: [{ text: String(item.parts?.[0]?.text || item.text || "") }],
-            }))
-          : []),
+        ...safeHistory.map((item) => ({
+          role: item.role === "user" ? "user" : "model",
+          parts: [{ text: item.content.slice(0, 2000) }],
+        })),
         {
           role: "user",
           parts: [{ text: message.trim() }],
@@ -327,11 +346,12 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
 
       for (const modelName of candidateModels) {
         try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
           const geminiRes = await fetch(geminiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
             },
             body: JSON.stringify({
               systemInstruction: {

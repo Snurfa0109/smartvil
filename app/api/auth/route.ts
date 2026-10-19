@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { verifyPassword, signToken } from "@/lib/auth-server";
+import { signToken, verifyPassword } from "@/lib/auth-server";
+import { RateLimiter, clientIp } from "@/lib/rate-limit";
+
+const loginLimiter = new RateLimiter({ max: 5, windowMs: 60_000 });
 
 function toProfile(row: Record<string, unknown>) {
   return {
@@ -17,6 +20,12 @@ function toProfile(row: Record<string, unknown>) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!loginLimiter.check(clientIp(req))) {
+      return NextResponse.json(
+        { error: "Terlalu banyak percobaan login. Coba lagi dalam 1 menit." },
+        { status: 429 },
+      );
+    }
     const { email, password } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ error: "Email dan kata sandi wajib diisi." }, { status: 400 });
