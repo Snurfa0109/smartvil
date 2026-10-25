@@ -1,9 +1,8 @@
 /**
- * @layer Backend (API Route)
- * @role Endpoint CRUD generik tabel sistem SmartVil
- * @access Public (Tabel Tertentu) / Terautentikasi (Admin)
- * @description Menyediakan operasi CRUD data master dengan pengecekan perizinan dan otentikasi.
+ * [BACKEND API] Endpoint CRUD Generik Database Master
+ * Layanan data tabel kependudukan, surat, berita, dan pengaduan dengan validasi whitelist ketat.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   isValidTable,

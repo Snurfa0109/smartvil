@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Form Pembuatan Berita Baru
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Halaman antarmuka untuk menyusun dan menerbitkan artikel berita baru menggunakan rich text editor.
+ * [HALAMAN ADMIN / DASHBOARD] Form Pembuatan Berita Baru
+ * Editor artikel baru dengan integrasi TipTap WYSIWYG dan unggah gambar sampul warta.
  */
 
 import BeritaEditor from "@/components/berita-editor";

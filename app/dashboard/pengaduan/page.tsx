@@ -1,3 +1,10 @@
+"use client";
+
+/**
+ * [HALAMAN ADMIN / DASHBOARD] Manajemen Pengaduan & Aspirasi Warga
+ * Monitoring keluhan masuk, tanggapan resmi aparatur, dan pembaruan status tindak lanjut.
+ */
+
 ﻿"use client";
 
 /**
@@ -234,7 +241,7 @@ export default function PengaduanDashboardPage() {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Header */}
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
@@ -247,7 +254,7 @@ export default function PengaduanDashboardPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         {statCards.map((stat, i) => (
           <div
@@ -271,7 +278,7 @@ export default function PengaduanDashboardPage() {
         ))}
       </div>
 
-      {/* Search & Filter Toolbar */}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
@@ -318,7 +325,7 @@ export default function PengaduanDashboardPage() {
         )}
       </div>
 
-      {/* Complaints List */}
+      
       <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -378,7 +385,7 @@ export default function PengaduanDashboardPage() {
                 >
                   <div className={`h-[3px] bg-gradient-to-r ${statusAccent}`} />
                   <div className="p-4">
-                    {/* Row 1: Title + badges */}
+                    
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -405,7 +412,7 @@ export default function PengaduanDashboardPage() {
                       )}
                     </div>
 
-                    {/* Row 2: Reporter info + meta */}
+                    
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100/80 text-[11px] text-slate-500">
                       <span className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-md bg-[#1b365d]/[0.06] flex items-center justify-center">
@@ -443,7 +450,7 @@ export default function PengaduanDashboardPage() {
                       </span>
                     </div>
 
-                    {/* Row 3: Actions */}
+                    
                     <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100/80">
                       <button
                         onClick={() => {
@@ -497,11 +504,11 @@ export default function PengaduanDashboardPage() {
         )}
       </div>
 
-      {/* Detail Modal */}
+      
       {selectedComplaint && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="w-full max-w-2xl bg-white rounded-2xl relative my-8 max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Header */}
+            
             <div className="bg-gradient-to-br from-[#1b365d] to-[#264478] px-6 py-4 flex justify-between items-center shrink-0">
               <div>
                 <h2 className="text-[15px] font-bold text-white">Detail & Tanggapan Pengaduan</h2>
@@ -519,9 +526,9 @@ export default function PengaduanDashboardPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
+            
             <div className="space-y-5 p-6 overflow-y-auto">
-              {/* Reporter History Banner */}
+              
               {selectedComplaint.phone && (
                 <div className="bg-blue-50 border border-blue-200/70 rounded-xl p-3.5 text-[11px] text-blue-900 flex items-center justify-between gap-3">
                   <div>
@@ -539,7 +546,7 @@ export default function PengaduanDashboardPage() {
                 </div>
               )}
 
-              {/* Reporter Info Grid */}
+              
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50/80 border border-slate-100 p-4 rounded-xl">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pelapor</p>
@@ -583,7 +590,7 @@ export default function PengaduanDashboardPage() {
                 </div>
               </div>
 
-              {/* Complaint Title */}
+              
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Judul Pengaduan
@@ -593,7 +600,7 @@ export default function PengaduanDashboardPage() {
                 </p>
               </div>
 
-              {/* Complaint Content */}
+              
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Isi Laporan Warga
@@ -603,7 +610,7 @@ export default function PengaduanDashboardPage() {
                 </div>
               </div>
 
-              {/* Photo Evidence */}
+              
               {selectedComplaint.photoUrl && (
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
@@ -620,7 +627,7 @@ export default function PengaduanDashboardPage() {
                 </div>
               )}
 
-              {/* Admin Response Section */}
+              
               <div className="border-t border-slate-100 pt-5 space-y-2.5">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Tulis Tanggapan Resmi / Catatan Tindak Lanjut
@@ -667,7 +674,7 @@ export default function PengaduanDashboardPage() {
         </div>
       )}
 
-      {/* Image Modal */}
+      
       {imageModalUrl && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"

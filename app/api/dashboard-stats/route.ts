@@ -1,9 +1,8 @@
 /**
- * @layer Backend (API Route)
- * @role Endpoint agregasi metrik dan statistik dashboard
- * @access Terautentikasi (Admin)
- * @description Menyajikan ringkasan statistik kependudukan, permohonan surat, dan pengaduan untuk dashboard.
+ * [BACKEND API] Agregasi Statistik & Metrik Dashboard
+ * Penyediaan data statistik ringkas untuk overview beranda administrasi kelurahan.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth-server";
 import { query } from "@/lib/db";

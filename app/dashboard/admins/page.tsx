@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Manajemen Akun Administrator & Staf
- * @access Terautentikasi (Super Admin Only)
- * @description Mengelola data pengguna admin, alokasi peran kewenangan, status aktif akun, dan audit keamanan staf kelurahan.
+ * [HALAMAN ADMIN / DASHBOARD] Manajemen Akun & Hak Akses Aparatur (Super Admin)
+ * Pengelolaan kredensial pengguna, pembagian peran jabatan, dan pengaturan izin modul.
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
@@ -446,7 +444,7 @@ export default function AdminsManagementPage() {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Header */}
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
@@ -465,7 +463,7 @@ export default function AdminsManagementPage() {
         </button>
       </div>
 
-      {/* Stat Cards */}
+      
       <div className="grid grid-cols-3 gap-3">
         {([
           { label: "Super Admin", value: superadminCount, iconBg: "bg-violet-100", iconText: "text-violet-600", numText: "text-violet-700", accentBar: "bg-violet-500", icon: <ShieldCheck className="h-[18px] w-[18px]" /> },
@@ -497,7 +495,7 @@ export default function AdminsManagementPage() {
         ))}
       </div>
 
-      {/* Role info cards */}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="p-4 rounded-xl border border-violet-200/70 bg-violet-50/40">
           <div className="flex items-center gap-2 text-violet-700 font-bold text-[12px] mb-1">
@@ -525,7 +523,7 @@ export default function AdminsManagementPage() {
         </div>
       </div>
 
-      {/* Success banner */}
+      
       {successMsg && (
         <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -538,7 +536,7 @@ export default function AdminsManagementPage() {
         </div>
       )}
 
-      {/* Search + filter */}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
@@ -572,7 +570,7 @@ export default function AdminsManagementPage() {
         </div>
       </div>
 
-      {/* Table */}
+      
       <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -640,7 +638,7 @@ export default function AdminsManagementPage() {
                               <Mail size={10} />
                               <span className="truncate">{admin.email}</span>
                             </div>
-                            {/* Mobile: show role + status inline */}
+                            
                             <div className="flex items-center gap-1.5 mt-1 sm:hidden">
                               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${roleBadge.bg} ${roleBadge.text}`}>
                                 <Shield size={9} /> {roleBadge.label}
@@ -717,7 +715,7 @@ export default function AdminsManagementPage() {
         )}
       </div>
 
-      {/* Create Modal */}
+      
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setIsCreateOpen(false)}>
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
@@ -837,7 +835,7 @@ export default function AdminsManagementPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      
       {isEditOpen && editingAdmin && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setIsEditOpen(false)}>
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>

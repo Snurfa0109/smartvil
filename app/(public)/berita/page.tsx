@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Portal Berita & Pengumuman
- * @access Public / Warga
- * @description Menampilkan daftar publikasi informasi, agenda kegiatan, pengumuman, dan artikel kelurahan.
+ * [HALAMAN USER / WARGA] Portal Berita & Informasi Publik
+ * Daftar artikel warta kelurahan, agenda kegiatan, pengumuman resmi, dan filter kategori berita.
  */
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -78,7 +76,6 @@ export default function NewsPage() {
             }));
           }
         } catch {
-          // fallback
         }
 
         if (loaded.length === 0) {
@@ -95,13 +92,10 @@ export default function NewsPage() {
 
     fetchNews();
   }, []);
-  // Set page title
   useEffect(() => {
     document.title = "Berita | Kelurahan";
   }, []);
 
-
-  // Reset to page 1 whenever filters change
   const handleCategoryChange = (category: string | null) => {
     setSelectedCategory(category);
     setCurrentPage(1);
@@ -195,11 +189,9 @@ export default function NewsPage() {
 
   const isFiltering = Boolean(searchTerm.trim() || (selectedCategory && selectedCategory !== "Semua") || selectedArchive);
 
-  // If not filtering, the first item on page 1 is shown as featured hero
   const featuredItem = !isFiltering && currentPage === 1 && filteredNews.length > 0 ? filteredNews[0] : null;
   const listPool = !isFiltering ? filteredNews.slice(1) : filteredNews;
 
-  // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(listPool.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedItems = listPool.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -220,7 +212,7 @@ export default function NewsPage() {
   return (
     <div className="pb-20 pt-6 md:pt-8 bg-slate-50/50 min-h-screen">
       <div className="container mx-auto px-6 md:px-12 space-y-8">
-        {/* Clean Header: Langsung ke Inti Berita & Pengumuman */}
+        
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-200">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20 mb-2.5">
@@ -239,9 +231,9 @@ export default function NewsPage() {
           </div>
         </div>
 
-        {/* Search & Filter Bar with Enhanced UCD Contrast & Affordance */}
+        
         <div className="bg-white border border-slate-200/90 rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
-          {/* Search Input Box */}
+          
           <div className="relative flex items-center bg-slate-50/90 hover:bg-white focus-within:bg-white border-2 border-slate-200 hover:border-slate-300 focus-within:border-[#1b365d] rounded-xl transition-all shadow-2xs">
             <div className="pl-4 pr-1 text-[#1b365d] flex items-center pointer-events-none">
               <Search className="w-4 h-4" />
@@ -264,7 +256,7 @@ export default function NewsPage() {
             )}
           </div>
 
-          {/* Filter Categories & Status */}
+          
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1.5 uppercase tracking-wider">
@@ -318,7 +310,7 @@ export default function NewsPage() {
               })}
             </div>
 
-            {/* Active Filter Indicators & Reset */}
+            
             {isFiltering && (
               <div className="flex items-center gap-2">
                 {selectedArchive && (
@@ -343,7 +335,7 @@ export default function NewsPage() {
 
       <div ref={listTopRef} />
 
-      {/* Result Status Indicator */}
+      
       {!loading && (
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
           <span>
@@ -363,7 +355,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Loading Skeleton */}
+      
       {loading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -380,7 +372,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Empty State */}
+      
       {!loading && filteredNews.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto space-y-4">
           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
@@ -404,7 +396,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Featured News Hero Card (Only on Page 1 when not filtering) */}
+      
       {!loading && featuredItem && (
         <div className="space-y-4">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -459,7 +451,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Regular News Grid (9 Items per page) */}
+      
       {!loading && paginatedItems.length > 0 && (
         <div className="space-y-6">
           {featuredItem && (
@@ -477,7 +469,7 @@ export default function NewsPage() {
             {paginatedItems.map((item) => (
               <Link key={item.id} href={`/berita/${item.id}`} className="group">
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden hover:border-[#1b365d] hover:shadow-md transition-all h-full flex flex-col">
-                  {/* Thumbnail Image */}
+                  
                   <div className="aspect-video bg-slate-100 overflow-hidden relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -490,7 +482,7 @@ export default function NewsPage() {
                     />
                   </div>
 
-                  {/* Body Content */}
+                  
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -530,7 +522,7 @@ export default function NewsPage() {
             ))}
           </div>
 
-          {/* Pagination Controls (Entries Pages) */}
+          
           {totalPages > 1 && (
             <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs text-slate-600">
@@ -551,7 +543,6 @@ export default function NewsPage() {
                 <div className="flex items-center gap-1">
                   {Array.from({ length: totalPages }).map((_, idx) => {
                     const pageNum = idx + 1;
-                    // Show a window of page numbers if pages > 5
                     if (
                       totalPages > 6 &&
                       pageNum !== 1 &&
@@ -598,7 +589,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* Archive Navigation */}
+      
       {!loading && archives.length > 0 && (
         <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-6 space-y-3">
           <div className="flex items-center justify-between">

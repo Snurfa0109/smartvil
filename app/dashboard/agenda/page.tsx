@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Manajemen Agenda & Kegiatan Kelurahan
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Mengelola jadwal acara, rapat, dan kegiatan komunitas kelurahan beserta lokasi dan detail pelaksanaannya.
+ * [HALAMAN ADMIN / DASHBOARD] Manajemen Agenda & Jadwal Kegiatan
+ * Penjadwalan kegiatan posyandu, kerja bakti, musrenbang, dan kegiatan resmi kelurahan.
  */
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -279,7 +277,7 @@ export default function AgendaDashboardPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#2a4a7f] flex items-center justify-center shadow-md shadow-[#1b365d]/20">
@@ -301,7 +299,7 @@ export default function AgendaDashboardPage() {
         </Button>
       </div>
 
-      {/* Stat Cards */}
+      
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Total Agenda", value: items.length, accentBar: "bg-gradient-to-r from-[#1b365d] to-[#2a4a7f]", numText: "text-slate-900", iconBg: "bg-[#1b365d]/8", iconText: "text-[#1b365d]", icon: <CalendarDays className="h-4 w-4" /> },
@@ -334,7 +332,7 @@ export default function AgendaDashboardPage() {
         ))}
       </div>
 
-      {/* Info strip */}
+      
       <div className="px-4 py-3 bg-[#1b365d]/[0.04] border border-[#1b365d]/10 rounded-xl text-sm text-[#1b365d] flex items-start gap-3">
         <CalendarDays className="h-4 w-4 shrink-0 mt-0.5 opacity-60" />
         <p className="text-xs leading-relaxed">
@@ -342,7 +340,7 @@ export default function AgendaDashboardPage() {
         </p>
       </div>
 
-      {/* Search bar */}
+      
       {items.length > 0 && (
         <div className="relative max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
@@ -356,9 +354,9 @@ export default function AgendaDashboardPage() {
         </div>
       )}
 
-      {/* Agenda list */}
+      
       <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-        {/* Section header */}
+        
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
@@ -440,7 +438,7 @@ export default function AgendaDashboardPage() {
                   <div className={`h-[3px] bg-gradient-to-r ${accentGrad}`} />
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-3">
-                      {/* Left: order badge + content */}
+                      
                       <div className="flex items-start gap-3 min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-bold text-slate-500 tabular-nums">
                           {item.order ?? idx}
@@ -455,7 +453,7 @@ export default function AgendaDashboardPage() {
                           {item.description && (
                             <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{item.description}</p>
                           )}
-                          {/* Schedule info row */}
+                          
                           <div className="flex items-center gap-3 mt-2 flex-wrap">
                             {dateLabel && (
                               <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-medium">
@@ -484,7 +482,7 @@ export default function AgendaDashboardPage() {
                         </div>
                       </div>
 
-                      {/* Right: actions */}
+                      
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => handleToggleActive(item)}
@@ -521,7 +519,7 @@ export default function AgendaDashboardPage() {
         )}
       </div>
 
-      {/* Create/Edit Dialog */}
+      
       {showDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs" onClick={closeDialog}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col layanan-modal" onClick={(e) => e.stopPropagation()}>
@@ -546,7 +544,7 @@ export default function AgendaDashboardPage() {
             </div>
 
             <div className="p-5 space-y-5 overflow-y-auto">
-              {/* ── Section: Informasi Utama ── */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Informasi Utama</legend>
                 <div>
@@ -578,7 +576,7 @@ export default function AgendaDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* ── Section: Kategori ── */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Kategori</legend>
                 <div>
@@ -623,7 +621,7 @@ export default function AgendaDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* ── Section: Jadwal Pelaksanaan ── */}
+              
               <fieldset className="space-y-3 p-4 bg-slate-50/70 border border-slate-200/60 rounded-xl">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Jadwal Pelaksanaan</legend>
                 <div className="grid grid-cols-2 gap-3">
@@ -685,7 +683,7 @@ export default function AgendaDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* ── Section: Lokasi & Frekuensi ── */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Detail Tambahan</legend>
                 <div>
@@ -720,7 +718,7 @@ export default function AgendaDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* ── Section: Pengaturan Tampilan ── */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pengaturan Tampilan</legend>
                 <div className="grid grid-cols-2 gap-3">
@@ -765,7 +763,7 @@ export default function AgendaDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* ── Live Preview ── */}
+              
               {form.title && (
                 <div className="rounded-xl border border-[#1b365d]/10 bg-[#1b365d]/[0.02] overflow-hidden">
                   <div className="px-3.5 py-2 border-b border-[#1b365d]/10 flex items-center gap-2">
@@ -774,7 +772,7 @@ export default function AgendaDashboardPage() {
                   </div>
                   <div className="p-3.5">
                     <div className="bg-white rounded-xl border border-slate-200/70 overflow-hidden shadow-sm">
-                      {/* Category accent bar */}
+                      
                       <div className={`h-[3px] ${CATEGORY_COLORS[form.categoryColor]?.swatch || "bg-slate-300"}`} />
                       <div className="p-3.5 space-y-2">
                         <div className="flex items-center justify-between gap-2">
@@ -833,7 +831,7 @@ export default function AgendaDashboardPage() {
         </div>
       )}
 
-      {/* Delete Confirmation */}
+      
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden layanan-modal">

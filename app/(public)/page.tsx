@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Beranda Publik
- * @access Public / Warga
- * @description Halaman utama SmartVil yang menyajikan informasi selamat datang, layanan cepat, statistik, dan berita desa.
+ * [HALAMAN USER / WARGA] Beranda Portal Kelurahan Banjar Agung
+ * Menampilkan ringkasan layanan, status operasional loket real-time, warta terkini, dan akses cepat surat online.
  */
 
 import { useEffect, useState, useMemo } from "react";
@@ -87,7 +85,6 @@ const AGENDA_BADGE: Record<string, string> = {
   purple: "text-purple-800 bg-purple-50 border-purple-100",
 };
 
-// Data fallback kependudukan resmi jika database awal masih kosong
 const FALLBACK_STATS: LandingStats = {
   total: 3840,
   kk: 1180,
@@ -104,13 +101,11 @@ export default function Home() {
   const [stats, setStats] = useState<LandingStats>(FALLBACK_STATS);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // Widget Lacak Surat Cepat di Beranda (Khusus Warga/Orang Tua)
   const [trackQuery, setTrackQuery] = useState("");
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackResult, setTrackResult] = useState<TrackedRequestItem[] | null>(null);
   const [trackSearched, setTrackSearched] = useState(false);
 
-  // 1. Sinkronisasi Profil Kelurahan (Jam Loket, Telepon, dsb) dari Dashboard Settings
   useEffect(() => {
     const fetchSiteConfig = async () => {
       try {
@@ -122,13 +117,10 @@ export default function Home() {
     };
     fetchSiteConfig();
   }, []);
-  // Set page title
   useEffect(() => {
     document.title = siteConfig.villageName || "Beranda";
   }, [siteConfig.villageName]);
 
-
-  // 2. Sinkronisasi Agenda Kegiatan dari Dashboard Agenda
   useEffect(() => {
     const fetchAgenda = async () => {
       try {
@@ -156,7 +148,6 @@ export default function Home() {
         if (activeItems.length > 0) {
           setAgendaItems(activeItems);
         } else {
-          // Fallback agenda resmi kelurahan jika admin belum mengisi
           setAgendaItems([
             {
               id: "ag-1",
@@ -194,7 +185,6 @@ export default function Home() {
           ]);
         }
       } catch {
-        // Fallback default
       } finally {
         setAgendaLoading(false);
       }
@@ -202,7 +192,6 @@ export default function Home() {
     fetchAgenda();
   }, []);
 
-  // 3. Sinkronisasi Berita & Statistik Warga dari Dashboard
   useEffect(() => {
     const fetchLatestNews = async () => {
       try {
@@ -234,7 +223,6 @@ export default function Home() {
           const kkApprox = Math.max(1, Math.floor(total / 3));
           setStats({ total, kk: kkApprox, male, female });
         } else {
-          // Gunakan fallback representatif skala kelurahan Banjar Agung Kota Serang
           setStats(FALLBACK_STATS);
         }
       } catch (error) {
@@ -249,11 +237,9 @@ export default function Home() {
     fetchStats();
   }, []);
 
-  // 4. Deteksi Waktu Nyata Jam Kerja Loket Fisik (Senin - Jumat 08.00 - 15.30 WIB)
   const isCounterOpenNow = useMemo(() => {
     try {
       const now = new Date();
-      // Gunakan waktu Indonesia Barat (UTC+7)
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
       const wib = new Date(utc + 3600000 * 7);
       const day = wib.getDay(); // 0: Minggu, 6: Sabtu
@@ -261,7 +247,6 @@ export default function Home() {
       const minutes = wib.getMinutes();
       const totalMinutes = hours * 60 + minutes;
 
-      // Buka: Senin (1) s.d. Jumat (5), 08:00 (480) s.d. 15:30 (930)
       const isWeekday = day >= 1 && day <= 5;
       const isWorkHours = totalMinutes >= 480 && totalMinutes <= 930;
       return isWeekday && isWorkHours;
@@ -270,7 +255,6 @@ export default function Home() {
     }
   }, [siteConfig.counterStatus]);
 
-  // 5. Handler Lacak Cepat Surat di Beranda (Sinkron ke database requests)
   const handleQuickTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = trackQuery.trim();
@@ -340,7 +324,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-12 pb-16">
       
-      {/* 1. Dynamic Hero Banner Resmi Kelurahan */}
+      
       <PageBanner
         pageKey="beranda"
         overrideTitle={siteConfig.heroTitle}
@@ -348,12 +332,12 @@ export default function Home() {
         overrideBadge={siteConfig.heroBadge}
       />
 
-      {/* 2. Floating Bar: Status Loket Fisik & Layanan Cepat (Sangat Jelas & Real-time) */}
+      
       <div className="container mx-auto px-6 md:px-12 -mt-6 sm:-mt-8 relative z-20">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
             
-            {/* Status Operasional Loket */}
+            
             <div className="md:col-span-5 flex items-center justify-between border-b md:border-b-0 md:border-r border-slate-100 pb-3.5 md:pb-0 md:pr-6">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center font-bold shrink-0">
@@ -380,7 +364,7 @@ export default function Home() {
               </span>
             </div>
 
-            {/* Jam Layanan & Kepastian Biaya */}
+            
             <div className="md:col-span-4 grid grid-cols-2 gap-2.5 text-xs border-b md:border-b-0 md:border-r border-slate-100 pb-3.5 md:pb-0 md:pr-6">
               <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl space-y-0.5">
                 <div className="flex items-center gap-1 text-slate-600 font-semibold text-[11px]">
@@ -401,7 +385,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Akses Cepat Bantuan WhatsApp */}
+            
             <div className="md:col-span-3 flex flex-col justify-center">
               <a
                 href={whatsappHref}
@@ -421,7 +405,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 3. CORE UCD: 3 KARTU KEBUTUHAN UTAMA WARGA (TASK-ORIENTED & RAMAH ORANG TUA) */}
+      
       <section className="container mx-auto px-6 md:px-12">
         <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
           <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#1b365d] bg-[#1b365d]/10 border border-[#1b365d]/20 px-3 py-1 rounded-full">
@@ -437,7 +421,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* KARTU 1: MAU BIKIN SURAT */}
+          
           <div className="bg-white border-2 border-[#1b365d]/20 hover:border-[#1b365d] rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
             <div className="space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-[#1b365d] text-white flex items-center justify-center shadow-md">
@@ -477,7 +461,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* KARTU 2: LACAK PERMOHONAN SURAT */}
+          
           <div className="bg-white border-2 border-amber-300 hover:border-amber-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
             <div className="space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md">
@@ -518,7 +502,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* KARTU 3: LAPOR PENGADUAN / ASPIRASI */}
+          
           <div className="bg-white border-2 border-emerald-300 hover:border-emerald-500 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
             <div className="space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
@@ -561,7 +545,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. WIDGET LACAK SURAT CEPAT LANGSUNG DI BERANDA (KEMUDAHAN MAKSIMAL BAGI ORANG TUA) */}
+      
       <section id="lacak-surat-section" className="container mx-auto px-6 md:px-12 scroll-mt-24">
         <div className="bg-gradient-to-br from-[#1b365d] to-[#122644] text-white rounded-2xl p-6 sm:p-8 shadow-lg border border-slate-700/50">
           <div className="max-w-3xl mx-auto space-y-5">
@@ -578,7 +562,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Input Form Lacak */}
+            
             <form onSubmit={handleQuickTrack} className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
                 <input
@@ -617,7 +601,7 @@ export default function Home() {
               </Button>
             </form>
 
-            {/* Hasil Pelacakan Real-time */}
+            
             {trackSearched && !trackLoading && (
               <div className="pt-4 border-t border-white/10 space-y-3">
                 {trackResult && trackResult.length > 0 ? (
@@ -693,7 +677,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. TRANSPARANSI ALUR PELAYANAN (BAHASA RAKYAT YANG JELAS & TENANG) */}
+      
       <section className="bg-slate-50 border-y border-slate-200 py-12">
         <div className="container mx-auto px-6 md:px-12">
           <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
@@ -763,7 +747,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. WARTA & PENGUMUMAN RESMI (SINKRON DARI DATABASE BERITA ADMIN) */}
+      
       <section className="container mx-auto px-6 md:px-12">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
           <div>
@@ -861,7 +845,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 7. AGENDA & PROGRAM KEGIATAN KELURAHAN (SINKRON DARI DATABASE AGENDA ADMIN) */}
+      
       <section id="agenda" className="container mx-auto px-6 md:px-12 scroll-mt-20">
         <div className="border border-slate-200 rounded-2xl p-6 md:p-8 bg-slate-50/70 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-4">
@@ -912,7 +896,7 @@ export default function Home() {
                         </div>
                       )}
 
-                      {/* Add to Calendar Action */}
+                      
                       <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-50">
                         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                           Simpan:
@@ -967,7 +951,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. TRANSPARANSI DATA KEPENDUDUKAN & KELURAHAN (SKALA KOTA SERANG) */}
+      
       <section className="bg-white py-12 border-t border-slate-200">
         <div className="container mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -983,7 +967,7 @@ export default function Home() {
                 Pemerintah Kelurahan Banjar Agung menyajikan data agregat penduduk secara transparan guna mendukung ketepatan perencanaan wilayah dan penyaluran program bantuan sosial.
               </p>
 
-              {/* Data Penduduk Utama */}
+              
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <div className="text-2xl md:text-3xl font-bold text-[#1b365d] mb-0.5 font-mono">
@@ -1001,7 +985,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Data Spasial RT/RW Kelurahan */}
+              
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="bg-blue-50/60 p-2.5 rounded-lg border border-blue-200">
                   <span className="font-extrabold text-[#1b365d] block text-base font-mono">8</span>
@@ -1026,7 +1010,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Demografi & Komitmen Pelayanan */}
+            
             <div className="lg:col-span-6">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 space-y-4 shadow-xs">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-3">
@@ -1098,9 +1082,7 @@ export default function Home() {
         </div>
       </section>
 
-
-
-      {/* 10. KOTAK BANTUAN RAMAH WARGA / SAFETY NET */}
+      
       <section className="container mx-auto px-6 md:px-12">
         <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-xs">
           <div className="flex items-start gap-4">

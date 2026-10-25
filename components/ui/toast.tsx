@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * [KOMPONEN / UI] Notifikasi Toast & Dialog Konfirmasi
+ * Komponen popup feedback pesan sukses, peringatan, error, dan konfirmasi aksi.
+ */
+
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, AlertTriangle, XCircle, Info, X } from "lucide-react";
@@ -99,7 +104,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {mounted &&
         createPortal(
           <>
-            {/* Toast stack */}
+            
             <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
               {toasts.map((t) => (
                 <div
@@ -118,7 +123,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               ))}
             </div>
 
-            {/* Confirm dialog */}
+            
             {confirmState && (
               <div className="fixed inset-0 z-[9998] bg-black/50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 fade-in duration-150">

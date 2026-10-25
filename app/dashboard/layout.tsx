@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Layout & Shell Navigasi Dashboard
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Menyediakan kerangka navigasi dashboard, sidebar, header status, dan proteksi sesi admin.
+ * [HALAMAN ADMIN / DASHBOARD] Layout & Shell Navigasi
+ * Sidebar navigasi menu kerja aparatur, indikator profil sesi petugas, dan tombol keluar sistem.
  */
 
 import Link from "next/link";
@@ -129,7 +127,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
-      {/* Mobile overlay */}
+      
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
@@ -137,14 +135,14 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* ── Sidebar ── */}
+      
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-[256px] flex flex-col transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0 md:flex`}
         style={{ background: "linear-gradient(180deg, #1e3a63 0%, #1b365d 40%, #152c4a 100%)" }}
       >
-        {/* Brand header */}
+        
         <div className="shrink-0 px-5 pt-6 pb-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -168,12 +166,12 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Divider */}
+        
         <div className="mx-5 h-px bg-white/[0.08] shrink-0" />
 
-        {/* Navigation — hidden scrollbar */}
+        
         <nav className="flex-1 overflow-y-auto sidebar-scroll px-3 pt-4 pb-2">
-          {/* Menu label */}
+          
           <div className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[0.2em] text-white/20">
             Menu Utama
           </div>
@@ -217,7 +215,7 @@ export default function DashboardLayout({
             })}
           </div>
 
-          {/* System section */}
+          
           {systemNavItems.length > 0 && (
             <>
               <div className="mx-3 my-3 h-px bg-white/[0.06]" />
@@ -264,9 +262,9 @@ export default function DashboardLayout({
           )}
         </nav>
 
-        {/* Footer */}
+        
         <div className="shrink-0 px-4 pb-5 pt-2">
-          {/* User card */}
+          
           <div className="rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="p-3.5">
               <div className="flex items-center gap-3">
@@ -303,7 +301,7 @@ export default function DashboardLayout({
               )}
             </div>
 
-            {/* Logout button */}
+            
             <button
               onClick={handleLogout}
               className="group w-full flex items-center justify-center gap-2 px-3 py-3 bg-white/[0.03] hover:bg-red-500/15 border-t border-white/[0.06] transition-all duration-200"
@@ -315,11 +313,11 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* ── Main content area ── */}
+      
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Top header bar */}
+        
         <header className="h-16 bg-white border-b border-slate-200/60 flex items-center justify-between px-4 md:px-6 shrink-0">
-          {/* Left side */}
+          
           <div className="flex items-center gap-3">
             <button
               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors md:hidden"
@@ -328,7 +326,7 @@ export default function DashboardLayout({
               <Menu size={20} />
             </button>
 
-            {/* Breadcrumb-style page title */}
+            
             <div className="hidden sm:flex items-center gap-2">
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                 <LayoutDashboard size={12} />
@@ -339,9 +337,9 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* Right side */}
+          
           <div className="flex items-center gap-2">
-            {/* Quick actions */}
+            
             <Link
               href="/"
               target="_blank"
@@ -351,10 +349,10 @@ export default function DashboardLayout({
               <span>Lihat Website</span>
             </Link>
 
-            {/* Divider */}
+            
             <div className="hidden md:block w-px h-6 bg-slate-200" />
 
-            {/* User profile */}
+            
             <div className="flex items-center gap-2.5 pl-1">
               <div className="text-right hidden sm:block">
                 <p className="text-[12px] font-bold text-slate-800 leading-tight">
@@ -391,7 +389,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page content */}
+        
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {isCurrentRouteForbidden ? (
             <div className="max-w-xl mx-auto my-12 bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">

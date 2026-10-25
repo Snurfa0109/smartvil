@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Komponen Simulasi Pratinjau Template Surat
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Merender simulasi pengisian placeholder template surat dinamis berbasis DOCX menggunakan data contoh.
+ * [KOMPONEN / ADMIN] Pratinjau Simulasi Dokumen Surat
+ * Pratinjau render dokumen template surat dan pengunduhan contoh terisi.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,8 +20,6 @@ type Props = {
   fileName?: string;
 };
 
-// Live preview of template as-is (no sample data).
-// "Unduh Contoh Terisi" generates a separate filled file on demand.
 export default function LetterSimulationPreview({ templateBuffer, placeholders, customFields, fileName }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"idle" | "rendering" | "ready" | "error">("idle");
@@ -55,7 +51,6 @@ export default function LetterSimulationPreview({ templateBuffer, placeholders, 
     return () => window.removeEventListener("resize", applyZoom);
   }, [applyZoom, zoom, status]);
 
-  // Render template apa adanya (tanpa data contoh) setiap kali buffer berubah
   useEffect(() => {
     if (!templateBuffer || placeholders.length === 0) {
       setStatus("idle");

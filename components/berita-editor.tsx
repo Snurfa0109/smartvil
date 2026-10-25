@@ -1,11 +1,10 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Komponen Rich Text Editor Berita
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Komponen editor berbasis TipTap untuk penyusunan konten berita lengkap dengan formatting teks dan media.
+ * [KOMPONEN / ADMIN] Rich Text Editor Berita TipTap
+ * Editor WYSIWYG untuk pembuatan dan pengubahan artikel berita kelurahan.
  */
+
 import DOMPurify from "dompurify";
 
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
@@ -339,7 +338,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Header */}
+      
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Link
@@ -381,12 +380,12 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Two-column layout */}
+        
         <div className="grid lg:grid-cols-12 gap-5 items-start">
 
-          {/* Left: Main content */}
+          
           <div className="lg:col-span-8 space-y-5">
-            {/* Title input — large, prominent */}
+            
             <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
               <div className="p-5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Judul Artikel</label>
@@ -401,7 +400,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
               </div>
             </div>
 
-            {/* Editor */}
+            
             <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
               <div className="px-5 pt-4 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -434,9 +433,9 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
             </div>
           </div>
 
-          {/* Right: Sidebar — metadata */}
+          
           <div className="lg:col-span-4 space-y-5">
-            {/* Publish settings */}
+            
             <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
               <div className="px-5 pt-4 pb-2 flex items-center gap-2">
                 <Tag className="h-4 w-4 text-[#c9971c]" />
@@ -476,7 +475,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
               </div>
             </div>
 
-            {/* Cover image */}
+            
             <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
               <div className="px-5 pt-4 pb-2 flex items-center gap-2">
                 <ImagePlus className="h-4 w-4 text-emerald-600" />
@@ -484,7 +483,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
               </div>
 
               <div className="p-5 pt-3 space-y-3">
-                {/* Preview */}
+                
                 <div className="w-full aspect-[16/9] rounded-xl border border-slate-200/80 overflow-hidden bg-slate-100 relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -511,7 +510,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
                   )}
                 </div>
 
-                {/* Upload area */}
+                
                 <div className="space-y-2">
                   <Input
                     type="url"
@@ -544,7 +543,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
               </div>
             </div>
 
-            {/* Action buttons */}
+            
             <div className="space-y-2">
               <Button
                 type="submit"

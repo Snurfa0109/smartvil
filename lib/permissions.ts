@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Definisi hak akses fitur dan perizinan peran admin
- * @access Server-side / Client-side
- * @description Mendefinisikan daftar fitur terkelola dan kontrol perizinan role admin dalam sistem SmartVil.
+ * [CORE LIBRARY / SISTEM] Matriks Hak Akses & Peran Pengguna (RBAC)
+ * Pemetaan izin modul fitur kelurahan berdasarkan departemen dan level akun pengguna.
  */
+
 export interface FeaturePermission {
   key: string;
   label: string;

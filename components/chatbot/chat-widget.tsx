@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Component
- * @role Widget Asisten AI (Chatbot)
- * @access Public / Warga
- * @description Komponen widget interaktif asisten virtual untuk melayani pertanyaan warga seputar informasi dan layanan desa.
+ * [KOMPONEN / SHARED] Widget Asisten Virtual AI "Arba"
+ * Tombol melayang dan dialog interaktif asisten AI untuk panduan layanan warga.
  */
 
 import React, { useState, useRef, useEffect } from "react";
@@ -365,7 +363,7 @@ export function ChatWidget() {
                         <div className="whitespace-pre-wrap">{msg.text}</div>
                       )}
 
-                      {/* CTA Buttons for model messages */}
+                      
                       {msg.role === "model" && msg.actions && msg.actions.length > 0 && (
                         <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">

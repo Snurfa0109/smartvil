@@ -1,3 +1,8 @@
+/**
+ * [CORE LIBRARY / SISTEM] Konfigurasi Gambar Banner & Hero Halaman
+ * Definisi daftar gambar banner bawaan, metadata resolusi, dan teks default per halaman.
+ */
+
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export interface PageBannerData {
@@ -30,7 +35,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     badge: "PORTAL RESMI PELAYANAN KELURAHAN BANJAR AGUNG",
     title: "Pelayanan Administrasi Kelurahan yang Cepat, Transparan, & Akuntabel",
     subtitle: "Sistem Informasi Pelayanan Publik Kelurahan Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang. Pengajuan surat mandiri online, data kependudukan terpadu, transparansi program, dan kanal aspirasi masyarakat.",
-    // Simbol Landmark Kota Serang: Jembatan Raden Aria Wangsakara (Bogeg) Ultra HD
     imageUrl: "/images/banner-beranda-bogeg.jpg",
     imageMeaning: "Jembatan Raden Aria Wangsakara (Jembatan Bogeg): Landmark ikonik kebanggaan Kota Serang dan urat nadi penghubung wilayah Cipocok Jaya dengan ornamen batik Banten, melambangkan kemajuan infrastruktur, konektivitas masyarakat, dan gerbang kemakmuran Banjar Agung.",
     actionText: "Lihat Layanan",
@@ -43,7 +47,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     badge: "PROFIL & WILAYAH • KECAMATAN CIPOCOK JAYA",
     title: "Profil Kelurahan Banjar Agung",
     subtitle: "Kecamatan Cipocok Jaya, Kota Serang, Provinsi Banten — Melayani dengan Integritas dan Berorientasi Pelayanan Masyarakat.",
-    // Simbol Wilayah Kelurahan: Panorama lanskap pemukiman kelurahan hijau asri dan pegunungan Banten
     imageUrl: "/images/banner-profil.jpg",
     imageMeaning: "Panorama Wilayah Kelurahan: Menggambarkan bentang wilayah Kelurahan Banjar Agung yang asri, hijau, dan damai, berorientasi pada keharmonisan warga dan kemajuan lingkungan.",
     actionText: "Struktur Aparatur",
@@ -56,7 +59,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     badge: "KETERBUKAAN INFORMASI PUBLIK & SATU DATA",
     title: "Informasi & Infografis Kependudukan",
     subtitle: "Pusat satu data statistik demografi warga, piramida kependudukan, warta publikasi kelurahan, dan direktori layanan resmi terpadu.",
-    // Simbol Data & Teknologi: Visualisasi analitik data kependudukan, chart digital 3D, dan smart city dashboard
     imageUrl: "/images/banner-informasi.jpg",
     imageMeaning: "Visualisasi Data Digital & Statistik Kependudukan: Menggambarkan tata kelola Satu Data Kelurahan berbasis teknologi analitik yang transparan, modern, dan akurat.",
     actionText: "Lihat Infografis",
@@ -69,7 +71,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     badge: "PELAYANAN ADMINISTRASI TERPADU KELURAHAN (PATEN)",
     title: "Layanan Administrasi Surat Kelurahan",
     subtitle: "Pengajuan surat pengantar dan keterangan resmi secara mandiri online. Cepat, transparan, terverifikasi otomatis, dan 100% bebas biaya retribusi (Gratis).",
-    // Simbol Administrasi Surat: Dokumen resmi negara, stempel cap, dan pena eksekutif tanda tangan tanpa orang
     imageUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1920&q=85",
     imageMeaning: "Dokumen & Pena Administrasi: Melambangkan keabsahan hukum surat keterangan, kecepatan verifikasi, dan tertib administrasi bebas calo.",
     actionText: "Buat Surat Mandiri",
@@ -82,7 +83,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     badge: "KANAL ASPIRASI & PENGADUAN MASYARAKAT",
     title: "Layanan Pengaduan & Aspirasi Warga",
     subtitle: "Sampaikan keluhan fasilitas lingkungan, kebersihan, dan pelayanan publik. Seluruh laporan diverifikasi dan ditindaklanjuti secara adil dan transparan.",
-    // Simbol Aspirasi & Keadilan: Timbangan keadilan condong di kanan dengan ruang kosong gelap di kiri
     imageUrl: "/images/banner-pengaduan.jpg",
     imageMeaning: "Timbangan Keadilan Warga: Melambangkan integritas aparatur dalam menampung aspirasi masyarakat dengan adil, objektif, dan setara tanpa diskriminasi.",
     actionText: "Tulis Pengaduan",
@@ -95,7 +95,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     badge: "WARTA RESMI & PUBLIKASI PEMERINTAHAN",
     title: "Warta & Publikasi Resmi Kelurahan",
     subtitle: "Pemberitaan resmi kegiatan aparatur, siaran pers agenda pembangunan, dan pengumuman program bantuan sosial Kelurahan Banjar Agung.",
-    // Simbol Berita & Pers: Lembaran warta berita cetak dan media dokumentasi tanpa orang
     imageUrl: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1920&q=85",
     imageMeaning: "Warta Media: Melambangkan penyebaran informasi yang akurat, terpercaya, dan mencerdaskan masyarakat.",
     actionText: "Jelajahi Berita",

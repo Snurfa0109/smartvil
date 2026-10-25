@@ -1,9 +1,8 @@
 /**
- * @layer Backend (API Route)
- * @role Endpoint chatbot kecerdasan buatan (AI Assistant)
- * @access Public / Anonim
- * @description Memproses percakapan interaktif warga dengan AI Assistant seputar layanan kelurahan.
+ * [BACKEND API] Asisten Virtual AI "Arba" Kelurahan
+ * Layanan chatbot warga multi-provider (Groq & Gemini) dengan injeksi konteks data kelurahan.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@/lib/chatbot-config";
 import { getSiteSettings } from "@/lib/site-config";
@@ -39,7 +38,6 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
   const combined = `${userMsg} ${botReply}`.toLowerCase();
   const actions: ChatAction[] = [];
 
-  // 1. Pengaduan / Aspirasi / Lapor Masalah
   const isPengaduan =
     combined.includes("lapor") ||
     combined.includes("pengaduan") ||
@@ -58,7 +56,6 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
     });
   }
 
-  // 2. Administrasi Surat / Layanan Mandiri
   const isSurat =
     combined.includes("surat") ||
     combined.includes("sktm") ||
@@ -82,7 +79,6 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
     });
   }
 
-  // 3. Warta & Berita / Pengumuman / Kegiatan
   const isBerita =
     combined.includes("berita") ||
     combined.includes("kabar") ||
@@ -102,7 +98,6 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
     });
   }
 
-  // 4. Data / Statistik
   const isData =
     combined.includes("jumlah penduduk") ||
     combined.includes("data kependudukan") ||
@@ -118,7 +113,6 @@ function determineChatActions(userMsg: string, botReply: string): ChatAction[] {
     });
   }
 
-  // 5. Kontak & Lokasi
   const isProfil =
     combined.includes("lokasi kantor") ||
     combined.includes("alamat kantor") ||
@@ -399,7 +393,6 @@ Jika pertanyaan di luar layanan kelurahan (misalnya: pemrograman, politik prakti
       );
     }
 
-    // Bersihkan emoji atau simbol dekoratif agar selalu clean
     const cleanReply = rawReply
       .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, "")
       .trim();

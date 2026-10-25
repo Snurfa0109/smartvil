@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Component
- * @role Navigasi Utama Publik
- * @access Public / Warga
- * @description Komponen header navigasi portal publik dengan tautan menu utama, modal pencarian, dan tautan login.
+ * [KOMPONEN / SHARED] Navigasi Utama Portal Publik
+ * Header navigasi atas halaman warga dengan link menu dan status pencarian.
  */
 
 import Link from "next/link";

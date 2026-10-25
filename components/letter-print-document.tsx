@@ -1,8 +1,6 @@
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Template Tata Letak Dokumen Surat Cetak
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Struktur tata letak dan konfigurasi dokumen cetak surat resmi kelurahan sesuai format standar persuratan.
+ * [KOMPONEN / ADMIN] Template Dokumen Resmi Cetak Surat
+ * Tata letak halaman surat resmi standar pemerintahan siap cetak kertas F4/A4.
  */
 
 import type { LetterType } from "@/lib/letters";
@@ -37,9 +35,9 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
 
   return (
     <>
-      {/* Kop Surat */}
+      
       <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingBottom: "12px", borderBottom: "3px double black", marginBottom: "20px" }}>
-        {/* Logo placeholder — di surat fisik diisi logo daerah */}
+        
         <div style={{
           width: "64px",
           height: "64px",
@@ -97,7 +95,7 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
         </div>
       </div>
 
-      {/* Judul Surat */}
+      
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <div style={{ fontSize: "13pt", fontWeight: "bold", textDecoration: "underline", textTransform: "uppercase", letterSpacing: "0.04em" }}>
           {request.typeName || "SURAT KETERANGAN"}
@@ -107,13 +105,13 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
         </div>
       </div>
 
-      {/* Isi Surat */}
+      
       <div style={{ textAlign: "justify", lineHeight: "1.8" }}>
         <p style={{ marginBottom: "12px" }}>
           Yang bertanda tangan di bawah ini, Lurah Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang, Provinsi Banten, dengan ini menerangkan bahwa:
         </p>
 
-        {/* Tabel data pemohon */}
+        
         <table style={{ width: "100%", marginBottom: "12px", fontSize: "11pt", fontFamily: "Arial, sans-serif" }}>
           <tbody>
             <DataRow label="Nama Lengkap" value={<strong style={{ textTransform: "uppercase" }}>{request.nama || "—"}</strong>} />
@@ -145,7 +143,7 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
           </div>
         )}
 
-        {/* Narasi */}
+        
         <p style={{ marginBottom: "12px", textIndent: "2em" }}>
           {request.templateNarrative ||
             letterType?.templateNarrative ||
@@ -157,7 +155,7 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
         </p>
       </div>
 
-      {/* Tanda Tangan */}
+      
       <div style={{ marginTop: "40px", display: "flex", justifyContent: "flex-end" }}>
         <div style={{ textAlign: "center", width: "220px" }}>
           <div style={{ fontSize: "11pt", fontFamily: "Arial, sans-serif" }}>
@@ -167,7 +165,7 @@ export default function LetterPrintDocument({ request, letterTypes, printConfig 
             {printConfig.pejabatJabatan || "Lurah"}
           </div>
 
-          {/* QR / Stempel area */}
+          
           <div style={{ margin: "12px auto", width: "76px", height: "76px", border: "1.5px dashed #9ca3af", borderRadius: "4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "3px" }}>
             <div style={{ fontSize: "7pt", color: "#9ca3af", fontFamily: "Arial, sans-serif", textAlign: "center", lineHeight: "1.4" }}>
               <div>[ QR CODE ]</div>

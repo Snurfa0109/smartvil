@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Komponen Editor & Pratinjau Cetak Surat
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Antarmuka pratinjau interaktif dokumen DOCX surat kelurahan sebelum diunduh atau dicetak secara fisik.
+ * [KOMPONEN / ADMIN] Editor & Formatter Cetak Surat
+ * Pengaturan format kop surat, penandatangan, nomor surat, dan pratinjau dokumen.
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -36,9 +34,6 @@ import { ADMIN_ONLY_FIELDS } from "@/lib/letter-constants";
 import { DOCX_PREVIEW_CSS } from "@/lib/docx-preview-styles";
 import styles from "@/app/letter-print.module.css";
 
-// docx-preview renders anchor images as 0×0 inline-block divs inside <p>,
-// breaking header text flow. This extracts the logo, fixes bidi direction,
-// and adjusts SVG separator positioning.
 function fixDocxPreviewDom(root: HTMLElement) {
   const header = root.querySelector("header");
   if (header) {
@@ -49,12 +44,10 @@ function fixDocxPreviewDom(root: HTMLElement) {
       header.style.minHeight = "80pt";
     }
 
-    // Find the 0×0 logo wrapper div (nested inside a <p> > <span>)
     const logoDiv = header.querySelector<HTMLElement>('div[style*="width: 0px"]');
     if (logoDiv) {
       const img = logoDiv.querySelector("img");
       if (img) {
-        // Remove the old wrapper div and clean up ancestor spans
         let ancestor: HTMLElement | null = logoDiv.parentElement;
         logoDiv.remove();
 
@@ -75,10 +68,6 @@ function fixDocxPreviewDom(root: HTMLElement) {
           });
         }
 
-        // The source image is the full coat-of-arms with text below it.
-        // Word crops it via srcRect: l=18.113% t=3.962% r=14.528% b=29.246%
-        // This means: show only the center emblem, hide bottom text.
-        // Use clip-path inset to replicate the exact Word crop.
         img.style.cssText = [
           "display:block",
           "width:95pt",
@@ -94,7 +83,6 @@ function fixDocxPreviewDom(root: HTMLElement) {
     }
   }
 
-  // docx-preview renders w:bidi as direction:rtl; reset to ltr
   root.querySelectorAll<HTMLElement>("p[style]").forEach((p) => {
     if (p.style.direction !== "rtl") return;
     p.style.direction = "ltr";
@@ -104,7 +92,6 @@ function fixDocxPreviewDom(root: HTMLElement) {
     p.style.marginInlineEnd = "0pt";
   });
 
-  // SVG separator line rendered incorrectly; fix positioning
   root.querySelectorAll<HTMLElement>("p.docx_header[style]").forEach((p) => {
     if (p.style.marginInlineStart) {
       p.style.marginInlineStart = "0pt";
@@ -126,7 +113,6 @@ function fixDocxPreviewDom(root: HTMLElement) {
     }
   });
 
-  // 4. Section positioning context
   root.querySelectorAll<HTMLElement>("section.docx").forEach((sec) => {
     sec.style.position = "relative";
   });
@@ -343,7 +329,7 @@ export default function LetterPrintEditor({
     <>
       <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ background: "#0f172a" }}>
 
-        {/* Topbar */}
+        
         <div className="shrink-0 bg-[#1b365d] border-b border-white/10 px-5 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
@@ -393,10 +379,10 @@ export default function LetterPrintEditor({
           </div>
         </div>
 
-        {/* Body: two-column */}
+        
         <div className="flex flex-1 overflow-hidden">
 
-          {/* Left: Edit panel */}
+          
           <div className="w-[360px] xl:w-[400px] shrink-0 flex flex-col overflow-hidden bg-[#f8fafc] border-r border-slate-200/60">
             <div className="overflow-y-auto flex-1">
 
@@ -578,7 +564,7 @@ export default function LetterPrintEditor({
               </div>
             </div>
 
-            {/* Sticky action footer */}
+            
             <div className="shrink-0 p-4 border-t border-slate-200 bg-white space-y-2">
               {hasDocxTemplate && (
                 <Button
@@ -597,7 +583,7 @@ export default function LetterPrintEditor({
             </div>
           </div>
 
-          {/* Right: Live Preview */}
+          
           <div className={styles.previewPane}>
             <div className={styles.previewPaneHeader}>
               <div className="flex items-center gap-2">

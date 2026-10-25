@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Konfigurasi profil kelurahan dan data situs
- * @access Server-side / Client-side
- * @description Menyimpan konfigurasi default kelurahan, struktur aparat, data wilayah, dan sinkronisasi settings.
+ * [CORE LIBRARY / SISTEM] Konfigurasi Profil Situs & CMS Data
+ * Definisi data bawaan kelurahan, pengaturan demografi, dan sinkronisasi preferensi situs.
  */
+
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export type OfficialItem = {
@@ -46,7 +45,6 @@ export type DemographySettings = {
 };
 
 export type SiteSettings = {
-  // Identitas & Kontak Kelurahan
   villageName: string;
   villageAddress: string;
   villagePhone: string;
@@ -54,14 +52,12 @@ export type SiteSettings = {
   instagramUrl: string;
   linktreeUrl: string;
 
-  // Halaman Profil Publik (/profil)
   title: string;
   subtitle: string;
   history: string;
   vision: string;
   mission: string;
 
-  // Geografis & Batas Wilayah
   geoArea: string;
   geoAreaDesc: string;
   geoCoord: string;
@@ -71,13 +67,11 @@ export type SiteSettings = {
   boundaryEast: string;
   boundaryWest: string;
 
-  // Identitas Wilayah & Peta
   kemendagriCode: string;
   postalCode: string;
   googleMapsEmbed: string;
   googleMapsUrl: string;
 
-  // Struktur Aparatur Kelurahan (Legacy Single + Dynamic List)
   headName: string;
   headTitle: string;
   headNip: string;
@@ -96,7 +90,6 @@ export type SiteSettings = {
   kasiPelayananPhoto?: string;
   officials?: OfficialItem[];
 
-  // Fasilitas & Kawasan Pemukiman Utama (/profil - Dynamic List)
   facility1Title: string;
   facility1Desc: string;
   facility2Title: string;
@@ -105,11 +98,9 @@ export type SiteSettings = {
   facility3Desc: string;
   facilities?: FacilityItem[];
 
-  // Informasi & Statistik Publik (/data)
   demography?: DemographySettings;
   externalLinks?: ExternalLinkItem[];
 
-  // Beranda / Landing Page (/)
   heroBadge: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -117,7 +108,6 @@ export type SiteSettings = {
   counterHours: string;
   counterDays: string;
 
-  // Kontak Darurat Wilayah Terpadu
   emergencyHotline: string;
   emergencyPuskesmas: string;
   emergencyPolsek: string;
@@ -126,7 +116,6 @@ export type SiteSettings = {
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  // Identitas & Kontak Kelurahan
   villageName: "Kelurahan Banjar Agung",
   villageAddress: "Jl. Syech Nawawi Albantani No. 16, Kel. Banjar Agung, Kec. Cipocok Jaya, Kota Serang, Banten 42122",
   villagePhone: "0813-1505-3901",
@@ -134,7 +123,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   instagramUrl: "https://www.instagram.com/kel.banjaragung/",
   linktreeUrl: "https://linktr.ee/kelurahanbanjaragung",
 
-  // Halaman Profil Publik
   title: "Profil Kelurahan Banjar Agung",
   subtitle: "Kecamatan Cipocok Jaya, Kota Serang, Provinsi Banten — Melayani dengan Integritas dan Berorientasi Pelayanan Masyarakat.",
   history:
@@ -150,7 +138,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     "Meningkatkan sinergi layanan kesehatan primer bersama Puskesmas Banjar Agung dan Posyandu di seluruh RW.\n" +
     "Menjaga kerukunan, ketertiban, dan ketenteraman warga bersama Bhabinkamtibmas dan Babinsa.",
 
-  // Geografis & Batas Wilayah
   geoArea: "348 Ha",
   geoAreaDesc: "Kawasan pemukiman (Bumi Mutiara Serang), fasilitas umum, sentra usaha mikro, dan fasilitas kesehatan.",
   geoCoord: "6°7′25″S 106°11′54″E",
@@ -160,13 +147,11 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   boundaryEast: "Kecamatan Walantaka / Kel. Cigoong",
   boundaryWest: "Kelurahan Cipocok Jaya / Karundang",
 
-  // Identitas Wilayah & Peta
   kemendagriCode: "36.73.05.1004",
   postalCode: "42122",
   googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3965.553186774327!2d106.18526387499237!3d-6.132261593865507!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e418b6f37a00001%3A0xfb48b3a8f7a1a77f!2sKelurahan%20Banjar%20Agung!5e0!3m2!1sid!2sid!4v1727188800000!5m2!1sid!2sid",
   googleMapsUrl: "https://maps.google.com/?q=Kelurahan+Banjar+Agung+Cipocok+Jaya+Kota+Serang",
 
-  // Struktur Aparatur Kelurahan
   headName: "Ahmad Suhendar, S.Sos",
   headTitle: "Lurah Banjar Agung",
   headNip: "19780512 200501 1 004",
@@ -184,7 +169,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   kasiPelayananNip: "19871104 201202 2 005",
   kasiPelayananPhoto: "",
 
-  // Fasilitas & Kawasan Pemukiman Utama (Default List)
   facility1Title: "Puskesmas Banjar Agung",
   facility1Desc: "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
   facility2Title: "Perumahan Bumi Mutiara Serang",
@@ -206,7 +190,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     },
   ],
 
-  // Struktur Aparatur Kelurahan (Default List)
   officials: [
     {
       id: "off-1",
@@ -250,7 +233,6 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     },
   ],
 
-  // Beranda / Landing Page
   heroBadge: "Portal Resmi Pelayanan Kelurahan Banjar Agung",
   heroTitle: "Pelayanan Administrasi Kelurahan yang Cepat, Transparan, & Akuntabel",
   heroSubtitle: "Sistem Informasi Pelayanan Publik Kelurahan Banjar Agung, Kecamatan Cipocok Jaya, Kota Serang. Pengajuan surat mandiri online, data kependudukan terpadu, transparansi program, dan kanal aspirasi masyarakat.",
@@ -258,14 +240,12 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   counterHours: "08:00 - 15:30 WIB",
   counterDays: "Senin - Jumat",
 
-  // Kontak Darurat Wilayah Terpadu
   emergencyHotline: "112",
   emergencyPuskesmas: "0813-1505-3901",
   emergencyPolsek: "0254-210110",
   emergencyKoramil: "0254-210220",
   emergencyDamkar: "0254-201113",
 
-  // Informasi & Statistik Publik (/data)
   demography: {
     total: 0,
     male: 0,
@@ -360,7 +340,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     if (stored && Object.keys(stored).length > 0) {
       const merged: SiteSettings = { ...DEFAULT_SITE_SETTINGS, ...stored };
       
-      // Pastikan facilities terisi
       if (!Array.isArray(merged.facilities) || merged.facilities.length === 0) {
         merged.facilities = [
           { id: "fac-1", title: merged.facility1Title || DEFAULT_SITE_SETTINGS.facility1Title, desc: merged.facility1Desc || DEFAULT_SITE_SETTINGS.facility1Desc, category: "Kesehatan" },
@@ -368,7 +347,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         ];
       }
 
-      // Pastikan officials terisi
       if (!Array.isArray(merged.officials) || merged.officials.length === 0) {
         merged.officials = [
           {
@@ -414,12 +392,10 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         ];
       }
 
-      // Pastikan demography terisi
       if (!merged.demography || typeof merged.demography.total !== "number") {
         merged.demography = DEFAULT_SITE_SETTINGS.demography;
       }
 
-      // Pastikan externalLinks terisi
       if (!Array.isArray(merged.externalLinks) || merged.externalLinks.length === 0) {
         merged.externalLinks = DEFAULT_SITE_SETTINGS.externalLinks;
       }
@@ -444,7 +420,6 @@ export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise
   const current = await getSetting<Partial<SiteSettings>>("profile", {});
   const toSave = { ...current, ...settings };
 
-  // Sinkronkan legacy fields jika officials diupdate
   if (Array.isArray(toSave.officials) && toSave.officials.length > 0) {
     const lurah = toSave.officials.find((o) => o.roleBadge === "LURAH") || toSave.officials[0];
     if (lurah) {
@@ -462,7 +437,6 @@ export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise
     }
   }
 
-  // Sinkronkan legacy fields jika facilities diupdate
   if (Array.isArray(toSave.facilities) && toSave.facilities.length > 0) {
     if (toSave.facilities[0]) {
       toSave.facility1Title = toSave.facilities[0].title;

@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Konfigurasi pengaturan chatbot asisten virtual
- * @access Server-side / Client-side
- * @description Menyediakan tipe data, nilai bawaan, dan fungsi pembantu untuk manajemen pengaturan AI Chatbot.
+ * [CORE LIBRARY / SISTEM] Konfigurasi Engine AI Chatbot Arba
+ * Tipe data setelan chatbot, prompt sistem, dan pembacaan konfigurasi AI dari database.
  */
+
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export type AIProvider = "auto" | "groq" | "gemini";

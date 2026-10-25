@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Klien HTTP sisi klien (client-side API client)
- * @access Client-side
- * @description Menyediakan wrapper fetch terpusat dengan penanganan token autentikasi otomatis.
+ * [CORE LIBRARY / FRONTEND] Klien Fetch API & Helper Records
+ * Wrapper pemanggilan API server dengan injeksi otomatis token otentikasi.
  */
+
 const TOKEN_KEY = "smartvil_token";
 
 export function getToken(): string | null {
