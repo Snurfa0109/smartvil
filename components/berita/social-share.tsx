@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * [KOMPONEN / SHARED] Tombol Berbagi Media Sosial Berita
+ * Akses cepat berbagi artikel ke WhatsApp, Facebook, Twitter, dan salin tautan.
+ */
+
 import { useState } from "react";
 import { Copy, Check, Share2 } from "lucide-react";
 
@@ -26,7 +31,6 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      // fallback prompt
       prompt("Salin tautan berita ini:", shareUrl);
     }
   };
@@ -41,7 +45,6 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
           url: shareUrl,
         });
       } catch {
-        // cancelled by user or not supported
       }
     }
   };
@@ -63,7 +66,7 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {/* WhatsApp Share */}
+        
         <a
           href={waUrl}
           target="_blank"
@@ -77,7 +80,7 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
           <span>WhatsApp</span>
         </a>
 
-        {/* Facebook Share */}
+        
         <a
           href={fbUrl}
           target="_blank"
@@ -91,7 +94,7 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
           <span>Facebook</span>
         </a>
 
-        {/* X / Twitter */}
+        
         <a
           href={xUrl}
           target="_blank"
@@ -105,7 +108,7 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
           <span>X / Twitter</span>
         </a>
 
-        {/* Salin Tautan */}
+        
         <button
           type="button"
           onClick={handleCopy}
@@ -120,7 +123,7 @@ export function SocialShare({ title, url, className = "" }: SocialShareProps) {
           <span>{copied ? "Tautan Tersalin!" : "Salin Tautan"}</span>
         </button>
 
-        {/* Native mobile share if supported */}
+        
         {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
           <button
             type="button"

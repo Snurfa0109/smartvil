@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Component
- * @role Footer Portal Publik
- * @access Public / Warga
- * @description Komponen kaki halaman yang memuat informasi kontak kelurahan, jam layanan, tautan cepat, dan hak cipta.
+ * [KOMPONEN / SHARED] Footer Portal Publik
+ * Kaki halaman portal berisi tautan cepat, jam pelayanan kantor, dan kontak resmi.
  */
 
 import Link from "next/link";
@@ -158,7 +156,7 @@ export function Footer() {
               </li>
             </ul>
 
-            {/* Peta Interaktif Lokasi Kantor Kelurahan */}
+            
             {config.googleMapsEmbed && (
               <div className="pt-1">
                 <div className="rounded-xl overflow-hidden border border-white/15 h-32 w-full bg-slate-900 shadow-inner relative group">

@@ -1,3 +1,10 @@
+"use client";
+
+/**
+ * [HALAMAN ADMIN / DASHBOARD] Konfigurasi Sistem & CMS Portal (Super Admin)
+ * Pengaturan profil kelurahan, banner pengumuman, data demografi, dan parameter AI chatbot.
+ */
+
 ﻿"use client";
 
 /**
@@ -1662,7 +1669,6 @@ function SettingsContent() {
         <TabsContent value="banners" className="space-y-6">
           <BannerManagement />
         </TabsContent>
-
 
       </Tabs>
     </div>

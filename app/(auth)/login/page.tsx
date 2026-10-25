@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Auth)
- * @role Autentikasi Masuk Admin
- * @access Publik / Tamu
- * @description Halaman formulir login untuk verifikasi identitas dan autentikasi akses perangkat kelurahan ke dashboard.
+ * [HALAMAN AKSES SISTEM] Login Administrator & Aparatur Kelurahan
+ * Autentikasi masuk petugas kelurahan ke dashboard administrasi SmartVil.
  */
 
 import { useState } from "react";

@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Verifikasi & Pemrosesan Layanan Surat
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Mengelola permohonan surat warga, verifikasi berkas persyaratan, penerbitan, dan cetak dokumen.
+ * [HALAMAN ADMIN / DASHBOARD] Verifikasi & Pemrosesan Layanan Surat
+ * Manajemen berkas permohonan warga, verifikasi syarat, penerbitan surat, dan cetak DOCX.
  */
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -283,7 +281,6 @@ export default function LayananDashboardPage() {
     );
     setTemplateError("");
     setIsTypeModalOpen(true);
-    // Ambil template lama untuk simulasi kanan (header/logo ikut tampil)
     if (item.templateFileUrl) {
       try {
         const res = await fetch(item.templateFileUrl);
@@ -338,8 +335,6 @@ export default function LayananDashboardPage() {
         );
       }
 
-      // Always start fresh: pass [] instead of typeForm.customFields
-      // so old field labels/types from a previous template don't carry over
       const customFields = placeholdersToCustomFields(placeholders, [], smart.injected);
       setTypeForm((prev) => ({
         ...prev,
@@ -524,7 +519,6 @@ export default function LayananDashboardPage() {
 
   const hasTemplate = (t: LetterType) => !!(t.templateFileUrl || t.templateData);
 
-  // Pipeline stats from real data
   const reqStats = useMemo(() => {
     const pending = requests.filter((r) => r.status === "pending").length;
     const processed = requests.filter((r) => r.status === "processed").length;
@@ -533,7 +527,6 @@ export default function LayananDashboardPage() {
     return { total: requests.length, pending, processed, ready, completed };
   }, [requests]);
 
-  // Filtered requests by status + search
   const filteredRequests = useMemo(() => {
     let result = requests;
     if (reqStatusFilter !== "all") {
@@ -630,7 +623,7 @@ export default function LayananDashboardPage() {
       {activeTab === "requests" ? (
         /* Tab 1: Requests — pipeline dashboard */
         <div className="space-y-6">
-          {/* Pipeline stat cards */}
+          
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {([
               { key: "all" as const, label: "Total Masuk", value: reqStats.total, icon: <Layers className="h-5 w-5" />, gradient: "from-[#1b365d] to-[#264478]", iconBg: "bg-[#1b365d]/10", iconText: "text-[#1b365d]", numText: "text-[#1b365d]", borderHover: "hover:border-[#1b365d]/30" },
@@ -651,7 +644,7 @@ export default function LayananDashboardPage() {
                       : `bg-white border border-slate-200 ${s.borderHover} hover:shadow-md`
                   }`}
                 >
-                  {/* Top accent bar */}
+                  
                   {!isActive && <div className={`h-1 ${s.iconBg}`} />}
 
                   <div className="p-4 pt-3">
@@ -684,7 +677,7 @@ export default function LayananDashboardPage() {
             })}
           </div>
 
-          {/* Search bar + active filter badge */}
+          
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="relative flex-1 max-w-md group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#1b365d] transition-colors" />
@@ -706,9 +699,9 @@ export default function LayananDashboardPage() {
             )}
           </div>
 
-          {/* Requests table card */}
+          
           <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            {/* Table header bar */}
+            
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
@@ -729,7 +722,7 @@ export default function LayananDashboardPage() {
               </div>
             </div>
 
-            {/* Table body */}
+            
             {loading ? (
               <div className="px-6 py-20 text-center">
                 <div className="w-10 h-10 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
@@ -865,7 +858,7 @@ export default function LayananDashboardPage() {
       ) : (
         /* Tab 2: Manage Letter Types */
         <div className="space-y-5">
-          {/* Header: tujuan tab + aksi utama */}
+          
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <div className="absolute inset-y-0 left-0 w-1 bg-[#1b365d]" />
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-5 pl-6">
@@ -897,7 +890,7 @@ export default function LayananDashboardPage() {
             </div>
           </div>
 
-          {/* Toolbar: cari + filter */}
+          
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -931,7 +924,7 @@ export default function LayananDashboardPage() {
             </div>
           </div>
 
-          {/* Daftar kartu */}
+          
           {filteredTypes.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-12 text-center">
               <Search className="h-10 w-10 mx-auto text-slate-300 mb-3" />
@@ -948,7 +941,7 @@ export default function LayananDashboardPage() {
                   style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
                   className="lt-card group relative flex flex-col rounded-2xl border border-slate-200 bg-white transition-all duration-200 hover:border-[#1b365d]/40 hover:shadow-[0_8px_28px_-14px_rgba(27,54,93,0.35)] focus-within:border-[#1b365d]/50"
                 >
-                  {/* Aksen atas: status aktif ditandai garis emas, nonaktif abu */}
+                  
                   <div className={`h-1 rounded-t-2xl transition-colors ${type.active !== false ? "bg-[#c9971c]" : "bg-slate-200"}`} />
 
                   <div className="flex flex-col flex-1 p-4">
@@ -984,7 +977,7 @@ export default function LayananDashboardPage() {
                       {type.desc || "Belum ada keterangan."}
                     </p>
 
-                    {/* Meta ringkas: persyaratan + field + template */}
+                    
                     <div className="flex flex-wrap items-center gap-1.5 mt-3">
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
                         <ClipboardList className="h-3.5 w-3.5 text-slate-400" />
@@ -1007,7 +1000,7 @@ export default function LayananDashboardPage() {
                       )}
                     </div>
 
-                    {/* Aksi */}
+                    
                     <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
                       <Button
                         size="sm"
@@ -1406,7 +1399,7 @@ export default function LayananDashboardPage() {
             className="layanan-modal w-full max-w-xl bg-white rounded-2xl shadow-2xl relative max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* ── Header ── */}
+            
             <div className="relative bg-gradient-to-r from-[#1b365d] to-[#264478] px-6 py-6 text-white overflow-hidden shrink-0">
               <div className="absolute right-0 top-0 w-40 h-40 rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
               <div className="absolute left-0 bottom-0 w-24 h-24 rounded-full bg-white/[0.04] translate-y-1/2 -translate-x-1/3" />
@@ -1448,10 +1441,10 @@ export default function LayananDashboardPage() {
               </div>
             </div>
 
-            {/* ── Content ── */}
+            
             <div className="overflow-y-auto flex-1 p-6 space-y-5">
 
-              {/* Info cards */}
+              
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 rounded-xl bg-[#1b365d]/[0.04] border border-[#1b365d]/10 p-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -1483,7 +1476,7 @@ export default function LayananDashboardPage() {
                 </div>
               </div>
 
-              {/* Keperluan */}
+              
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Keperluan Pengajuan</p>
                 <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200/80 leading-relaxed">
@@ -1491,7 +1484,7 @@ export default function LayananDashboardPage() {
                 </div>
               </div>
 
-              {/* Form data */}
+              
               {selectedRequest.formData && Object.keys(selectedRequest.formData).length > 0 && (
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -1511,7 +1504,7 @@ export default function LayananDashboardPage() {
                 </div>
               )}
 
-              {/* ── Workflow stepper ── */}
+              
               <div className="pt-2">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Alur Pelayanan</p>
                 <div className="grid grid-cols-4 gap-2">
@@ -1551,7 +1544,7 @@ export default function LayananDashboardPage() {
                     );
                   })}
                 </div>
-                {/* Progress bar */}
+                
                 <div className="mt-3 flex gap-1">
                   {["pending", "processed", "ready", "completed"].map((step, i) => {
                     const steps = ["pending", "processed", "ready", "completed"];
@@ -1569,7 +1562,7 @@ export default function LayananDashboardPage() {
               </div>
             </div>
 
-            {/* ── Footer actions ── */}
+            
             <div className="border-t border-slate-200 px-6 py-4 bg-slate-50/80 flex flex-wrap items-center gap-2.5 shrink-0">
               <Button variant="outline" size="sm" onClick={() => handleOpenPrint(selectedRequest)} className="h-9 rounded-xl border-slate-200 hover:border-[#1b365d]/30 hover:text-[#1b365d] hover:bg-[#1b365d]/5">
                 <Printer className="mr-1.5 h-4 w-4" /> Cetak Surat

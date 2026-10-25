@@ -1,8 +1,6 @@
 /**
- * @layer Core / Library
- * @role Pembatas laju permintaan (Rate Limiter in-memory)
- * @access Server-side Only
- * @description Membatasi frekuensi request berbasis IP dengan sliding-window untuk mencegah brute force dan spam.
+ * [CORE LIBRARY / SISTEM] Rate Limiter In-Memory & Resolusi IP
+ * Pembatas laju request sliding-window untuk mencegah brute-force dan flood request.
  */
 
 interface Entry {
@@ -19,14 +17,12 @@ export class RateLimiter {
     this.max = opts.max;
     this.windowMs = opts.windowMs;
 
-    // Prune expired entries every 60s to prevent unbounded growth
     const interval = setInterval(() => {
       const now = Date.now();
       for (const [key, entry] of this.map) {
         if (now >= entry.resetAt) this.map.delete(key);
       }
     }, 60_000);
-    // Allow process to exit without waiting for this timer
     if (typeof interval === "object" && "unref" in interval) interval.unref();
   }
 

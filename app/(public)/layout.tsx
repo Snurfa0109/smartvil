@@ -1,8 +1,6 @@
 /**
- * @layer Frontend (Public / Warga)
- * @role Layout Wrapper
- * @access Public / Warga
- * @description Menyediakan layout global portal publik termasuk Navbar, Footer, dan ChatWidget.
+ * [HALAMAN USER / WARGA] Layout Utama Portal Publik
+ * Kerangka tata letak halaman warga yang menyatukan Navbar, Footer, dan Widget Chatbot Arba.
  */
 
 import { Navbar } from "@/components/layout/navbar";

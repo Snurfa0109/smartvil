@@ -1,9 +1,8 @@
 /**
- * @layer Backend (API Route)
- * @role Endpoint seeding inisialisasi data awal database
- * @access Super Admin
- * @description Mengisi data master awal seperti admin, profil kelurahan, dan template surat jika tabel kosong.
+ * [BACKEND API] Inisialisasi Data Awal (Database Seeder)
+ * Penyediaan data awal tabel dan akun bawaan saat pertama kali sistem disiapkan.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth-server";
 import { query } from "@/lib/db";
@@ -19,7 +18,6 @@ async function seedIfEmpty(table: string, insert: () => Promise<void>) {
       return `${table}: sudah ada ${count} baris, dilewati`;
     }
   } catch {
-    // Table mungkin belum ada atau error lain, lanjut seed
   }
   await insert();
   return `${table}: seeded`;
@@ -41,7 +39,6 @@ export async function POST(req: NextRequest) {
       await query("ALTER TABLE `news` ADD COLUMN `views` INT UNSIGNED NOT NULL DEFAULT 0");
       logs.push("migration: added views column to news");
     } catch {
-      // Column already exists
     }
 
     for (const col of ["date_start DATE NULL", "date_end DATE NULL", "time_start VARCHAR(10) DEFAULT ''", "time_end VARCHAR(10) DEFAULT ''", "location VARCHAR(500) DEFAULT ''"]) {
@@ -49,7 +46,6 @@ export async function POST(req: NextRequest) {
         await query(`ALTER TABLE \`agenda\` ADD COLUMN ${col}`);
         logs.push(`migration: added ${col.split(" ")[0]} column to agenda`);
       } catch {
-        // Column already exists
       }
     }
 
@@ -212,7 +208,6 @@ export async function POST(req: NextRequest) {
     try {
       logs.push(
         await seedIfEmpty("letter_types", async () => {
-          // Jenis surat ditambahkan oleh admin melalui dashboard, tidak di-seed
         })
       );
     } catch (e) {

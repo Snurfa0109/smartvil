@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Komponen Manajemen Banner & Informasi Publik
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Komponen dashboard untuk mengunggah, menyusun, dan mengaktifkan banner pengumuman pada portal publik.
+ * [KOMPONEN / ADMIN] Manajemen Banner Halaman Publik
+ * Antarmuka admin untuk mengelola gambar latar dan teks judul banner di setiap halaman.
  */
 
 import { useEffect, useState } from "react";
@@ -177,7 +175,7 @@ export function BannerManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header Clean Standar Admin */}
+      
       <div className="border-b border-slate-200 pb-4">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">
           Banner Halaman &amp; Agenda Kegiatan
@@ -187,7 +185,7 @@ export function BannerManagement() {
         </p>
       </div>
 
-      {/* Alert Status Notifikasi */}
+      
       {statusMsg && (
         <div
           className={`p-3.5 rounded-xl text-xs sm:text-sm flex items-center gap-3 border shadow-2xs transition-all ${
@@ -201,7 +199,7 @@ export function BannerManagement() {
         </div>
       )}
 
-      {/* Selector Menu Halaman (Clean Tabular Grid) */}
+      
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         {MENU_ITEMS.map((item) => {
           const isActive = activeMenu === item.key;
@@ -246,7 +244,7 @@ export function BannerManagement() {
         })}
       </div>
 
-      {/* Form Konfigurasi Banner Terpilih */}
+      
       <Card className="border-slate-200 shadow-xs">
         <CardHeader className="pb-4 border-b border-slate-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -282,7 +280,7 @@ export function BannerManagement() {
         </CardHeader>
 
         <CardContent className="pt-5 space-y-6">
-          {/* Form Teks & Identitas */}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="banner-badge" className="text-xs font-semibold text-slate-700">
@@ -338,7 +336,7 @@ export function BannerManagement() {
             />
           </div>
 
-          {/* Pengaturan Tombol Aksi */}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
             <div className="space-y-2">
               <Label className="text-xs font-bold text-slate-700">Tombol Aksi Utama</Label>
@@ -377,7 +375,7 @@ export function BannerManagement() {
             </div>
           </div>
 
-          {/* Pengaturan Foto Background */}
+          
           <div className="space-y-3 pt-3 border-t border-slate-100">
             <div>
               <Label className="text-xs font-bold text-slate-900 block">
@@ -423,7 +421,7 @@ export function BannerManagement() {
               </div>
             </div>
 
-            {/* Pilihan Foto Bawaan Resmi */}
+            
             {PRESET_PHOTOS[activeMenu] && PRESET_PHOTOS[activeMenu].length > 0 && (
               <div className="space-y-2 pt-1">
                 <Label className="text-xs font-medium text-slate-600">
@@ -456,7 +454,7 @@ export function BannerManagement() {
             )}
           </div>
 
-          {/* Pratinjau Tampilan di Website */}
+          
           <div className="space-y-2 pt-3 border-t border-slate-100">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
               <Eye className="w-3.5 h-3.5 text-[#1b365d]" />
@@ -506,7 +504,7 @@ export function BannerManagement() {
             </div>
           </div>
 
-          {/* Tombol Aksi Simpan & Reset */}
+          
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
             <Button
               type="button"

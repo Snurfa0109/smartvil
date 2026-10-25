@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Generator dan parser template surat dinas (.docx)
- * @access Server-side / Client-side
- * @description Menangani ekstraksi placeholder dokumen DOCX, validasi field kustom, dan pembuatan surat otomatis.
+ * [CORE LIBRARY / SISTEM] Generator & Parser Template Surat DOCX
+ * Ekstraksi variabel {{placeholder}} dari berkas Microsoft Word dan pengisian data otomatis.
  */
+
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { DROPDOWN_FIELDS, ADMIN_ONLY_FIELDS, NARRATIVE_LABEL_KEYS } from "./letter-constants";
@@ -82,7 +81,6 @@ export function stripPlaceholdersFromDocx(buf: ArrayBuffer): ArrayBuffer {
     /<w:r\b[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?\s*<w:t[^>]*>\s*\{\{([a-zA-Z0-9_]+)\}\}\s*<\/w:t>\s*<\/w:r>/g,
     (_full: string, key: string) => {
       const k = key.toLowerCase();
-      // Signer zone fields need fill text restored so re-scanning can detect them
       if (k.includes("nama_pejabat")) {
         return _full.replace(/\{\{[^}]+\}\}/, "NAMA LENGKAP PEJABAT");
       }
@@ -90,7 +88,6 @@ export function stripPlaceholdersFromDocx(buf: ArrayBuffer): ArrayBuffer {
     }
   );
 
-  // Restore fill dots after stripping so re-scanning can detect the field
   xml = xml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/g, (_full: string, attrs: string, text: string) => {
     if (!text.includes("{{")) return _full;
     const cleaned = text.replace(/\s*\{\{[a-zA-Z0-9_]+\}\}/g, "").trimEnd();
@@ -123,7 +120,6 @@ function paragraphTexts(docXml: string): string[] {
     return runs.join("");
   });
 }
-
 
 export async function smartTemplateFromStaticDocx(
   file: File | ArrayBuffer
@@ -182,7 +178,6 @@ export async function smartTemplateFromStaticDocx(
         injected.push({ label: "NIP Pejabat", key });
         return replaceAllRuns(paraXml, rprTag, `NIP. {{${key}}}`);
       }
-      // ALL CAPS name that isn't a title/role prefix — likely the pejabat name
       if (/^[A-Z][A-Z\s.,]+$/.test(trimmed) && trimmed.length >= 5 && trimmed.length < 40
           && !/^(AN\.|A\.N\.|LURAH|CAMAT|KEPALA|SEKRETARIS|PLT|PLH|MENGETAHUI|DIKETAHUI|HORMAT|TEMBUSAN)/i.test(trimmed)) {
         const key = uniqueKey("nama_pejabat");
@@ -271,7 +266,6 @@ function isHeaderOrTitle(trimmed: string): boolean {
   if (/^(kecamatan|kelurahan|desa|kabupaten|kota|provinsi)\s/i.test(trimmed)) return true;
   if (/^(jl\.|jalan\s|telp|email|website|fax)/i.test(trimmed)) return true;
   if (/^(hormat\s+kami|tertanda|diketahui|mengetahui|tembusan)/i.test(trimmed)) return true;
-  // Section headers like "DATA SUAMI" or "I. SUAMI" are not fillable fields
   if (/^(data\s+\w+|[IVX]+\.\s*[A-Z])/i.test(trimmed) && trimmed.length < 30 && !/[.:_\u2026]{3,}/.test(trimmed)) return true;
   const upper = trimmed.replace(/\s+/g, "");
   if (upper.length > 4 && upper === upper.toUpperCase() && !/[.:_\u2026]/.test(upper)) return true;
@@ -351,7 +345,6 @@ function findDuplicateLabelSections(texts: string[]): Map<string, Record<number,
 
   return result;
 }
-
 
 export function placeholdersToCustomFields(
   placeholders: string[],

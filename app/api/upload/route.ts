@@ -1,9 +1,8 @@
 /**
- * @layer Backend (API Route)
- * @role Endpoint upload berkas dan gambar sistem
- * @access Terautentikasi (Admin) & Public (Surat/Pengaduan)
- * @description Memvalidasi MIME type, magic bytes berkas, dan menyimpan file ke disk server.
+ * [BACKEND API] Layanan Unggah Berkas & Validasi Magic Bytes
+ * Penerimaan berkas foto dan dokumen dengan verifikasi signature biner dan isolasi folder.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -11,8 +10,6 @@ import { randomUUID } from "crypto";
 import { getSessionProfile } from "@/lib/auth-server";
 import { RateLimiter, clientIp } from "@/lib/rate-limit";
 
-
-// First bytes signature for allowed file types
 const MAGIC_SIGNATURES: Record<string, number[][]> = {
   "image/jpeg": [[0xFF, 0xD8, 0xFF]],
   "image/png": [[0x89, 0x50, 0x4E, 0x47]],

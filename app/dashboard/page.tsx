@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Ringkasan Statistik & Aktivitas Dashboard
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Menampilkan ikhtisar metrik layanan, jumlah penduduk, pengaduan terkini, dan log aktivitas kelurahan.
+ * [HALAMAN ADMIN / DASHBOARD] Ringkasan Eksekutif & Statistik
+ * Metrik permohonan surat masuk, pengaduan warga, status loket pelayanan, dan aktivitas aparatur.
  */
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -81,7 +79,6 @@ export default function DashboardPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
-    // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -137,7 +134,6 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Cleanup abort on unmount
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   useEffect(() => {
@@ -153,10 +149,8 @@ export default function DashboardPage() {
       setDateLabel("Pelayanan Aktif");
     }
 
-    // Check if loket is active (08:00–15:30 WIB, Mon–Fri)
     const checkLoketStatus = () => {
       const now = new Date();
-      // Convert to WIB (UTC+7)
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
       const wib = new Date(utc + 7 * 3600000);
       const day = wib.getDay(); // 0=Sun, 6=Sat
@@ -262,7 +256,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 pb-8">
 
-      {/* ── Hero Header ── */}
+      
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1b365d] via-[#1f3f6e] to-[#264478] p-6 md:p-8 text-white shadow-lg">
         <div className="absolute right-0 top-0 w-72 h-72 rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
         <div className="absolute left-1/3 bottom-0 w-48 h-48 rounded-full bg-white/[0.03] translate-y-1/2" />
@@ -312,7 +306,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Error Banner ── */}
+      
       {error && (
         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-3">
           <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
@@ -328,7 +322,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Metric Cards ── */}
+      
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {([
           {
@@ -429,10 +423,10 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ── Pipeline + Activity ── */}
+      
       <div className="grid gap-5 lg:grid-cols-12 items-start">
 
-        {/* Left: Pipeline */}
+        
         <div className="lg:col-span-7 rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
           <div className="px-6 pt-5 pb-4">
             <div className="flex items-center justify-between gap-3">
@@ -565,7 +559,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right: Activity Stream */}
+        
         <div className="lg:col-span-5 rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm flex flex-col">
           <div className="px-6 pt-5 pb-4">
             <div className="flex items-center justify-between gap-3">

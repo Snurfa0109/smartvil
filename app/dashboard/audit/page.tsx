@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Monitoring Audit Trail & Log Aktivitas
- * @access Terautentikasi (Super Admin Only)
- * @description Menampilkan rekam jejak aktivitas pengguna, perubahan data sensitif, dan log autentikasi sistem.
+ * [HALAMAN ADMIN / DASHBOARD] Rekam Jejak Audit & Keamanan Sistem (Super Admin)
+ * Log aktivitas pengguna, riwayat perubahan data, dan monitoring akses login sistem.
  */
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -199,7 +197,7 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Header */}
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-md shadow-[#1b365d]/15">
@@ -228,7 +226,7 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {statCards.map((stat, i) => (
           <div
@@ -256,7 +254,7 @@ export default function AuditLogsPage() {
         ))}
       </div>
 
-      {/* Toolbar: search + filters */}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
@@ -300,9 +298,9 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      {/* Table */}
+      
       <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-        {/* Table header bar */}
+        
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#1b365d]/[0.06] flex items-center justify-center">
@@ -384,7 +382,7 @@ export default function AuditLogsPage() {
                             {log.displayName || "Pengguna"}
                           </p>
                           <p className="text-[10px] text-slate-400 truncate">{log.email || "-"}</p>
-                          {/* Mobile: show action + module inline */}
+                          
                           <div className="flex items-center gap-1.5 mt-1 sm:hidden">
                             {getActionBadge(log.action)}
                             {getModuleBadge(log.module)}

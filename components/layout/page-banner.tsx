@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Component
- * @role Banner Halaman Dinamis
- * @access Public / Warga
- * @description Komponen header visual dinamis untuk menampilkan banner judul, deskripsi, dan aksi cepat pada halaman publik.
+ * [KOMPONEN / SHARED] Banner Hero Halaman Publik
+ * Banner visual atas setiap halaman dengan judul dinamis dan gambar latar kelurahan.
  */
 
 import { useEffect, useState } from "react";
@@ -62,7 +60,7 @@ export function PageBanner({
   return (
     <div className="relative w-full min-h-[380px] md:min-h-[430px] bg-[#0B1B2B] text-white overflow-hidden flex items-center border-b border-slate-800">
       
-      {/* 1. Full-Bleed Background Symbolic Image (Tanpa Orang - Memperlihatkan Simbol/Arsitektur) */}
+      
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -71,21 +69,21 @@ export function PageBanner({
           className="w-full h-full object-cover object-center scale-105"
         />
 
-        {/* 2. Horizontal Left-to-Right Dark Gradient Overlay (Persis Screenshot Referensi) */}
-        {/* Sisi kiri solid pekat agar teks kontras dan terbaca, sisi kanan transparan memperlihatkan objek simbolis */}
+        
+        
         <div className="absolute inset-0 bg-gradient-to-r from-[#0B1B2B] via-[#0B1B2B]/90 sm:via-[#0B1B2B]/75 to-transparent" />
         
-        {/* Subtle Vertical Vignette */}
+        
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B1B2B] via-transparent to-[#0B1B2B]/40" />
       </div>
 
-      {/* 3. Main Content Container */}
+      
       <div className="relative container mx-auto px-6 md:px-12 py-12 md:py-16 z-10 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           <div className={`${sideContent ? "lg:col-span-7" : "lg:col-span-12 max-w-3xl"} space-y-5`}>
             
-            {/* Top Pill Badge */}
+            
             <div className="flex flex-wrap items-center gap-2.5">
               {isCustomEvent ? (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-700 text-white border border-rose-500/40 shadow-xs">
@@ -106,17 +104,17 @@ export function PageBanner({
               )}
             </div>
 
-            {/* Headline Judul Besar & Tegas */}
+            
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-[1.15] drop-shadow-md">
               {activeTitle}
             </h1>
 
-            {/* Subjudul & Narasi Penjelas */}
+            
             <p className="text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl font-normal drop-shadow-sm">
               {activeSubtitle}
             </p>
 
-            {/* Tombol Aksi: Tampilkan switcher anak jika disematkan, atau tombol banner bawaan jika tanpa anak (Mencegah tombol duplikat) */}
+            
             {children ? (
               <div className="pt-2">
                 {children}
@@ -146,7 +144,7 @@ export function PageBanner({
 
           </div>
 
-          {/* Kolom Kanan: Side Content (Widget Data Statistik di Banner) */}
+          
           {sideContent && (
             <div className="lg:col-span-5 w-full">
               {sideContent}

@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Pengaduan Aspirasi Warga
- * @access Public / Warga
- * @description Memfasilitasi warga menyampaikan aspirasi dan aduan lingkungan serta memantau tindak lanjut laporan.
+ * [HALAMAN USER / WARGA] Kanal Pengaduan & Aspirasi Warga
+ * Formulir penyampaian aduan online dengan unggah bukti foto dan pelacakan tindak lanjut.
  */
 
 import { Button } from "@/components/ui/button";
@@ -83,11 +81,9 @@ export default function ComplaintsPage() {
       console.error("Error reading saved phones:", e);
     }
   }, []);
-  // Set page title
   useEffect(() => {
     document.title = "Pengaduan | Kelurahan";
   }, []);
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

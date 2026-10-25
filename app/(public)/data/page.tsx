@@ -1,10 +1,9 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Informasi & Statistik Terbuka
- * @access Public / Warga
- * @description Menyajikan infografis data kependudukan, transparansi anggaran, fasilitas publik, dan tautan eksternal.
+ * [HALAMAN USER / WARGA] Data & Statistik Kependudukan
+ * Menyajikan infografis data kependudukan terbuka, piramida kelompok usia,
+ * statistik demografi wilayah, dan tautan layanan publik.
  */
 
 import Link from "next/link";
@@ -24,7 +23,6 @@ const CATEGORY_STYLES: Record<string, { icon: LucideIcon; color: string; bg: str
   "Kesehatan": { icon: HeartPulse, color: "text-rose-700", bg: "bg-rose-50", border: "border-rose-200" },
   "Layanan Digital Nasional": { icon: Globe, color: "text-purple-700", bg: "bg-purple-50", border: "border-purple-200" },
 };
-
 
 type AgeGroups = {
   children: number;
@@ -72,7 +70,6 @@ interface ResidentRecord {
   statusKeluarga?: string;
 }
 
-
 export default function DataPage() {
   const [stats, setStats] = useState<DataStats>(DEFAULT_EMPTY_STATS);
   const [loading, setLoading] = useState(false);
@@ -114,11 +111,9 @@ export default function DataPage() {
     };
     fetchNews();
   }, []);
-  // Set page title
   useEffect(() => {
     document.title = "Data Penduduk | Kelurahan";
   }, []);
-
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -138,10 +133,8 @@ export default function DataPage() {
             }));
           }
         } catch {
-          // ignore
         }
 
-        // Ambil konfigurasi profil & demografi resmi dari site settings
         let siteConfig = null;
         try {
           siteConfig = await getSiteSettings();
@@ -155,11 +148,8 @@ export default function DataPage() {
             setExternalLinks(siteConfig.externalLinks);
           }
         } catch {
-          // ignore
         }
 
-        // Jika belum ada data penduduk di database,
-        // gunakan data statistik agregat yang dikelola admin di Settings > Demografi
         if (residents.length === 0) {
           const demo = siteConfig?.demography || DEFAULT_SITE_SETTINGS.demography!;
           setStats({
@@ -267,7 +257,7 @@ export default function DataPage() {
       <PageBanner pageKey="data" />
 
       <div className="container mx-auto px-6 md:px-12 space-y-12">
-        {/* INFOGRAFIS KEPENDUDUKAN */}
+        
         <section>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-lg bg-[#1b365d]/10 text-[#1b365d] flex items-center justify-center">
@@ -281,7 +271,7 @@ export default function DataPage() {
             </div>
           </div>
 
-          {/* KPI Cards */}
+          
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
               { title: "Total Penduduk", value: stats.total.toLocaleString("id-ID"), sub: "Jiwa terdaftar", icon: Users, color: "text-[#1b365d]", bg: "bg-[#1b365d]/10" },
@@ -306,7 +296,7 @@ export default function DataPage() {
             ))}
           </div>
 
-          {/* Gender Proportion Bar */}
+          
           <Card className="border border-slate-200 shadow-xs mb-6">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold text-slate-900">Komposisi Jenis Kelamin</CardTitle>
@@ -336,10 +326,10 @@ export default function DataPage() {
             </CardContent>
           </Card>
 
-          {/* Demographic Breakdown Grids dengan Grafik Visual Lengkap */}
+          
           <div className="grid md:grid-cols-2 gap-6">
 
-            {/* 1. Grafik Donut SVG & Piramida Kelompok Usia */}
+            
             <Card className="border border-slate-200 shadow-sm">
               <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-slate-100">
                 <div>
@@ -363,12 +353,12 @@ export default function DataPage() {
 
                   return (
                     <div className="flex flex-col sm:flex-row items-center gap-6">
-                      {/* Donut SVG Ring */}
+                      
                       <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
                         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                          {/* Background Ring */}
+                          
                           <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f1f5f9" strokeWidth="14" />
-                          {/* Segmen Anak-anak (Amber) */}
+                          
                           <circle
                             cx="50"
                             cy="50"
@@ -380,7 +370,7 @@ export default function DataPage() {
                             strokeDashoffset="0"
                             className="transition-all duration-700"
                           />
-                          {/* Segmen Usia Produktif (Biru Navy) */}
+                          
                           <circle
                             cx="50"
                             cy="50"
@@ -392,7 +382,7 @@ export default function DataPage() {
                             strokeDashoffset={offsetAdults}
                             className="transition-all duration-700"
                           />
-                          {/* Segmen Lansia (Emerald) */}
+                          
                           <circle
                             cx="50"
                             cy="50"
@@ -414,7 +404,7 @@ export default function DataPage() {
                         </div>
                       </div>
 
-                      {/* Legend & Breakdown Bars */}
+                      
                       <div className="flex-1 w-full space-y-3">
                         <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-2.5 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -462,7 +452,7 @@ export default function DataPage() {
               </CardContent>
             </Card>
 
-            {/* 2. Grafik Batang Vertikal: Capaian Jenjang Pendidikan */}
+            
             <Card className="border border-slate-200 shadow-sm">
               <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-slate-100">
                 <div>
@@ -477,9 +467,9 @@ export default function DataPage() {
                   <p className="text-sm text-muted-foreground text-center py-10">Belum ada data pendidikan.</p>
                 ) : (
                   <div>
-                    {/* Visual Vertical Columns */}
+                    
                     <div className="h-44 flex items-end justify-between gap-2 sm:gap-3 pt-6 pb-2 px-1 relative">
-                      {/* Grid garis pemandu horizontal */}
+                      
                       <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
                         <div className="border-b border-dashed border-slate-200 w-full h-0" />
                         <div className="border-b border-dashed border-slate-200 w-full h-0" />
@@ -521,7 +511,7 @@ export default function DataPage() {
               </CardContent>
             </Card>
 
-            {/* 3. Sektor Mata Pencaharian Terbanyak (Ranking Bar) */}
+            
             <Card className="border border-slate-200 shadow-sm">
               <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-slate-100">
                 <div>
@@ -560,7 +550,7 @@ export default function DataPage() {
               </CardContent>
             </Card>
 
-            {/* 4. Komposisi Keagamaan (Segmented Bar & Kartu) */}
+            
             <Card className="border border-slate-200 shadow-sm">
               <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-slate-100">
                 <div>
@@ -575,7 +565,7 @@ export default function DataPage() {
                   <p className="text-sm text-muted-foreground text-center py-6">Belum ada data agama.</p>
                 ) : (
                   <div className="space-y-4">
-                    {/* Multi-segment Colored Strip Bar */}
+                    
                     <div className="h-5 w-full rounded-full overflow-hidden flex bg-slate-100 p-0.5 border border-slate-200">
                       {stats.religions.map((rel, idx) => {
                         const pct = stats.total > 0 ? (rel.count / stats.total) * 100 : 0;
@@ -619,7 +609,7 @@ export default function DataPage() {
           </div>
         </section>
 
-        {/* WARTA & PENGUMUMAN RESMI */}
+        
         <section id="warta" className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
@@ -703,7 +693,7 @@ export default function DataPage() {
           </div>
         </section>
 
-        {/* TAUTAN LAYANAN EKSTERNAL */}
+        
         <section>
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
@@ -719,7 +709,6 @@ export default function DataPage() {
 
           <div className="space-y-6">
             {(() => {
-              // Kelompokkan tautan berdasarkan kategori
               const map = new Map<string, ExternalLinkItem[]>();
               externalLinks.forEach((item) => {
                 const cat = item.category || "Layanan Lainnya";

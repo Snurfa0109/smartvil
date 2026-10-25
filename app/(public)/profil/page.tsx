@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Profil Desa / Kelurahan
- * @access Public / Warga
- * @description Menampilkan profil wilayah, visi misi, struktur perangkat, program kerja, dan peta wilayah kelurahan.
+ * [HALAMAN USER / WARGA] Profil Kelurahan Banjar Agung
+ * Menampilkan profil wilayah, visi misi, struktur organisasi aparatur, data RW, dan fasilitas publik.
  */
 
 import { useEffect, useState } from "react";
@@ -35,7 +33,6 @@ import {
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
 
-// Data Sebaran 8 Rukun Warga (RW) Kelurahan Banjar Agung
 const RW_DATA = [
   { rw: "RW 01", wilayah: "Lingkungan Bogeg", cakupan: "Pusat hunian warga asli & akses jalan utama", rtCount: 4 },
   { rw: "RW 02", wilayah: "Lingkungan Banjar Agung Timur", cakupan: "Area pemukiman asri & sentra usaha warga", rtCount: 4 },
@@ -59,11 +56,9 @@ export default function ProfilePage() {
 
     loadProfile();
   }, []);
-  // Set page title
   useEffect(() => {
     document.title = `Profil | ${profile.villageName || "Kelurahan"}`;
   }, [profile.villageName]);
-
 
   const missionItems = profile.mission
     .split("\n")
@@ -75,7 +70,6 @@ export default function ProfilePage() {
     .map((p) => p.trim())
     .filter(Boolean);
 
-  // List aparatur dinamis (bersumber dari Admin CMS Settings)
   const officialsList =
     profile.officials && profile.officials.length > 0
       ? profile.officials
@@ -129,7 +123,6 @@ export default function ProfilePage() {
   const headOfficial = officialsList[0];
   const staffOfficials = officialsList.slice(1);
 
-  // List fasilitas umum dinamis (bersumber dari Admin CMS Settings)
   const facilitiesList =
     profile.facilities && profile.facilities.length > 0
       ? profile.facilities
@@ -154,7 +147,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-10 pb-16">
-      {/* 1. Banner Resmi Halaman Profil */}
+      
       <PageBanner
         pageKey="profil"
         overrideTitle={profile.title}
@@ -162,7 +155,7 @@ export default function ProfilePage() {
       />
 
       <div className="container mx-auto px-6 md:px-12 space-y-12">
-        {/* 2. Quick Jump Anchor Bar (UCD Navigation - Ramah Lansia & Cepat Dipindai) */}
+        
         <div className="sticky top-20 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2 sm:p-2.5 shadow-sm">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 shrink-0 hidden sm:inline-block">
@@ -213,7 +206,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 3. Info Identitas Resmi Legalitas Wilayah (Kode Kemendagri) */}
+        
         <section id="identitas" className="space-y-6 scroll-mt-28">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             {[
@@ -238,7 +231,7 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Kartu Pelayanan Terpadu & Standar PATEN */}
+          
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs">
             <div className="grid md:grid-cols-12 gap-6 items-center">
               <div className="md:col-span-8 space-y-2">
@@ -289,7 +282,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 4. Struktur Organisasi & Aparatur Kelurahan (Sinkron dengan Admin CMS) */}
+        
         <section id="aparatur" className="space-y-6 scroll-mt-28">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
             <div className="flex items-center gap-3">
@@ -311,7 +304,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 space-y-8 shadow-xs">
-            {/* Kartu Pimpinan Utama: LURAH */}
+            
             {headOfficial && (
               <div className="max-w-md mx-auto">
                 <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-xs relative">
@@ -358,7 +351,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Garis Penghubung Hirarki */}
+            
             {staffOfficials.length > 0 && (
               <div className="flex flex-col items-center">
                 <div className="w-px h-6 bg-slate-200" />
@@ -368,7 +361,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Grid Aparatur & Staf Kelurahan (Dinamis dari Admin CMS) */}
+            
             {staffOfficials.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-1">
                 {staffOfficials.map((off, idx) => (
@@ -424,7 +417,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 5. Visi & Misi Pembangunan */}
+        
         <section id="visimisi" className="space-y-6 scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
             <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
@@ -441,7 +434,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid md:grid-cols-12 gap-6 items-stretch">
-            {/* Visi */}
+            
             <div className="md:col-span-5 bg-gradient-to-br from-[#1b365d] to-[#12243d] text-white rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-sm space-y-4">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 bg-white/10 px-3 py-1 rounded-md inline-block">
@@ -460,7 +453,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Misi */}
+            
             <div className="md:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs space-y-4">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#1b365d] bg-blue-50 border border-blue-200 px-3 py-1 rounded-md inline-block">
                 Misi Pelayanan &amp; Wilayah
@@ -482,7 +475,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 6. Sejarah & Karakteristik Wilayah (UCD Chunking - Mengurangi Cognitive Load) */}
+        
         <section id="sejarah" className="space-y-6 scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
             <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">
@@ -498,7 +491,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 3 Kartu Sorotan Sejarah */}
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-2">
               <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
@@ -521,7 +514,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Narasi Rinci Sejarah */}
+          
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs">
             <h3 className="font-bold text-base text-slate-900 mb-3 flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-[#1b365d]" />
@@ -535,7 +528,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 7. Peta Batas Wilayah Spasial & Sebaran 8 Rukun Warga (RW) */}
+        
         <section id="teritorial" className="space-y-6 scroll-mt-28">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div className="flex items-center gap-3">
@@ -563,7 +556,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Peta Polygon */}
+            
             <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col justify-between">
               <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full overflow-hidden bg-slate-100 group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -583,7 +576,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Batas-Batas 4 Arah Mata Angin */}
+            
             <div className="lg:col-span-5 flex flex-col justify-between gap-4">
               <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -624,7 +617,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Tabel Sebaran 8 Rukun Warga (RW) */}
+          
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
@@ -667,7 +660,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 8. Fasilitas & Kawasan Pemukiman Utama */}
+        
         <section id="fasilitas" className="space-y-6 scroll-mt-28">
           <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
             <div className="w-10 h-10 rounded-xl bg-[#1b365d]/10 flex items-center justify-center text-[#1b365d]">

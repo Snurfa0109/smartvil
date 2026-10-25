@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Halaman Pencarian Global
- * @access Public / Warga
- * @description Menyediakan antarmuka pencarian terpadu lintas modul berita, layanan surat, dan informasi kelurahan.
+ * [HALAMAN USER / WARGA] Pencarian Global Portal
+ * Pencarian terpadu lintas halaman informasi, regulasi surat, berita, dan kontak kelurahan.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -102,11 +100,9 @@ function SearchContent() {
   useEffect(() => {
     setInputVal(initialQuery);
   }, [initialQuery]);
-  // Set page title
   useEffect(() => {
     document.title = "Cari | Kelurahan";
   }, []);
-
 
   useEffect(() => {
     getLetterTypes()

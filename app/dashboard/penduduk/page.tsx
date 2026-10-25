@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Manajemen Data Kependudukan
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Mengelola master data penduduk kelurahan, filter demografi, pencarian NIK/KK, serta ekspor-impor data.
+ * [HALAMAN ADMIN / DASHBOARD] Master Data Kependudukan
+ * Pencatatan basis data warga per RW/RT, filter demografi, dan rekapitulasi jumlah jiwa.
  */
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -422,7 +420,7 @@ export default function PendudukDashboardPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
@@ -456,7 +454,7 @@ export default function PendudukDashboardPage() {
         </div>
       </div>
 
-      {/* Summary strip */}
+      
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-xl bg-slate-200/60 border border-slate-200/70 overflow-hidden">
         {statCards.map((s, i) => (
           <div
@@ -481,7 +479,7 @@ export default function PendudukDashboardPage() {
         ))}
       </div>
 
-      {/* Filters + Search */}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="flex items-center gap-1.5 flex-wrap">
           {FILTER_TABS.map((tab) => (
@@ -511,9 +509,9 @@ export default function PendudukDashboardPage() {
         </div>
       </div>
 
-      {/* Data Table */}
+      
       <div className="rounded-2xl border border-slate-200/70 bg-white overflow-hidden shadow-sm">
-        {/* Table header bar */}
+        
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1b365d] to-[#264478] flex items-center justify-center shadow-sm">
@@ -533,7 +531,7 @@ export default function PendudukDashboardPage() {
           </div>
         </div>
 
-        {/* Table body */}
+        
         {loading ? (
           <LoadingState />
         ) : filteredResidents.length === 0 ? (
@@ -650,7 +648,7 @@ export default function PendudukDashboardPage() {
           </div>
         )}
 
-        {/* Pagination */}
+        
         {filteredResidents.length > ITEMS_PER_PAGE && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-slate-100">
             <p className="text-xs text-slate-400">
@@ -722,7 +720,7 @@ export default function PendudukDashboardPage() {
         )}
       </div>
 
-      {/* Modal */}
+      
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -736,7 +734,7 @@ export default function PendudukDashboardPage() {
             className="w-full max-w-xl bg-white rounded-2xl shadow-2xl relative max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header — navy gradient */}
+            
             <div className="relative bg-gradient-to-r from-[#1b365d] to-[#264478] px-6 py-5 text-white overflow-hidden shrink-0">
               <div className="absolute right-0 top-0 w-40 h-40 rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
               <div className="absolute left-0 bottom-0 w-24 h-24 rounded-full bg-white/[0.04] translate-y-1/2 -translate-x-1/3" />
@@ -767,9 +765,9 @@ export default function PendudukDashboardPage() {
               </div>
             </div>
 
-            {/* Modal Body */}
+            
             <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 space-y-5">
-              {/* Section: Identitas */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Identitas
@@ -822,7 +820,7 @@ export default function PendudukDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* Section: Status */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Status Kependudukan
@@ -876,7 +874,7 @@ export default function PendudukDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* Section: Pekerjaan & Alamat */}
+              
               <fieldset className="space-y-3">
                 <legend className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                   Pekerjaan &amp; Domisili
@@ -905,7 +903,7 @@ export default function PendudukDashboardPage() {
                 </div>
               </fieldset>
 
-              {/* Submit */}
+              
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <Button
                   type="button"

@@ -1,9 +1,8 @@
 /**
- * @layer Security / Middleware
- * @role Middleware keamanan HTTP dan validasi rute
- * @access Server-side Only
- * @description Menerapkan security response headers dan memvalidasi token JWT pada rute yang diproteksi.
+ * [CORE / SECURITY] Gateway Middleware & Header Keamanan
+ * Pengecekan autentikasi rute dashboard dan penyematan HTTP security headers standar.
  */
+
 import { NextResponse, type NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
@@ -17,7 +16,6 @@ export function proxy(req: NextRequest) {
   res.headers.set("X-DNS-Prefetch-Control", "off");
   res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
-  // Dashboard route protection
   if (req.nextUrl.pathname.startsWith("/dashboard")) {
     const token = req.cookies.get("smartvil_token")?.value;
     if (!token) {

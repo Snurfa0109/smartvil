@@ -1,9 +1,8 @@
 /**
- * @layer Backend (API Route)
- * @role Endpoint pencatatan log audit sistem
- * @access Terautentikasi (Admin)
- * @description Menyimpan catatan aktivitas operasional admin ke dalam database audit log.
+ * [BACKEND API] Pencatatan & Pembacaan Rekam Jejak Audit
+ * Log audit trail keamanan untuk mencatat aktivitas administratif aparatur kelurahan.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionProfile } from "@/lib/auth-server";
 import { query } from "@/lib/db";

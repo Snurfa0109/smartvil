@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Utilitas autentikasi dan otorisasi server-side
- * @access Server-side Only
- * @description Menyediakan pembuatan token JWT, hashing kata sandi, dan verifikasi sesi admin.
+ * [CORE LIBRARY / BACKEND] Otentikasi Server, JWT & Hashing Sandi
+ * Penanganan verifikasi token JWT, hashing bcrypt, dan ekstraksi sesi login dari cookie.
  */
+
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { query } from "@/lib/db";
@@ -50,7 +49,6 @@ function verifyToken(token: string): { uid: string; email: string; role: string 
 function getBearerToken(req: Request): string | null {
   const h = req.headers.get("authorization") || "";
   if (h.toLowerCase().startsWith("bearer ")) return h.slice(7).trim() || null;
-  // Fallback: read from cookie header
   const cookies = req.headers.get("cookie") || "";
   const match = cookies.match(/(?:^|;\s*)smartvil_token=([^;]+)/);
   return match ? match[1] : null;
@@ -88,5 +86,4 @@ export async function requireSuperAdmin(req: Request): Promise<SessionProfile | 
   if (!profile || profile.role !== "superadmin") return null;
   return profile;
 }
-
 

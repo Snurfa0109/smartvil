@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Manajemen Publikasi Berita & Artikel
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Menampilkan daftar artikel berita kelurahan, status publikasi, pencarian, dan pengelolaan konten informasi.
+ * [HALAMAN ADMIN / DASHBOARD] Manajemen Warta & Publikasi Berita
+ * Pengelolaan artikel berita kelurahan, status publikasi, dan monitoring pembaca artikel.
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
@@ -185,7 +183,7 @@ export default function BeritaDashboardPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header row */}
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Berita & Artikel</h1>
@@ -198,7 +196,7 @@ export default function BeritaDashboardPage() {
         </Link>
       </div>
 
-      {/* Summary strip */}
+      
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-xl bg-slate-200/60 border border-slate-200/70 overflow-hidden">
         <div className="bg-white px-4 py-3.5 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-[#1b365d]/8 flex items-center justify-center shrink-0">
@@ -259,7 +257,7 @@ export default function BeritaDashboardPage() {
         </div>
       </div>
 
-      {/* Toolbar */}
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1">
           <div className="relative flex-1 max-w-xs w-full">
@@ -333,7 +331,7 @@ export default function BeritaDashboardPage() {
         </div>
       </div>
 
-      {/* Content */}
+      
       {loading ? (
         <div className="py-20 text-center">
           <div className="w-8 h-8 border-[3px] border-slate-200 border-t-[#1b365d] rounded-full animate-spin mx-auto" />
@@ -370,7 +368,7 @@ export default function BeritaDashboardPage() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="space-y-5">
-          {/* Featured: wider card, asymmetric layout */}
+          
           {featuredArticle && (
             <div className="group rounded-xl border border-slate-200/70 bg-white overflow-hidden hover:shadow-md transition-shadow duration-300">
               <div className="grid md:grid-cols-2 gap-0">
@@ -428,7 +426,7 @@ export default function BeritaDashboardPage() {
             </div>
           )}
 
-          {/* Grid cards */}
+          
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {gridItems.map((item, idx) => {
               const catStyle = getCategoryStyle(item.category);
@@ -577,7 +575,7 @@ export default function BeritaDashboardPage() {
         </div>
       )}
 
-      {/* Pagination */}
+      
       {filteredNews.length > itemsPerPage && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-slate-400">

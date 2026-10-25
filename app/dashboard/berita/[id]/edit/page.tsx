@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Admin / Dashboard)
- * @role Form Pengubahan Berita
- * @access Terautentikasi (Admin / Staf Kelurahan)
- * @description Halaman antarmuka untuk memperbarui konten, kategori, dan gambar thumbnail artikel berita yang telah ada.
+ * [HALAMAN ADMIN / DASHBOARD] Form Pengubahan Artikel Berita
+ * Pengubahan konten artikel, penyesuaian kategori warta, dan pembaruan gambar berita.
  */
 
 import { useParams } from "next/navigation";

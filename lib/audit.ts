@@ -1,9 +1,8 @@
 /**
- * @layer Core / Library
- * @role Utilitas pencatatan audit log sisi klien
- * @access Client-side
- * @description Membantu pengiriman log aktivitas pengguna dan tindakan administratif ke endpoint audit.
+ * [CORE LIBRARY / SISTEM] Helper Pengiriman Log Audit Keamanan
+ * Utilitas pengiriman rekam jejak aktivitas aparatur ke endpoint audit server.
  */
+
 import { getToken } from "@/lib/api";
 
 export type AuditAction = "LOGIN" | "LOGOUT" | "CREATE" | "UPDATE" | "DELETE" | "AKSES_DITOLAK";

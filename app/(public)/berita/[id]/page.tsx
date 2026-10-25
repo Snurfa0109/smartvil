@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * @layer Frontend (Public / Warga)
- * @role Detail Berita & Pengumuman
- * @access Public / Warga
- * @description Menampilkan detail isi artikel berita, galeri dokumentasi kegiatan, dan navigasi berita terkait.
+ * [HALAMAN USER / WARGA] Detail Berita & Artikel Kelurahan
+ * Halaman baca berita lengkap dengan counter pembaca dan tombol berbagi media sosial.
  */
 
 import { useEffect, useState } from "react";
@@ -63,7 +61,6 @@ export default function BeritaDetailPage() {
           body: JSON.stringify({ id }),
         }).catch(() => {});
 
-        // Fetch related / other news
         try {
           const rows = await apiList("news", { orderBy: "date", order: "desc", limit: 4 });
           const others = (rows || [])
@@ -79,7 +76,6 @@ export default function BeritaDetailPage() {
             }));
           setRelatedItems(others);
         } catch {
-          // ignore
         }
       } catch (error) {
         console.error("Error fetching berita:", error);
@@ -91,7 +87,6 @@ export default function BeritaDetailPage() {
 
     fetchBerita();
   }, [id]);
-  // Set page title dynamically from article
   useEffect(() => {
     if (item?.title) {
       document.title = `${item.title} | Berita`;
@@ -99,7 +94,6 @@ export default function BeritaDetailPage() {
       document.title = "Berita | Kelurahan";
     }
   }, [item?.title]);
-
 
   if (loading) {
     return (
@@ -195,13 +189,13 @@ export default function BeritaDetailPage() {
             }}
           />
 
-          {/* Social Share Bar */}
+          
           <div className="pt-4 border-t border-slate-200">
             <SocialShare title={item.title || "Berita Kelurahan Banjar Agung"} />
           </div>
         </article>
 
-        {/* Warta Lainnya */}
+        
         {relatedItems.length > 0 && (
           <div className="mt-12 pt-8 border-t border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
