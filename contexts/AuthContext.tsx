@@ -1,4 +1,10 @@
 "use client";
+/**
+ * @layer Context
+ * @role Pengelola status autentikasi sesi admin di frontend
+ * @access Client-side
+ * @description Menyediakan React Context untuk menyimpan state profil pengguna login, penanganan login/logout, dan pengecekan sesi.
+ */
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";

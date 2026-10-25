@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Manajemen Publikasi Berita & Artikel
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Menampilkan daftar artikel berita kelurahan, status publikasi, pencarian, dan pengelolaan konten informasi.
+ */
+
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { usePolling } from "@/hooks/use-polling";
 import { apiList, apiDelete } from "@/lib/api";

@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Utilitas autentikasi dan otorisasi server-side
+ * @access Server-side Only
+ * @description Menyediakan pembuatan token JWT, hashing kata sandi, dan verifikasi sesi admin.
+ */
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { query } from "@/lib/db";

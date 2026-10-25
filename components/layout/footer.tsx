@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Component
+ * @role Footer Portal Publik
+ * @access Public / Warga
+ * @description Komponen kaki halaman yang memuat informasi kontak kelurahan, jam layanan, tautan cepat, dan hak cipta.
+ */
+
 import Link from "next/link";
 import { FileText, Users, Building, Newspaper, MessageSquareWarning, PhoneCall, MapPin, Mail, Clock, Instagram, ExternalLink, Navigation } from "lucide-react";
 import { useEffect, useState } from "react";

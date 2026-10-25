@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Komponen Manajemen Banner & Informasi Publik
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Komponen dashboard untuk mengunggah, menyusun, dan mengaktifkan banner pengumuman pada portal publik.
+ */
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

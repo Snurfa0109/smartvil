@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Beranda Publik
+ * @access Public / Warga
+ * @description Halaman utama SmartVil yang menyajikan informasi selamat datang, layanan cepat, statistik, dan berita desa.
+ */
+
 import { useEffect, useState, useMemo } from "react";
 import { apiList, apiCount } from "@/lib/api";
 import { Button } from "@/components/ui/button";

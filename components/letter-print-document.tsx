@@ -1,3 +1,10 @@
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Template Tata Letak Dokumen Surat Cetak
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Struktur tata letak dan konfigurasi dokumen cetak surat resmi kelurahan sesuai format standar persuratan.
+ */
+
 import type { LetterType } from "@/lib/letters";
 
 export interface LetterPrintConfig {

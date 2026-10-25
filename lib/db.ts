@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Pengelola koneksi dan query database MySQL
+ * @access Server-side Only
+ * @description Menginisialisasi connection pool MySQL serta fungsi eksekusi query parameterized yang aman.
+ */
 import mysql from "mysql2/promise";
 
 const config = {

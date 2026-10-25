@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint autentikasi admin (login & verifikasi sesi JWT)
+ * @access Public (Login) / Terautentikasi (Cek Sesi)
+ * @description Menangani proses login admin, penerbitan JWT token, dan validasi sesi aktif.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { signToken, verifyPassword } from "@/lib/auth-server";

@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Konfigurasi profil kelurahan dan data situs
+ * @access Server-side / Client-side
+ * @description Menyimpan konfigurasi default kelurahan, struktur aparat, data wilayah, dan sinkronisasi settings.
+ */
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export type OfficialItem = {

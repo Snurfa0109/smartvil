@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint manajemen data dan akun administrator
+ * @access Super Admin
+ * @description Menyediakan layanan pengelolaan akun admin, hak akses perizinan, dan status aktif staf.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { requireSuperAdmin, hashPassword, getSessionProfile } from "@/lib/auth-server";

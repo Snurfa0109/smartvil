@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Layanan Surat Online
+ * @access Public / Warga
+ * @description Menyediakan formulir pengajuan surat administrasi desa online dan fitur pelacakan status permohonan.
+ */
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {

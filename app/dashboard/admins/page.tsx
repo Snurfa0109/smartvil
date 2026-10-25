@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Manajemen Akun Administrator & Staf
+ * @access Terautentikasi (Super Admin Only)
+ * @description Mengelola data pengguna admin, alokasi peran kewenangan, status aktif akun, dan audit keamanan staf kelurahan.
+ */
+
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiList, apiUpdate, getToken } from "@/lib/api";

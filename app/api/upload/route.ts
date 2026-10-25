@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint upload berkas dan gambar sistem
+ * @access Terautentikasi (Admin) & Public (Surat/Pengaduan)
+ * @description Memvalidasi MIME type, magic bytes berkas, dan menyimpan file ke disk server.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";

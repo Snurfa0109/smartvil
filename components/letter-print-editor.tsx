@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Komponen Editor & Pratinjau Cetak Surat
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Antarmuka pratinjau interaktif dokumen DOCX surat kelurahan sebelum diunduh atau dicetak secara fisik.
+ */
+
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { renderAsync } from "docx-preview";

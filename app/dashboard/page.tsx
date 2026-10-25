@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Ringkasan Statistik & Aktivitas Dashboard
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Menampilkan ikhtisar metrik layanan, jumlah penduduk, pengaduan terkini, dan log aktivitas kelurahan.
+ */
+
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePolling } from "@/hooks/use-polling";
 import Link from "next/link";

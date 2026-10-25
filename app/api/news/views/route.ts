@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint penambahan hitungan pembaca artikel berita
+ * @access Public / Anonim
+ * @description Menambahkan metrik views artikel secara aman dengan perlindungan rate limit in-memory.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 

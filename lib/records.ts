@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Abstraksi akses data (Data Access Layer) CRUD
+ * @access Server-side Only
+ * @description Mengatur perizinan akses tabel data dan menjalankan operasi CRUD database terstandarisasi.
+ */
 import { query } from "@/lib/db";
 import { randomUUID } from "crypto";
 

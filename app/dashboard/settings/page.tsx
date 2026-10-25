@@ -1,5 +1,12 @@
 ﻿"use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Konfigurasi Sistem & Profil Kelurahan
+ * @access Terautentikasi (Super Admin Only)
+ * @description Mengatur profil kelurahan, parameter instansi, template surat, integrasi API, dan cadangan data sistem.
+ */
+
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";

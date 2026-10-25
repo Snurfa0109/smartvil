@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Manajemen Data Kependudukan
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Mengelola master data penduduk kelurahan, filter demografi, pencarian NIK/KK, serta ekspor-impor data.
+ */
+
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Profil Desa / Kelurahan
+ * @access Public / Warga
+ * @description Menampilkan profil wilayah, visi misi, struktur perangkat, program kerja, dan peta wilayah kelurahan.
+ */
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {

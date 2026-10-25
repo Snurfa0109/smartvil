@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Monitoring Audit Trail & Log Aktivitas
+ * @access Terautentikasi (Super Admin Only)
+ * @description Menampilkan rekam jejak aktivitas pengguna, perubahan data sensitif, dan log autentikasi sistem.
+ */
+
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { apiList } from "@/lib/api";
 import { AuditEntry, AuditAction, AuditModule } from "@/lib/audit";
