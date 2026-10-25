@@ -21,7 +21,9 @@ import {
   CheckCircle2,
   User,
   BookOpen,
-  Landmark
+  Landmark,
+  MapPin,
+  Activity
 } from "lucide-react";
 import { SiteSettings, DEFAULT_SITE_SETTINGS, getSiteSettings } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
@@ -30,9 +32,6 @@ import { PageBanner } from "@/components/layout/page-banner";
 const RW_DATA = [
   { rw: "RW 01", wilayah: "Lingkungan Bogeg", cakupan: "Pusat hunian warga asli & akses jalan utama", rtCount: 4 },
   { rw: "RW 02", wilayah: "Lingkungan Banjar Agung Timur", cakupan: "Area pemukiman asri & sentra usaha warga", rtCount: 4 },
-  { rw: "RW 03", wilayah: "Perumahan Bumi Agung Permai (BAP) I", cakupan: "Kawasan BAP I Bagian Utara (Blok A – C)", rtCount: 5 },
-  { rw: "RW 04", wilayah: "Perumahan Bumi Agung Permai (BAP) I", cakupan: "Kawasan BAP I Bagian Selatan (Blok D – F)", rtCount: 5 },
-  { rw: "RW 05", wilayah: "Perumahan Bumi Agung Permai (BAP) II", cakupan: "Kawasan pemukiman BAP II & sarana fasilitas sosial", rtCount: 4 },
   { rw: "RW 06", wilayah: "Perumahan Bumi Mutiara Serang", cakupan: "Hunian keluarga terpadu & masjid jami'", rtCount: 4 },
   { rw: "RW 07", wilayah: "Lingkungan Cilaku Perbatasan", cakupan: "Kawasan hijau & pembinaan pertanian perkotaan", rtCount: 3 },
   { rw: "RW 08", wilayah: "Kawasan Niaga & Hunian Baru", cakupan: "Sentra pertokoan, UMKM, & pemukiman berkembang", rtCount: 3 },
@@ -130,27 +129,19 @@ export default function ProfilePage() {
       : [
           {
             id: "fac-1",
-            title: profile.facility1Title || "Balai Warga & Posyandu Terpadu",
-            category: "Fasilitas Sosial",
+            title: profile.facility1Title || "Puskesmas Banjar Agung",
+            category: "Kesehatan",
             desc:
               profile.facility1Desc ||
-              "Tersedia balai pertemuan warga di tiap RW dan Posyandu aktif untuk pemantauan tumbuh kembang balita serta lansia.",
+              "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
           },
           {
             id: "fac-2",
-            title: profile.facility2Title || "Puskesmas Pembantu Cipocok Jaya",
-            category: "Kesehatan Primer",
+            title: profile.facility2Title || "Perumahan Bumi Mutiara Serang",
+            category: "Hunian / Pemukiman",
             desc:
               profile.facility2Desc ||
-              "Akses layanan kesehatan tingkat pertama, imunisasi balita, dan rujukan BPJS Kesehatan warga kelurahan.",
-          },
-          {
-            id: "fac-3",
-            title: profile.facility3Title || "Kawasan Perumahan & Niaga Mandiri",
-            category: "Pemukiman",
-            desc:
-              profile.facility3Desc ||
-              "Perumahan Bumi Agung Permai (BAP) I & II serta Bumi Mutiara Serang dengan fasilitas ibadah dan olahraga.",
+              "Kawasan hunian keluarga yang asri dan strategis, mendukung dinamika pertumbuhan wilayah Cipocok Jaya.",
           },
         ];
 
@@ -513,16 +504,6 @@ export default function ProfilePage() {
             </div>
 
             <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-2">
-              <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                <Home className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-sm text-slate-900">Kawasan Pemukiman Mandiri</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Tumbuh pesat dengan sentra hunian keluarga seperti Perumahan Bumi Agung Permai (BAP) I &amp; II serta Bumi Mutiara Serang dengan kerukunan warga yang kokoh.
-              </p>
-            </div>
-
-            <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs space-y-2">
               <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
                 <HeartHandshake className="w-5 h-5" />
               </div>
@@ -695,38 +676,71 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 ${facilitiesList.length <= 2 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"} gap-6`}>
             {facilitiesList.map((fac, idx) => {
-              const iconStyles = [
-                { bg: "bg-blue-50", text: "text-blue-600", borderHover: "hover:border-blue-300", icon: Home },
-                { bg: "bg-emerald-50", text: "text-emerald-600", borderHover: "hover:border-emerald-300", icon: HeartHandshake },
-                { bg: "bg-amber-50", text: "text-amber-700", borderHover: "hover:border-amber-300", icon: ShieldCheck },
-                { bg: "bg-indigo-50", text: "text-indigo-600", borderHover: "hover:border-indigo-300", icon: Building2 },
-                { bg: "bg-slate-100", text: "text-slate-700", borderHover: "hover:border-slate-300", icon: Landmark },
-              ];
-              const style = iconStyles[idx % iconStyles.length];
-              const IconComp = style.icon;
+              const isHealth =
+                fac.category?.toLowerCase().includes("kesehatan") ||
+                fac.title?.toLowerCase().includes("puskesmas");
+              const isHousing =
+                fac.category?.toLowerCase().includes("hunian") ||
+                fac.category?.toLowerCase().includes("pemukiman") ||
+                fac.title?.toLowerCase().includes("perumahan");
+
+              const badgeStyle = isHealth
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : isHousing
+                ? "bg-blue-50 text-[#1b365d] border-blue-200"
+                : "bg-slate-100 text-slate-700 border-slate-200";
+
+              const iconBoxStyle = isHealth
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                : isHousing
+                ? "bg-[#1b365d]/10 text-[#1b365d] border border-[#1b365d]/20"
+                : "bg-slate-100 text-slate-700 border border-slate-200";
+
+              const cardAccentBorder = isHealth
+                ? "hover:border-emerald-400 group-hover:shadow-emerald-500/10"
+                : isHousing
+                ? "hover:border-[#1b365d]/50 group-hover:shadow-[#1b365d]/10"
+                : "hover:border-slate-300";
+
+              const IconComp = isHealth ? Activity : isHousing ? Home : Landmark;
 
               return (
                 <div
                   key={fac.id || idx}
-                  className={`bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 ${style.borderHover} transition-colors flex flex-col justify-between`}
+                  className={`group bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between ${cardAccentBorder}`}
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className={`w-10 h-10 rounded-xl ${style.bg} ${style.text} flex items-center justify-center font-bold`}>
-                        <IconComp className="h-5 w-5" />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={`w-12 h-12 rounded-xl ${iconBoxStyle} flex items-center justify-center font-bold transition-transform group-hover:scale-105 duration-200`}>
+                        <IconComp className="h-6 w-6" />
                       </div>
                       {fac.category && (
-                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full border uppercase tracking-wider ${badgeStyle}`}>
                           {fac.category}
                         </span>
                       )}
                     </div>
-                    <h3 className="font-bold text-base text-slate-900 leading-snug">{fac.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      {fac.desc}
-                    </p>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg text-slate-900 group-hover:text-[#1b365d] transition-colors leading-snug">
+                        {fac.title}
+                      </h3>
+                      <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
+                        {fac.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      Kelurahan Banjar Agung
+                    </span>
+                    <span className="font-medium text-slate-500">
+                      {isHealth ? "Layanan Kesehatan" : isHousing ? "Kawasan Pemukiman" : "Fasilitas Publik"}
+                    </span>
                   </div>
                 </div>
               );

@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
               115,
             ],
             [
-              "Pelatihan Pemasaran Digital bagi Pelaku UMKM Perumahan Banjar Agung Indah (BAP)",
+              "Pelatihan Pemasaran Digital bagi Pelaku UMKM Kelurahan Banjar Agung",
               "Pelatihan",
               "<p>Sebanyak 35 pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) di lingkungan Kelurahan Banjar Agung mengikuti bimbingan teknis pemasaran digital dan fasilitasi sertifikasi halal produk lokal.</p>",
               "2026-09-28",
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
         await seedIfEmpty("agenda", async () => {
           const agenda = [
             ['Gerakan "Rabu Asri" Kerja Bakti Bersih Lingkungan', "Program Lingkungan", "blue", "Setiap Rabu", "Kerja bakti pembersihan drainase pemukiman, penataan tanaman lingkungan, dan edukasi pilah sampah rumah tangga bersama warga.", "07:30 - 11:00 WIB • Lingkungan RW 03 & RW 05", "2026-10-21", "2026-10-21", "07:30", "11:00", "Lingkungan RW 03 & RW 05 Kelurahan Banjar Agung"],
-            ["Posyandu Terpadu Balita & Skrining Lansia Sehat", "Kesehatan Warga", "emerald", "Jumat, 23 Okt 2026", "Pemeriksaan tumbuh kembang balita, imunisasi dasar lengkap, serta pemeriksaan tensi dan gula darah lansia.", "08:30 - 11:30 WIB • Posyandu BAP RW 07", "2026-10-23", "2026-10-23", "08:30", "11:30", "Posyandu BAP RW 07, Banjar Agung"],
+            ["Posyandu Terpadu Balita & Skrining Lansia Sehat", "Kesehatan Warga", "emerald", "Jumat, 23 Okt 2026", "Pemeriksaan tumbuh kembang balita, imunisasi dasar lengkap, serta pemeriksaan tensi dan gula darah lansia.", "08:30 - 11:30 WIB • Posyandu Terpadu RW 06", "2026-10-23", "2026-10-23", "08:30", "11:30", "Posyandu Terpadu RW 06, Banjar Agung"],
             ["Penyaluran Beras Bantuan Pangan Kemensos RI Tahap II", "Bantuan Sosial", "amber", "Senin, 26 Okt 2026", "Penyaluran Cadangan Beras Pangan Pemerintah (CPP) bagi 450 KPM terdaftar dengan membawa KTP dan KK asli.", "08:30 - 15:00 WIB • Aula Kantor Kelurahan", "2026-10-26", "2026-10-26", "08:30", "15:00", "Aula Kantor Kelurahan Banjar Agung"],
             ["Layanan Jemput Bola Aktivasi Identitas Kependudukan Digital (IKD)", "Layanan Publik", "violet", "Kamis, 29 Okt 2026", "Aktivasi aplikasi IKD di smartphone warga oleh petugas Disdukcapil bersama seksi pelayanan umum kelurahan.", "09:00 - 14:00 WIB • Ruang Pelayanan Terpadu", "2026-10-29", "2026-10-29", "09:00", "14:00", "Ruang Pelayanan Terpadu Kelurahan Banjar Agung"],
           ];

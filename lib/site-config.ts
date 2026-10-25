@@ -133,7 +133,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   subtitle: "Kecamatan Cipocok Jaya, Kota Serang, Provinsi Banten — Melayani dengan Integritas dan Berorientasi Pelayanan Masyarakat.",
   history:
     "Banjaragung (atau Banjar Agung) merupakan salah satu kelurahan yang terletak di wilayah Kecamatan Cipocok Jaya, Kota Serang, Provinsi Banten. Dengan Kode Wilayah Kemendagri 36.73.05.1004 dan Kode Pos 42122, Kelurahan Banjar Agung memiliki posisi strategis di kawasan penyangga ibu kota Provinsi Banten.\n\n" +
-    "Wilayah Kelurahan Banjar Agung mencakup pusat pemukiman masyarakat yang tumbuh pesat, di antaranya Perumahan Bumi Agung Permai (BAP) I & II serta Perumahan Bumi Mutiara Serang. Pelayanan kesehatan masyarakat didukung oleh fasilitas Puskesmas Banjar Agung yang siap melayani kebutuhan medis warga.\n\n" +
+    "Wilayah Kelurahan Banjar Agung mencakup pusat pemukiman masyarakat yang tumbuh pesat, di antaranya Perumahan Bumi Mutiara Serang. Pelayanan kesehatan masyarakat didukung oleh fasilitas Puskesmas Banjar Agung yang siap melayani kebutuhan medis warga.\n\n" +
     "Dalam kehidupan bermasyarakat, warga Kelurahan Banjar Agung aktif memelihara kegotongroyongan melalui program lingkungan seperti 'Rabu Asri' (kerja bakti kebersihan dan penghijauan lingkungan), penyaluran bantuan sosial pangan dari Kemensos bagi warga prasejahtera, serta modernisasi pelayanan publik secara digital.",
   vision:
     "Terwujudnya Kelurahan Banjar Agung yang Religius, Asri, Sejahtera, dan Unggul dalam Pelayanan Publik Menuju Tata Kelola Kota Serang yang Maju dan Berkelanjutan.",
@@ -146,7 +146,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
 
   // Geografis & Batas Wilayah
   geoArea: "348 Ha",
-  geoAreaDesc: "Kawasan pemukiman (BAP I & II, Bumi Mutiara), fasilitas umum, sentra usaha mikro, dan fasilitas kesehatan.",
+  geoAreaDesc: "Kawasan pemukiman (Bumi Mutiara Serang), fasilitas umum, sentra usaha mikro, dan fasilitas kesehatan.",
   geoCoord: "6°7′25″S 106°11′54″E",
   geoCoordDesc: "Koordinat geografis: -6.12361, 106.19833 (Kecamatan Cipocok Jaya, Kota Serang, Banten).",
   boundaryNorth: "Kelurahan Panancangan",
@@ -179,27 +179,21 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   kasiPelayananPhoto: "",
 
   // Fasilitas & Kawasan Pemukiman Utama (Default List)
-  facility1Title: "Perumahan BAP (Bumi Agung Permai)",
-  facility1Desc: "Kawasan pemukiman terpadu BAP I dan BAP II dengan sarana warga yang tertata dan kebersamaan RT/RW yang aktif.",
-  facility2Title: "Puskesmas Banjar Agung",
-  facility2Desc: "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
-  facility3Title: "Perumahan Bumi Mutiara Serang",
-  facility3Desc: "Kawasan hunian keluarga yang asri dan strategis, mendukung dinamika pertumbuhan wilayah Cipocok Jaya.",
+  facility1Title: "Puskesmas Banjar Agung",
+  facility1Desc: "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
+  facility2Title: "Perumahan Bumi Mutiara Serang",
+  facility2Desc: "Kawasan hunian keluarga yang asri dan strategis, mendukung dinamika pertumbuhan wilayah Cipocok Jaya.",
+  facility3Title: "",
+  facility3Desc: "",
   facilities: [
     {
       id: "fac-1",
-      title: "Perumahan BAP (Bumi Agung Permai)",
-      desc: "Kawasan pemukiman terpadu BAP I dan BAP II dengan sarana warga yang tertata dan kebersamaan RT/RW yang aktif.",
-      category: "Hunian / Pemukiman",
-    },
-    {
-      id: "fac-2",
       title: "Puskesmas Banjar Agung",
       desc: "Fasilitas pelayanan kesehatan masyarakat tingkat pertama untuk rawat jalan, imunisasi, posyandu balita & lansia.",
       category: "Kesehatan",
     },
     {
-      id: "fac-3",
+      id: "fac-2",
       title: "Perumahan Bumi Mutiara Serang",
       desc: "Kawasan hunian keluarga yang asri dan strategis, mendukung dinamika pertumbuhan wilayah Cipocok Jaya.",
       category: "Hunian / Pemukiman",
@@ -363,9 +357,8 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       // Pastikan facilities terisi
       if (!Array.isArray(merged.facilities) || merged.facilities.length === 0) {
         merged.facilities = [
-          { id: "fac-1", title: merged.facility1Title || DEFAULT_SITE_SETTINGS.facility1Title, desc: merged.facility1Desc || DEFAULT_SITE_SETTINGS.facility1Desc, category: "Hunian / Pemukiman" },
-          { id: "fac-2", title: merged.facility2Title || DEFAULT_SITE_SETTINGS.facility2Title, desc: merged.facility2Desc || DEFAULT_SITE_SETTINGS.facility2Desc, category: "Kesehatan" },
-          { id: "fac-3", title: merged.facility3Title || DEFAULT_SITE_SETTINGS.facility3Title, desc: merged.facility3Desc || DEFAULT_SITE_SETTINGS.facility3Desc, category: "Hunian / Pemukiman" },
+          { id: "fac-1", title: merged.facility1Title || DEFAULT_SITE_SETTINGS.facility1Title, desc: merged.facility1Desc || DEFAULT_SITE_SETTINGS.facility1Desc, category: "Kesehatan" },
+          { id: "fac-2", title: merged.facility2Title || DEFAULT_SITE_SETTINGS.facility2Title, desc: merged.facility2Desc || DEFAULT_SITE_SETTINGS.facility2Desc, category: "Hunian / Pemukiman" },
         ];
       }
 
@@ -476,6 +469,9 @@ export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise
     if (toSave.facilities[2]) {
       toSave.facility3Title = toSave.facilities[2].title;
       toSave.facility3Desc = toSave.facilities[2].desc;
+    } else {
+      toSave.facility3Title = "";
+      toSave.facility3Desc = "";
     }
   }
 
