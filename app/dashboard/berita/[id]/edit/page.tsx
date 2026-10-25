@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Form Pengubahan Berita
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Halaman antarmuka untuk memperbarui konten, kategori, dan gambar thumbnail artikel berita yang telah ada.
+ */
+
 import { useParams } from "next/navigation";
 import BeritaEditor from "@/components/berita-editor";
 

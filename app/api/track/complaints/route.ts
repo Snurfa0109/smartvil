@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint pelacakan status pengaduan warga
+ * @access Public / Anonim
+ * @description Memungkinkan warga melacak tindak lanjut pengaduan via kode tiket atau nomor telepon.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 

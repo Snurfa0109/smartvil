@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Manajemen Agenda & Kegiatan Kelurahan
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Mengelola jadwal acara, rapat, dan kegiatan komunitas kelurahan beserta lokasi dan detail pelaksanaannya.
+ */
+
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";

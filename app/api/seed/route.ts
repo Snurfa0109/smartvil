@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint seeding inisialisasi data awal database
+ * @access Super Admin
+ * @description Mengisi data master awal seperti admin, profil kelurahan, dan template surat jika tabel kosong.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth-server";
 import { query } from "@/lib/db";

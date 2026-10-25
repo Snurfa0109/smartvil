@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Component
+ * @role Banner Halaman Dinamis
+ * @access Public / Warga
+ * @description Komponen header visual dinamis untuk menampilkan banner judul, deskripsi, dan aksi cepat pada halaman publik.
+ */
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { 

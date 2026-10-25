@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Konfigurasi pengaturan chatbot asisten virtual
+ * @access Server-side / Client-side
+ * @description Menyediakan tipe data, nilai bawaan, dan fungsi pembantu untuk manajemen pengaturan AI Chatbot.
+ */
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export type AIProvider = "auto" | "groq" | "gemini";

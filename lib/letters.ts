@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Layanan logika bisnis jenis dan permohonan surat
+ * @access Server-side / Client-side
+ * @description Menyediakan fungsi CRUD tipe surat, skema field dinamis, dan penomoran otomatis surat kelurahan.
+ */
 import { apiList, apiInsert, apiUpdate, apiDelete } from "@/lib/api";
 
 export interface LetterCustomFieldDef {

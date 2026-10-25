@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Komponen Simulasi Pratinjau Template Surat
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Merender simulasi pengisian placeholder template surat dinamis berbasis DOCX menggunakan data contoh.
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 import { generateSampleFilledDocx, downloadBlob } from "@/lib/letter-template";

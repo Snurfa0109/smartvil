@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Component
+ * @role Navigasi Utama Publik
+ * @access Public / Warga
+ * @description Komponen header navigasi portal publik dengan tautan menu utama, modal pencarian, dan tautan login.
+ */
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";

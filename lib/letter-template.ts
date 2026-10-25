@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Generator dan parser template surat dinas (.docx)
+ * @access Server-side / Client-side
+ * @description Menangani ekstraksi placeholder dokumen DOCX, validasi field kustom, dan pembuatan surat otomatis.
+ */
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { DROPDOWN_FIELDS, ADMIN_ONLY_FIELDS, NARRATIVE_LABEL_KEYS } from "./letter-constants";

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Component
+ * @role Modal Dialog Pencarian
+ * @access Public / Warga
+ * @description Komponen dialog modal pencarian global dengan fitur pencarian cepat lintas modul dan pintasan keyboard.
+ */
+
 import { useEffect, useState, useMemo } from "react";
 import type { ComponentType } from "react";
 import { useRouter } from "next/navigation";

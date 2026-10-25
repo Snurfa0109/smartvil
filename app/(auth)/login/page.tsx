@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Auth)
+ * @role Autentikasi Masuk Admin
+ * @access Publik / Tamu
+ * @description Halaman formulir login untuk verifikasi identitas dan autentikasi akses perangkat kelurahan ke dashboard.
+ */
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Lock, Mail, Shield } from "lucide-react";

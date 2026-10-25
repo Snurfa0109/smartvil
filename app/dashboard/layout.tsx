@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Layout & Shell Navigasi Dashboard
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Menyediakan kerangka navigasi dashboard, sidebar, header status, dan proteksi sesi admin.
+ */
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {

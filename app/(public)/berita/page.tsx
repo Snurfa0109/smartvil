@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Portal Berita & Pengumuman
+ * @access Public / Warga
+ * @description Menampilkan daftar publikasi informasi, agenda kegiatan, pengumuman, dan artikel kelurahan.
+ */
+
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { apiList } from "@/lib/api";

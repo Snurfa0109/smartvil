@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Informasi & Statistik Terbuka
+ * @access Public / Warga
+ * @description Menyajikan infografis data kependudukan, transparansi anggaran, fasilitas publik, dan tautan eksternal.
+ */
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

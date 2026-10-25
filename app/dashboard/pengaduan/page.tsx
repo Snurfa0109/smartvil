@@ -1,5 +1,12 @@
 ﻿"use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Manajemen & Penanganan Pengaduan Warga
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Memantau status laporan keluhan masyarakat, menindaklanjuti respon tanggapan, dan mengarsipkan pengaduan.
+ */
+
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiList, apiUpdate, apiDelete } from "@/lib/api";

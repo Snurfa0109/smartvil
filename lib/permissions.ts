@@ -1,3 +1,9 @@
+/**
+ * @layer Core / Library
+ * @role Definisi hak akses fitur dan perizinan peran admin
+ * @access Server-side / Client-side
+ * @description Mendefinisikan daftar fitur terkelola dan kontrol perizinan role admin dalam sistem SmartVil.
+ */
 export interface FeaturePermission {
   key: string;
   label: string;

@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Verifikasi & Pemrosesan Layanan Surat
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Mengelola permohonan surat warga, verifikasi berkas persyaratan, penerbitan, dan cetak dokumen.
+ */
+
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";

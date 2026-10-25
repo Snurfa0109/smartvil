@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Pengaduan Aspirasi Warga
+ * @access Public / Warga
+ * @description Memfasilitasi warga menyampaikan aspirasi dan aduan lingkungan serta memantau tindak lanjut laporan.
+ */
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle, ShieldCheck } from "lucide-react";

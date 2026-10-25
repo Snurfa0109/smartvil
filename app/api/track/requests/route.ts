@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint pelacakan status permohonan surat warga
+ * @access Public / Anonim
+ * @description Memungkinkan warga melacak progres permohonan surat via kode tiket atau nomor telepon.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 

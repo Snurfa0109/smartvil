@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Detail Berita & Pengumuman
+ * @access Public / Warga
+ * @description Menampilkan detail isi artikel berita, galeri dokumentasi kegiatan, dan navigasi berita terkait.
+ */
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { apiGet, apiList } from "@/lib/api";

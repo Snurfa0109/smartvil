@@ -1,4 +1,11 @@
 "use client";
+
+/**
+ * @layer Frontend (Admin / Dashboard)
+ * @role Komponen Rich Text Editor Berita
+ * @access Terautentikasi (Admin / Staf Kelurahan)
+ * @description Komponen editor berbasis TipTap untuk penyusunan konten berita lengkap dengan formatting teks dan media.
+ */
 import DOMPurify from "dompurify";
 
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";

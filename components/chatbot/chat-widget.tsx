@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Component
+ * @role Widget Asisten AI (Chatbot)
+ * @access Public / Warga
+ * @description Komponen widget interaktif asisten virtual untuk melayani pertanyaan warga seputar informasi dan layanan desa.
+ */
+
 import React, { useState, useRef, useEffect } from "react";
 import { 
   X, 

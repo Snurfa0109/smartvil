@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Halaman Pencarian Global
+ * @access Public / Warga
+ * @description Menyediakan antarmuka pencarian terpadu lintas modul berita, layanan surat, dan informasi kelurahan.
+ */
+
 import { useEffect, useState, useMemo, Suspense } from "react";
 import type { ComponentType } from "react";
 import { useSearchParams, useRouter } from "next/navigation";

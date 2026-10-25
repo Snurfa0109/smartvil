@@ -1,3 +1,9 @@
+/**
+ * @layer Backend (API Route)
+ * @role Endpoint chatbot kecerdasan buatan (AI Assistant)
+ * @access Public / Anonim
+ * @description Memproses percakapan interaktif warga dengan AI Assistant seputar layanan kelurahan.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_CHATBOT_SETTINGS, ChatbotSettings, getChatbotSettings } from "@/lib/chatbot-config";
 import { getSiteSettings } from "@/lib/site-config";

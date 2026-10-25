@@ -1,3 +1,10 @@
+/**
+ * @layer Frontend (Public / Warga)
+ * @role Layout Wrapper
+ * @access Public / Warga
+ * @description Menyediakan layout global portal publik termasuk Navbar, Footer, dan ChatWidget.
+ */
+
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ChatWidget } from "@/components/chatbot/chat-widget";

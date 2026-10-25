@@ -1,7 +1,8 @@
 /**
- * Simple in-memory sliding-window rate limiter.
- * Each instance tracks hits per key (typically IP) within `windowMs`.
- * Not shared across serverless instances — acceptable for single-process deploys.
+ * @layer Core / Library
+ * @role Pembatas laju permintaan (Rate Limiter in-memory)
+ * @access Server-side Only
+ * @description Membatasi frekuensi request berbasis IP dengan sliding-window untuk mencegah brute force dan spam.
  */
 
 interface Entry {

@@ -1,3 +1,9 @@
+/**
+ * @layer Security / Middleware
+ * @role Middleware keamanan HTTP dan validasi rute
+ * @access Server-side Only
+ * @description Menerapkan security response headers dan memvalidasi token JWT pada rute yang diproteksi.
+ */
 import { NextResponse, type NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
