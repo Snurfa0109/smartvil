@@ -52,12 +52,12 @@ async function main() {
     },
     {
       id: 'fdccbde6-1ddc-4ec5-ac01-241207f6d1ff',
-      title: 'Pelatihan Pemasaran Digital bagi Pelaku UMKM Perumahan Banjar Agung Indah (BAP)',
+      title: 'Pelatihan Pemasaran Digital bagi Pelaku UMKM Kelurahan Banjar Agung',
       category: 'Pelatihan',
       date: '2026-09-28',
       image_url: '/images/banner-pengaduan.jpg',
       views: 89,
-      content: '<p>Sebanyak 35 pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) di lingkungan Kelurahan Banjar Agung mengikuti bimbingan teknis pemasaran digital dan foto produk komersial yang difasilitasi oleh Dinas Koperasi dan UMKM Kota Serang bertempat di aula serbaguna perumahan BAP.</p><p>Materi yang disampaikan meliputi pembuatan konten promosi media sosial (Instagram & TikTok), optimasi toko online, pengelolaan pencatatan keuangan sederhana berbasis aplikasi, serta prosedur pendaftaran sertifikasi halal secara gratis (Self-Declare).</p><p>Diharapkan melalui pelatihan ini, produk-produk lokal khas Banjar Agung seperti aneka kue basah, keripik olahan, dan kerajinan tangan dapat menjangkau pasar yang lebih luas di tingkat regional maupun nasional.</p>'
+      content: '<p>Sebanyak 35 pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) di lingkungan Kelurahan Banjar Agung mengikuti bimbingan teknis pemasaran digital dan foto produk komersial yang difasilitasi oleh Dinas Koperasi dan UMKM Kota Serang bertempat di aula kelurahan.</p><p>Materi yang disampaikan meliputi pembuatan konten promosi media sosial (Instagram & TikTok), optimasi toko online, pengelolaan pencatatan keuangan sederhana berbasis aplikasi, serta prosedur pendaftaran sertifikasi halal secara gratis (Self-Declare).</p><p>Diharapkan melalui pelatihan ini, produk-produk lokal khas Banjar Agung seperti aneka kue basah, keripik olahan, dan kerajinan tangan dapat menjangkau pasar yang lebih luas di tingkat regional maupun nasional.</p>'
     }
   ];
 
@@ -105,8 +105,8 @@ async function main() {
       date_end: '2026-10-23',
       time_start: '08:30',
       time_end: '11:30',
-      location: 'Posyandu BAP RW 07, Banjar Agung',
-      time_location: '08:30 - 11:30 WIB • Posyandu BAP RW 07',
+      location: 'Posyandu Terpadu RW 06, Banjar Agung',
+      time_location: '08:30 - 11:30 WIB • Posyandu Terpadu RW 06',
       description: 'Pemeriksaan tumbuh kembang balita, imunisasi dasar lengkap, serta pemeriksaan tekanan darah dan gula darah gratis bagi lansia.',
       active: 1,
       sort_order: 1

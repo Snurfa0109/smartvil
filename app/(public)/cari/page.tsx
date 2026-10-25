@@ -75,7 +75,7 @@ const STATIC_PAGES: SearchItem[] = [
     id: "fasilitas",
     title: "Fasilitas Publik & Puskesmas Banjar Agung",
     category: "profil",
-    subtitle: "Puskesmas Banjar Agung, Posyandu, pemukiman BAP I & II, dan Bumi Mutiara.",
+    subtitle: "Puskesmas Banjar Agung, Posyandu, dan pemukiman Bumi Mutiara Serang.",
     url: "/profil",
   },
 ];

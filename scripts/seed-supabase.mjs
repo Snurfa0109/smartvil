@@ -43,7 +43,7 @@ await seedIfEmpty("news", [
   R({ title: "Gerakan 'Rabu Asri' Bersama Warga di Lingkungan RW 03 dan RW 05", category: "Kegiatan", content: "Aparatur kelurahan, pengurus RT/RW, dan warga melaksanakan gotong royong kebersihan drainase dan pemangkasan dahan pohon.", date: "2026-09-23" }),
   R({ title: "Jadwal Posyandu Balita & Skrining PTM Puskesmas Banjar Agung", category: "Kesehatan", content: "Jadwal penimbangan balita, imunisasi dasar, serta pemeriksaan penyakit tidak menular bagi lansia di seluruh posyandu RW 01 hingga RW 10.", date: "2026-09-21" }),
   R({ title: "Musrenbang Kelurahan Banjar Agung TA 2027", category: "Pemerintahan", content: "Musrenbang tingkat kelurahan digelar dengan fokus drainase perumahan, perbaikan jalan lingkungan, dan pemberdayaan ekonomi perempuan.", date: "2026-09-15" }),
-  R({ title: "Pelatihan Pemasaran Digital bagi UMKM Perumahan BAP", category: "Pelatihan", content: "Puluhan pelaku usaha rumahan mendapatkan pelatihan promosi media sosial dan sertifikasi halal bersama Dinas Koperasi dan UMKM.", date: "2026-09-12" }),
+  R({ title: "Pelatihan Pemasaran Digital bagi UMKM Kelurahan Banjar Agung", category: "Pelatihan", content: "Puluhan pelaku usaha rumahan mendapatkan pelatihan promosi media sosial dan sertifikasi halal bersama Dinas Koperasi dan UMKM.", date: "2026-09-12" }),
 ]);
 
 await seedIfEmpty("complaints", [
@@ -61,7 +61,7 @@ await seedIfEmpty("requests", [
 await seedIfEmpty("agenda", [
   R({ title: 'Gerakan "Rabu Asri" Kelurahan', category: "Program Lingkungan", category_color: "blue", schedule: "Setiap Rabu", description: "Kerja bakti kebersihan drainase, penghijauan lingkungan, dan penataan pemukiman bersama RT/RW se-Kelurahan Banjar Agung.", time_location: "07:30 WIB - Selesai • Seluruh Lingkungan RW", active: true, sort_order: 0 }),
   R({ title: "Penyaluran Beras Bantuan Pangan Kemensos RI", category: "Bantuan Sosial", category_color: "emerald", schedule: "Sesuai Jadwal", description: "Penyaluran Cadangan Beras Pangan Pemerintah (CPP) bagi Keluarga Penerima Manfaat (KPM) warga Kelurahan Banjar Agung.", time_location: "Aula Kantor Kelurahan Banjar Agung", active: true, sort_order: 1 }),
-  R({ title: "Posyandu Balita & Lansia Puskesmas Banjar Agung", category: "Kesehatan Warga", category_color: "amber", schedule: "Jadwal Posyandu", description: "Pemeriksaan kesehatan tumbuh kembang balita, imunisasi dasar, penimbangan, dan pemeriksaan tekanan darah lansia.", time_location: "08:30 - 11:30 WIB • Posyandu BAP & Lingkungan RW", active: true, sort_order: 2 }),
+  R({ title: "Posyandu Balita & Lansia Puskesmas Banjar Agung", category: "Kesehatan Warga", category_color: "amber", schedule: "Jadwal Posyandu", description: "Pemeriksaan kesehatan tumbuh kembang balita, imunisasi dasar, penimbangan, dan pemeriksaan tekanan darah lansia.", time_location: "08:30 - 11:30 WIB • Posyandu Terpadu Lingkungan RW", active: true, sort_order: 2 }),
 ]);
 
 console.log("SELESAI");
