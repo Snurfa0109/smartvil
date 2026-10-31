@@ -187,7 +187,7 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 - **`app/api/audit/route.ts`**: Pencatatan dan pembacaan riwayat aktivitas administratif aparatur.
 - **`app/api/news/views/route.ts`**: Atomic counter untuk menambah jumlah pembaca berita dengan rate limiter agar tidak bisa di-spam.
 - **`app/api/seed/route.ts`**: Endpoint inisialisasi basis data dan data contoh awal.
-- **`app/api/notifications/route.ts`**: Agregasi notifikasi aktivitas masuk (permohonan surat baru yang butuh verifikasi, pengaduan warga pending, dan agenda kegiatan terdekat) dengan kalkulasi count belum diproses untuk admin dashboard.
+- **`app/api/notifications/route.ts`**: Agregasi notifikasi aktivitas masuk warga yang memerlukan tindakan aparatur (permohonan surat baru yang butuh verifikasi dan laporan pengaduan warga berstatus pending) dengan badge counter realtime untuk admin dashboard.
 
 ---
 

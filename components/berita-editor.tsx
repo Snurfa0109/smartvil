@@ -46,6 +46,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { useState } from "react";
 import { getBeritaCategories, DEFAULT_BERITA_CATEGORIES } from "@/lib/site-config";
 import { apiGet, apiUpdate, apiInsert } from "@/lib/api";
+import { generateUUID } from "@/lib/utils";
 
 type BeritaEditorProps = {
   id?: string | null;
@@ -311,7 +312,7 @@ export default function BeritaEditor({ id = null }: BeritaEditorProps) {
         await writeAuditLog("UPDATE", "berita", `Memperbarui berita: "${title}" (Kategori: ${category})`);
         success("Berita berhasil diperbarui!");
       } else {
-        await apiInsert("news", { id: crypto.randomUUID(), ...payload });
+        await apiInsert("news", { id: generateUUID(), ...payload });
         await writeAuditLog("CREATE", "berita", `Menerbitkan berita baru: "${title}" (Kategori: ${category})`);
         success("Berita berhasil ditambahkan!");
       }
