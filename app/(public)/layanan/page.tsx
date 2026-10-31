@@ -37,6 +37,7 @@ import { apiInsert } from "@/lib/api";
 import { LetterType, getLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
+import { generateRandomCode } from "@/lib/utils";
 
 interface StoredTicket {
   ticketCode: string;
@@ -171,7 +172,7 @@ export default function ServicesPage() {
     setLoading(true);
 
     try {
-      const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+      const randomSuffix = generateRandomCode(8);
       const ticketCode = `SRT-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
       const letterObj = activeLetterObj;
       const letterName = letterObj?.name || "Surat Keterangan";

@@ -12,20 +12,18 @@ import {
   Bell,
   FileText,
   MessageSquareWarning,
-  Calendar,
   CheckCheck,
   Volume2,
   VolumeX,
   Clock,
   Inbox,
   ArrowRight,
-  ShieldAlert,
 } from "lucide-react";
 import { usePolling } from "@/hooks/use-polling";
 
 export interface AdminNotification {
   id: string;
-  category: "surat" | "pengaduan" | "agenda";
+  category: "surat" | "pengaduan";
   title: string;
   subtitle: string;
   timestamp: string;
@@ -93,7 +91,7 @@ function playNotificationChime() {
 export function NotificationBell() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"semua" | "surat" | "pengaduan" | "agenda">("semua");
+  const [activeTab, setActiveTab] = useState<"semua" | "surat" | "pengaduan">("semua");
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [summary, setSummary] = useState<NotificationSummary>({
     pendingRequests: 0,
@@ -229,8 +227,6 @@ export function NotificationBell() {
         return <FileText className="w-4 h-4 text-blue-600" />;
       case "pengaduan":
         return <MessageSquareWarning className="w-4 h-4 text-amber-600" />;
-      case "agenda":
-        return <Calendar className="w-4 h-4 text-purple-600" />;
       default:
         return <Inbox className="w-4 h-4 text-slate-500" />;
     }
@@ -242,8 +238,6 @@ export function NotificationBell() {
         return "bg-blue-50 border-blue-200";
       case "pengaduan":
         return "bg-amber-50 border-amber-200";
-      case "agenda":
-        return "bg-purple-50 border-purple-200";
       default:
         return "bg-slate-50 border-slate-200";
     }
@@ -313,9 +307,8 @@ export function NotificationBell() {
           <div className="flex items-center border-b border-slate-100 bg-slate-50/70 p-1.5 gap-1">
             {[
               { id: "semua", label: "Semua", count: notifications.length },
-              { id: "surat", label: "Surat", count: summary.pendingRequests },
-              { id: "pengaduan", label: "Aduan", count: summary.pendingComplaints },
-              { id: "agenda", label: "Agenda", count: notifications.filter((n) => n.category === "agenda").length },
+              { id: "surat", label: "Surat Masuk", count: summary.pendingRequests },
+              { id: "pengaduan", label: "Pengaduan", count: summary.pendingComplaints },
             ].map((tab) => (
               <button
                 key={tab.id}

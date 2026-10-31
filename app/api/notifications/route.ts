@@ -1,6 +1,6 @@
 /**
- * [BACKEND API] Notifikasi Sistem & Aktivitas Masuk
- * Agregasi notifikasi permohonan surat baru, pengaduan warga, agenda, dan log keamanan.
+ * [BACKEND API] Notifikasi Aktivitas Masuk Warga
+ * Agregasi notifikasi permohonan surat baru dan laporan pengaduan masyarakat yang butuh verifikasi aparatur.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,7 +9,7 @@ import { query } from "@/lib/db";
 
 export interface AdminNotification {
   id: string;
-  category: "surat" | "pengaduan" | "agenda";
+  category: "surat" | "pengaduan";
   title: string;
   subtitle: string;
   timestamp: string;
@@ -46,14 +46,6 @@ export async function GET(req: NextRequest) {
       ).catch(() => [{ c: 0 }]),
     ]);
 
-    let upcomingAgenda: Record<string, unknown>[] = [];
-    try {
-      upcomingAgenda = await query<Record<string, unknown>[]>(
-        "SELECT id, title, category, date_start, time_start, location FROM `agenda` WHERE `is_active` = 1 AND `date_start` >= CURDATE() ORDER BY `date_start` ASC LIMIT 5"
-      );
-    } catch {
-      upcomingAgenda = [];
-    }
 
     const notifications: AdminNotification[] = [];
 
@@ -97,22 +89,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    for (const a of upcomingAgenda) {
-      const title = String(a.title || "Agenda Kegiatan");
-      const dateStart = a.date_start ? String(a.date_start).split("T")[0] : "";
-      const loc = a.location ? `• ${String(a.location)}` : "";
-
-      notifications.push({
-        id: `agd-${a.id}`,
-        category: "agenda",
-        title: `Agenda Mendatang: ${title}`,
-        subtitle: `Jadwal: ${dateStart} ${loc}`,
-        timestamp: dateStart ? new Date(dateStart).toISOString() : new Date().toISOString(),
-        status: "active",
-        link: "/dashboard/agenda",
-        isPending: false,
-      });
-    }
 
     notifications.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()

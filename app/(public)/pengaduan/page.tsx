@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { PageBanner } from "@/components/layout/page-banner";
+import { generateRandomCode } from "@/lib/utils";
 
 const complaintCategories = [
   "Infrastruktur & Jalan",
@@ -124,7 +125,7 @@ export default function ComplaintsPage() {
         }
       }
 
-      const randomSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+      const randomSuffix = generateRandomCode(8);
       const ticketCode = `PGD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${randomSuffix}`;
 
       const rawPhone = formData.phone.trim();
