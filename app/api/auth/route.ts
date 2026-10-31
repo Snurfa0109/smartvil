@@ -49,9 +49,11 @@ export async function POST(req: NextRequest) {
     await query("UPDATE profiles SET last_login = NOW() WHERE id = ?", [row.id]);
     const token = signToken({ uid: String(row.id), email: String(row.email), role: String(row.role) });
     const response = NextResponse.json({ token, profile: toProfile(row) });
+    const proto = req.headers.get("x-forwarded-proto") || req.nextUrl.protocol.replace(":", "");
+    const isHttps = proto === "https";
     response.cookies.set("smartvil_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       sameSite: "lax",
       path: "/",
       maxAge: 4 * 60 * 60,
