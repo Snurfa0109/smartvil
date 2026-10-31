@@ -35,7 +35,7 @@ export default function LoginPage() {
         return;
       }
       setToken(body.token);
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error(err);
       setError("Email atau kata sandi tidak sesuai. Silakan coba lagi.");
