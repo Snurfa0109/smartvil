@@ -27,6 +27,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { writeAuditLog } from "@/lib/audit";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 
 export default function DashboardLayout({
   children,
@@ -349,9 +350,9 @@ export default function DashboardLayout({
               <span>Lihat Website</span>
             </Link>
 
-            
-            <div className="hidden md:block w-px h-6 bg-slate-200" />
+            <NotificationBell />
 
+            <div className="hidden md:block w-px h-6 bg-slate-200" />
             
             <div className="flex items-center gap-2.5 pl-1">
               <div className="text-right hidden sm:block">
