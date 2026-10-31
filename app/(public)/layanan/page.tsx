@@ -56,7 +56,7 @@ interface TrackedRequestItem {
 }
 
 export default function ServicesPage() {
-  const { error: showError, warning } = useToast();
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
@@ -190,6 +190,9 @@ export default function ServicesPage() {
         status: "pending",
         admin_notes: "",
       });
+
+      success("Permohonan surat berhasil terkirim! Simpan kode tiket Anda untuk melacak status.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
 
       const submittedData = {
         ticketCode,
