@@ -187,6 +187,7 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 - **`app/api/audit/route.ts`**: Pencatatan dan pembacaan riwayat aktivitas administratif aparatur.
 - **`app/api/news/views/route.ts`**: Atomic counter untuk menambah jumlah pembaca berita dengan rate limiter agar tidak bisa di-spam.
 - **`app/api/seed/route.ts`**: Endpoint inisialisasi basis data dan data contoh awal.
+- **`app/api/notifications/route.ts`**: Agregasi notifikasi aktivitas masuk (permohonan surat baru yang butuh verifikasi, pengaduan warga pending, dan agenda kegiatan terdekat) dengan kalkulasi count belum diproses untuk admin dashboard.
 
 ---
 
@@ -219,4 +220,5 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 - **`components/letter-simulation-preview.tsx`**: Komponen pratinjau rendering template surat langsung di browser admin.
 - **`components/dashboard/banner-management.tsx`**: Antarmuka pengaturan gambar banner di dashboard settings.
 - **`components/berita/social-share.tsx`**: Widget tombol berbagi artikel berita ke WhatsApp, Facebook, Twitter, dan salin tautan.
+- **`components/dashboard/notification-bell.tsx`**: Lonceng notifikasi interaktif di header dashboard dengan badge counter realtime (polling 20 detik), audio chime Web Audio API, tab filter per kategori, dan navigasi langsung ke berkas terkait.
 - **`components/ui/*`**: Komponen atomik antarmuka (Button, Card, Input, Label, Select, Tabs, Textarea, Toast).
