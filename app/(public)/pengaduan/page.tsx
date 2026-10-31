@@ -45,7 +45,7 @@ interface TrackedComplaintItem {
 }
 
 export default function ComplaintsPage() {
-  const { error: showError, warning } = useToast();
+  const { success, error: showError, warning } = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -144,6 +144,9 @@ export default function ComplaintsPage() {
       };
 
       await apiInsert("complaints", payload);
+
+      success("Pengaduan Anda berhasil terkirim! Petugas kelurahan akan segera menindaklanjuti.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
 
       setSubmittedInfo({
         nama: formData.nama.trim(),
