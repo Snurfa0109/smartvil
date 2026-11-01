@@ -39,7 +39,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full bg-white border-b border-border shadow-xs">
+      <nav aria-label="Navigasi utama portal kelurahan" className="sticky top-0 z-40 w-full bg-white border-b border-border shadow-xs">
         <div className="container mx-auto px-6 md:px-12">
           <div className="flex h-16 items-center justify-between gap-6">
 
@@ -63,6 +63,7 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={`relative px-3.5 py-2 text-sm font-semibold transition-colors ${
                       isActive
                         ? "text-[#1b365d]"
@@ -82,10 +83,11 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
+                aria-label="Cari seluruh informasi dan layanan kelurahan"
                 className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 rounded-lg transition-colors cursor-pointer"
                 title="Cari seluruh layanan & informasi kelurahan"
               >
-                <Search className="w-3.5 h-3.5 text-slate-500" />
+                <Search className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
                 <span>Cari di portal...</span>
               </button>
 
@@ -108,10 +110,12 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none"
-                aria-label="Toggle Menu"
+                aria-expanded={isOpen}
+                aria-controls="mobile-nav-menu"
+                aria-label={isOpen ? "Tutup menu navigasi" : "Buka menu navigasi utama"}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none cursor-pointer"
               >
-                {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {isOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
               </button>
             </div>
 
@@ -119,7 +123,7 @@ export function Navbar() {
         </div>
 
         {isOpen && (
-          <div className="md:hidden border-t border-border bg-white px-4 py-3 space-y-1">
+          <div id="mobile-nav-menu" className="md:hidden border-t border-border bg-white px-4 py-3 space-y-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (

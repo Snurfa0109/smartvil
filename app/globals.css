@@ -173,6 +173,51 @@ body {
   .dash-shine::after { display: none; }
 }
 
+/* ── Accessibility Mode Overrides ── */
+html.a11y-text-lg {
+  font-size: 112.5%;
+}
+html.a11y-text-xl {
+  font-size: 125%;
+}
+html.a11y-high-contrast {
+  filter: contrast(135%);
+}
+html.a11y-high-contrast body {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+html.a11y-high-contrast p,
+html.a11y-high-contrast span,
+html.a11y-high-contrast h1,
+html.a11y-high-contrast h2,
+html.a11y-high-contrast h3,
+html.a11y-high-contrast h4,
+html.a11y-high-contrast label,
+html.a11y-high-contrast input,
+html.a11y-high-contrast textarea {
+  color: #ffffff !important;
+}
+html.a11y-high-contrast .bg-white,
+html.a11y-high-contrast .bg-slate-50,
+html.a11y-high-contrast .bg-slate-100 {
+  background-color: #121212 !important;
+  border-color: #ffffff !important;
+}
+html.a11y-dyslexic {
+  font-family: 'Comic Sans MS', 'Trebuchet MS', var(--font-sans) !important;
+  letter-spacing: 0.05em !important;
+  word-spacing: 0.1em !important;
+  line-height: 1.8 !important;
+}
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
 /* ── Print: cetak surat resmi ── */
 #printable-letter-container {
   display: none;

@@ -105,19 +105,28 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         createPortal(
           <>
             
-            <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+            <div
+              role="region"
+              aria-label="Pemberitahuan Sistem"
+              aria-live="polite"
+              className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+            >
               {toasts.map((t) => (
                 <div
                   key={t.id}
+                  role={t.variant === "error" ? "alert" : "status"}
+                  aria-atomic="true"
                   className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg animate-in slide-in-from-right-5 fade-in duration-200 ${BG[t.variant]}`}
                 >
                   {ICONS[t.variant]}
                   <p className="text-sm font-medium leading-relaxed flex-1">{t.message}</p>
                   <button
+                    type="button"
                     onClick={() => removeToast(t.id)}
-                    className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors"
+                    aria-label="Tutup notifikasi"
+                    className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors cursor-pointer"
                   >
-                    <X className="h-3.5 w-3.5 opacity-50" />
+                    <X className="h-3.5 w-3.5 opacity-50" aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -125,7 +134,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
             
             {confirmState && (
-              <div className="fixed inset-0 z-[9998] bg-black/50 flex items-center justify-center p-4">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-dialog-title"
+                aria-describedby="confirm-dialog-desc"
+                className="fixed inset-0 z-[9998] bg-black/50 flex items-center justify-center p-4"
+              >
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 fade-in duration-150">
                   <div className="p-6 space-y-3">
                     <div className="flex items-start gap-3">
@@ -143,10 +158,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                         )}
                       </div>
                       <div>
-                        <h3 className="font-bold text-base text-slate-900">
+                        <h3 id="confirm-dialog-title" className="font-bold text-base text-slate-900">
                           {confirmState.opts.title}
                         </h3>
-                        <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                        <p id="confirm-dialog-desc" className="text-sm text-slate-600 mt-1 leading-relaxed">
                           {confirmState.opts.message}
                         </p>
                       </div>
