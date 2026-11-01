@@ -548,10 +548,15 @@ export default function ComplaintsPage() {
             <CardContent className="pt-5 space-y-4">
               <form onSubmit={handleTrackSubmit} className="flex gap-2">
                 <div className="relative flex-1">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <label htmlFor="track-phone-input" className="sr-only">
+                    Nomor Telepon atau WhatsApp untuk pelacakan aduan
+                  </label>
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden="true" />
                   <input
+                    id="track-phone-input"
                     type="tel"
                     required
+                    aria-label="Nomor Telepon atau WhatsApp Pelapor"
                     placeholder="Masukkan Nomor Telepon / WhatsApp (contoh: 081234567890)..."
                     className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b365d]/20 focus:border-[#1b365d]"
                     value={trackPhone}

@@ -882,10 +882,15 @@ export default function ServicesPage() {
                 className="flex flex-col sm:flex-row gap-2"
               >
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <label htmlFor="track-letter-input" className="sr-only">
+                    Kode Tiket, Nomor WhatsApp, atau NIK Pemohon Surat
+                  </label>
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" aria-hidden="true" />
                   <input
+                    id="track-letter-input"
                     type="text"
                     required
+                    aria-label="Ketik Kode Tiket, Nomor WhatsApp, atau NIK Pemohon"
                     placeholder="Ketik Kode Tiket, Nomor WhatsApp, atau NIK..."
                     className="w-full h-11 pl-10 pr-4 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1b365d] focus:border-[#1b365d]"
                     value={trackInput}

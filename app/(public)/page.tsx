@@ -242,7 +242,7 @@ export default function Home() {
       const now = new Date();
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
       const wib = new Date(utc + 3600000 * 7);
-      const day = wib.getDay(); // 0: Minggu, 6: Sabtu
+      const day = wib.getDay();
       const hours = wib.getHours();
       const minutes = wib.getMinutes();
       const totalMinutes = hours * 60 + minutes;
@@ -565,10 +565,15 @@ export default function Home() {
             
             <form onSubmit={handleQuickTrack} className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
+                <label htmlFor="quick-track-input" className="sr-only">
+                  Nomor WhatsApp atau Kode Tiket Surat Permohonan
+                </label>
                 <input
+                  id="quick-track-input"
                   type="text"
                   value={trackQuery}
                   onChange={(e) => setTrackQuery(e.target.value)}
+                  aria-label="Ketik Nomor WhatsApp atau Kode Tiket Surat"
                   placeholder="Ketik Nomor WhatsApp atau Kode Tiket Surat di sini..."
                   className="w-full h-12 pl-4 pr-10 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner"
                 />
@@ -576,9 +581,10 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => { setTrackQuery(""); setTrackResult(null); setTrackSearched(false); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label="Hapus teks pencarian tiket"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4" aria-hidden="true" />
                   </button>
                 )}
               </div>

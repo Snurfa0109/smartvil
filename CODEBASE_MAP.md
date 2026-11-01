@@ -214,6 +214,7 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 - **`components/layout/navbar.tsx`**: Header navigasi atas portal warga, menu layanan, indikator pencarian, dan tombol darurat.
 - **`components/layout/footer.tsx`**: Kaki halaman publik berisi identitas kantor kelurahan, jam loket, alamat maps, dan kontak resmi.
 - **`components/layout/page-banner.tsx`**: Komponen banner visual di atas setiap halaman publik dengan teks judul dinamis.
+- **`components/layout/accessibility-widget.tsx`**: Widget aksesibilitas melayang (a11y) untuk warga lansia dan disabilitas: pengatur ukuran font dinamis (A/A+/A++), kontras tinggi, font ramah disleksia, peredam animasi (*reduce-motion*), dan pembaca suara (*text-to-speech* bahasa Indonesia).
 - **`components/chatbot/chat-widget.tsx`**: Tombol melayang dan jendela interaktif asisten virtual AI "Arba" untuk memandu warga awam.
 - **`components/berita-editor.tsx`**: Editor artikel TipTap WYSIWYG untuk pembuatan dan pengubahan artikel berita di dashboard.
 - **`components/letter-print-editor.tsx` & `components/letter-print-document.tsx`**: Pengatur tata letak kop surat resmi kelurahan, batang tubuh, tanda tangan lurah, stempel, dan format cetak kertas F4/A4.
