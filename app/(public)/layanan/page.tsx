@@ -31,8 +31,8 @@ import {
   Scroll,
   Info,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
 import { LetterType, getLetterTypes } from "@/lib/letters";
@@ -61,7 +61,10 @@ export default function ServicesPage() {
   const { success, error: showError, warning } = useToast();
   const { citizen } = useCitizen();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"apply" | "track">(
+    searchParams.get("tab") === "track" ? "track" : "apply"
+  );
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
@@ -237,10 +240,9 @@ export default function ServicesPage() {
     }
   };
 
-  const handleTrackSearch = async (queryParam?: string) => {
+  const handleTrackSearch = useCallback(async (queryParam?: string) => {
     const rawSearch = (queryParam || trackInput).trim();
     if (!rawSearch) return;
-
     setTrackLoading(true);
     try {
       const res = await fetch(`/api/track/requests?q=${encodeURIComponent(rawSearch)}`);
@@ -261,7 +263,15 @@ export default function ServicesPage() {
     } finally {
       setTrackLoading(false);
     }
-  };
+  }, [trackInput, showError]);
+
+  useEffect(() => {
+    const ticket = searchParams.get("ticket");
+    if (searchParams.get("tab") === "track" && ticket) {
+      setTrackInput(ticket);
+      handleTrackSearch(ticket);
+    }
+  }, [searchParams, handleTrackSearch]);
 
   const handleCopyTicket = (code: string) => {
     navigator.clipboard.writeText(code);
