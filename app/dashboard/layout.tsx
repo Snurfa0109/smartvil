@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   Inbox,
   Newspaper,
+  UserCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,6 +89,7 @@ export default function DashboardLayout({
     { key: "agenda", href: "/dashboard/agenda", label: "Agenda Kegiatan", icon: CalendarDays },
     { key: "layanan", href: "/dashboard/layanan", label: "Permohonan Surat", icon: Inbox },
     { key: "penduduk", href: "/dashboard/penduduk", label: "Data Penduduk", icon: Users },
+    { key: "warga", href: "/dashboard/warga", label: "Akun Warga", icon: UserCheck },
     { key: "pengaduan", href: "/dashboard/pengaduan", label: "Pengaduan Masuk", icon: MessageSquare },
     { key: "settings", href: "/dashboard/settings", label: "Profil & Konten Web", icon: Globe, exact: true },
   ];

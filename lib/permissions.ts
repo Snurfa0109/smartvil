@@ -42,6 +42,12 @@ export const MANAGEABLE_FEATURES: FeaturePermission[] = [
     path: "/dashboard/penduduk",
   },
   {
+    key: "warga",
+    label: "Akun Warga",
+    description: "Kelola akun pengguna warga, verifikasi profil, dan reset kata sandi",
+    path: "/dashboard/warga",
+  },
+  {
     key: "pengaduan",
     label: "Pengaduan Masuk",
     description: "Kelola aspirasi dan laporan pengaduan dari warga",
@@ -61,6 +67,7 @@ export const DEFAULT_ADMIN_PERMISSIONS = [
   "agenda",
   "layanan",
   "penduduk",
+  "warga",
   "pengaduan",
   "settings",
 ];
