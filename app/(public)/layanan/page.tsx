@@ -31,7 +31,7 @@ import {
   Scroll,
   Info,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
@@ -57,7 +57,7 @@ interface TrackedRequestItem {
   createdAt: string;
 }
 
-export default function ServicesPage() {
+function ServicesContent() {
   const { success, error: showError, warning } = useToast();
   const { citizen } = useCitizen();
   const router = useRouter();
@@ -1119,5 +1119,13 @@ export default function ServicesPage() {
       )}
     </div>
   </div>
+  );
+}
+
+export default function ServicesPage() {
+  return (
+    <Suspense>
+      <ServicesContent />
+    </Suspense>
   );
 }

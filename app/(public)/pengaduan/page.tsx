@@ -8,7 +8,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle, ShieldCheck } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
@@ -46,7 +46,7 @@ interface TrackedComplaintItem {
   createdAt: string;
 }
 
-export default function ComplaintsPage() {
+function ComplaintsContent() {
   const { success, error: showError, warning } = useToast();
   const { citizen } = useCitizen();
   const router = useRouter();
@@ -745,5 +745,13 @@ export default function ComplaintsPage() {
       )}
     </div>
   </div>
+  );
+}
+
+export default function ComplaintsPage() {
+  return (
+    <Suspense>
+      <ComplaintsContent />
+    </Suspense>
   );
 }
