@@ -20,7 +20,12 @@ export default function AuthLayout({
         Lewati ke Konten Utama
       </a>
       <Navbar />
-      <main id="main-content" tabIndex={-1} aria-label="Konten utama" className="focus:outline-hidden">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        aria-label="Konten utama"
+        className="fixed inset-0 top-16 overflow-hidden focus:outline-hidden"
+      >
         {children}
       </main>
     </CitizenProvider>

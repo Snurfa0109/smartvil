@@ -52,7 +52,7 @@ export default function MasukPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex overflow-hidden">
+    <div className="h-full flex overflow-hidden">
       <div className="hidden lg:flex relative flex-1 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
