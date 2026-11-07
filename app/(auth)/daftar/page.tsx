@@ -118,7 +118,7 @@ export default function DaftarPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex overflow-hidden">
+    <div className="h-full flex overflow-hidden">
       <div className="hidden lg:flex relative w-[380px] shrink-0 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
