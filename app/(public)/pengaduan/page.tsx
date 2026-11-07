@@ -8,8 +8,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle, ShieldCheck } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
@@ -50,7 +50,10 @@ export default function ComplaintsPage() {
   const { success, error: showError, warning } = useToast();
   const { citizen } = useCitizen();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"form" | "track">("form");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"form" | "track">(
+    searchParams.get("tab") === "track" ? "track" : "form"
+  );
 
   const [formData, setFormData] = useState({
     nama: "",
@@ -203,10 +206,9 @@ export default function ComplaintsPage() {
     }
   };
 
-  const handleTrackWithPhone = async (phoneNumber?: string) => {
+  const handleTrackWithPhone = useCallback(async (phoneNumber?: string) => {
     const rawSearch = (phoneNumber || trackPhone).trim();
     if (!rawSearch) return;
-
     setTrackingLoading(true);
     try {
       const res = await fetch(`/api/track/complaints?q=${encodeURIComponent(rawSearch)}`);
@@ -233,7 +235,15 @@ export default function ComplaintsPage() {
     } finally {
       setTrackingLoading(false);
     }
-  };
+  }, [trackPhone, showError]);
+
+  useEffect(() => {
+    const ticket = searchParams.get("ticket");
+    if (searchParams.get("tab") === "track" && ticket) {
+      setTrackPhone(ticket);
+      handleTrackWithPhone(ticket);
+    }
+  }, [searchParams, handleTrackWithPhone]);
 
   const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
