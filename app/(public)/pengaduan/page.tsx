@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
@@ -48,6 +49,7 @@ interface TrackedComplaintItem {
 export default function ComplaintsPage() {
   const { success, error: showError, warning } = useToast();
   const { citizen } = useCitizen();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -115,6 +117,10 @@ export default function ComplaintsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!citizen) {
+      router.push("/masuk");
+      return;
+    }
     if (!formData.nama.trim() || !formData.phone.trim()) {
       warning("Nama lengkap dan nomor telepon wajib diisi.");
       return;

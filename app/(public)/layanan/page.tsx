@@ -32,6 +32,7 @@ import {
   Info,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
 import { LetterType, getLetterTypes } from "@/lib/letters";
@@ -59,6 +60,7 @@ interface TrackedRequestItem {
 export default function ServicesPage() {
   const { success, error: showError, warning } = useToast();
   const { citizen } = useCitizen();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
@@ -528,7 +530,14 @@ export default function ServicesPage() {
                       <button
                         type="button"
                         key={letterKey}
-                        onClick={() => { setSelectedLetter(letterKey); setCustomFormData({}); }}
+                        onClick={() => {
+                          if (!citizen) {
+                            router.push("/masuk");
+                            return;
+                          }
+                          setSelectedLetter(letterKey);
+                          setCustomFormData({});
+                        }}
                         className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer group border ${
                           isSelected
                             ? "bg-[#1b365d] text-white shadow-md shadow-[#1b365d]/20 border-[#1b365d]"
