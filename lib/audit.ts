@@ -14,6 +14,7 @@ export type AuditModule =
   | "settings"
   | "agenda"
   | "admin"
+  | "warga"
   | "auth"
   | "sistem";
 
