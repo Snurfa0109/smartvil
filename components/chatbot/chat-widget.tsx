@@ -19,7 +19,8 @@ import {
   Newspaper,
   ArrowRight,
   BarChart2,
-  MapPin
+  MapPin,
+  MessageCircle
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
@@ -44,6 +45,9 @@ const INITIAL_ACTIONS: ChatAction[] = [
   { label: "Buat Pengaduan Warga", url: "/pengaduan", type: "pengaduan" },
   { label: "Warta & Berita Terbaru", url: "/berita", type: "berita" },
 ];
+
+const ADMIN_WA_NUMBER = "6281315053901";
+const ADMIN_WA_URL = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent("Halo, saya ingin bertanya mengenai layanan Kelurahan Banjar Agung.")}`;
 
 const QUICK_PROMPTS = [
   "Bagaimana cara membuat SKTM?",
@@ -416,6 +420,20 @@ export function ChatWidget() {
                         </div>
                       )}
 
+                      {msg.role === "model" && msg.id !== "welcome-msg" && (
+                        <div className="mt-2 pt-2 border-t border-slate-100">
+                          <a
+                            href={ADMIN_WA_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            Hubungi Admin via WhatsApp
+                          </a>
+                        </div>
+                      )}
+
                       <div
                         className={`text-[10px] mt-1 text-right ${
                           msg.role === "user" ? "text-blue-200" : "text-slate-400"
@@ -480,9 +498,20 @@ export function ChatWidget() {
                     <Send className="h-4 w-4 ml-0.5" />
                   </button>
                 </div>
-                <p className="text-[10px] text-center text-slate-400 mt-2">
-                  Didukung oleh Google Gemini • Khusus Layanan Kelurahan Banjar Agung
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[10px] text-slate-400">
+                    Didukung oleh Google Gemini
+                  </p>
+                  <a
+                    href={ADMIN_WA_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    WhatsApp Admin
+                  </a>
+                </div>
               </div>
             </>
           )}
