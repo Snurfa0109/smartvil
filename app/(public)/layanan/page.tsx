@@ -37,6 +37,7 @@ import { apiInsert } from "@/lib/api";
 import { LetterType, getLetterTypes } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
+import { useCitizen } from "@/contexts/CitizenContext";
 import { generateRandomCode } from "@/lib/utils";
 
 interface StoredTicket {
@@ -57,6 +58,7 @@ interface TrackedRequestItem {
 
 export default function ServicesPage() {
   const { success, error: showError, warning } = useToast();
+  const { citizen } = useCitizen();
   const [activeTab, setActiveTab] = useState<"apply" | "track">("apply");
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
@@ -92,6 +94,11 @@ export default function ServicesPage() {
   useEffect(() => {
     getSiteSettings().then((s) => setVillagePhone(s.villagePhone)).catch(() => undefined);
   }, []);
+  useEffect(() => {
+    if (citizen) {
+      setFormData(prev => ({ ...prev, nama: citizen.nama, phone: citizen.phone }));
+    }
+  }, [citizen]);
   useEffect(() => {
     document.title = "Layanan Surat | Kelurahan";
   }, []);
@@ -189,6 +196,7 @@ export default function ServicesPage() {
         template_narrative: letterObj?.templateNarrative || "",
         status: "pending",
         admin_notes: "",
+        citizen_id: citizen?.id || "",
       });
 
       success("Permohonan surat berhasil terkirim! Simpan kode tiket Anda untuk melacak status.");

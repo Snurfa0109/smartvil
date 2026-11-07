@@ -9,11 +9,10 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 
 | Peran & Halaman | Target Pengguna | Akses & Keamanan | Karakteristik Utama |
 |---|---|---|---|
-| **Halaman User / Warga** (`app/(public)/*`) | Warga Kelurahan Banjar Agung, pemohon surat, pelapor aduan, umum | Terbuka (Public / Tanpa Login), proteksi data sensitif (PII masked), rate-limited | Desain ramah warga (*mobile-first* & lansia-friendly), tombol aksi cepat, pelacakan tiket mandiri, AI Chatbot Arba. |
+| **Halaman Publik / Warga** (`app/(public)/*`) | Warga Kelurahan Banjar Agung, pemohon surat, pelapor aduan, umum | Autentikasi Warga (`smartvil_citizen` cookie JWT) untuk Layanan Surat, Pengaduan, dan Riwayat. Halaman informasi (Beranda, Profil, Berita, Data) terbuka publik | Desain ramah warga (*mobile-first* & lansia-friendly), registrasi lengkap data kependudukan, pelacakan tiket mandiri, dashboard riwayat mandiri, AI Chatbot Arba. |
 | **Halaman Admin / Dashboard** (`app/dashboard/*`) | Lurah, Sekretaris Kelurahan, Kepala Seksi (Pemerintahan, Ekbang, Trantibum), Staf Loket | Terproteksi cookie HttpOnly JWT (`smartvil_token`), otentikasi peran (RBAC), audit trail | Verifikasi berkas, generator template DOCX otomatis, cetak surat resmi siap ttd, pengarsipan kependudukan, monitoring aduan. |
-| **Backend REST API** (`app/api/*`) | Klien Frontend Publik & Dashboard Admin | Autentikasi JWT Bearer/Cookie, Whitelist Tabel & Kolom, Sanitasi Magic Bytes | Gerbang transaksi data MySQL, failover LLM (Groq & Gemini), generator counter atomic, seeder basis data. |
-| **Core Libraries & Kernel** (`lib/*`, `proxy.ts`) | Server runtime & Shared utilities | Internal engine | Connection pool `mysql2/promise`, engine template docx zip, RBAC permission matrix, rate limiter. |
-
+| **Backend REST API** (`app/api/*`) | Klien Frontend Publik, Portal Warga, & Dashboard Admin | Autentikasi JWT Bearer/Cookie ganda (Admin & Warga), Whitelist Tabel & Kolom, Sanitasi Magic Bytes | Gerbang transaksi data MySQL, autentikasi warga terproteksi hash SHA-256 NIK, agregasi demografi publik tanpa eksposur PII, failover LLM. |
+| **Core Libraries & Kernel** (`lib/*`, `middleware.ts`) | Server runtime & Shared utilities | Internal engine | Middleware gateway Next.js, connection pool `mysql2/promise`, engine otentikasi warga & admin terpisah, RBAC permission matrix. |
 ---
 
 ## 2. Rincian Detail Setiap File (Fungsi, Relasi, & Fitur)
@@ -91,13 +90,36 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 - **Fitur Utama**:
   - Memindai secara serentak judul berita, deskripsi permohonan surat, agenda kegiatan kelurahan, dan direktori fasilitas umum profil.
 - **Relasi & Komponen**: Melakukan query multi-tabel via `lib/api.ts`.
+#### `app/(public)/masuk/page.tsx` — Masuk Akun Warga
+- **Terkait Apa**: Gerbang otentikasi warga pemohon layanan surat dan pelapor pengaduan.
+- **Fitur Utama**:
+  - Login menggunakan nomor telepon WhatsApp dan kata sandi.
+  - Menyimpan sesi warga via cookie HttpOnly JWT `smartvil_citizen` dengan enkripsi bcrypt.
+  - Tautan langsung ke halaman pendaftaran `/daftar`.
+- **Relasi & Komponen**: Terhubung ke `POST /api/citizen-auth` (action: "login") dan `contexts/CitizenContext.tsx`.
+
+#### `app/(public)/daftar/page.tsx` — Pendaftaran Akun Warga Baru
+- **Terkait Apa**: Formulir registrasi warga terintegrasi dengan basis data kependudukan kelurahan.
+- **Fitur Utama**:
+  - 4 Fieldset Komprehensif: Identitas Pribadi (NIK 16 digit, Nama, Gender, Tgl Lahir, Agama, Pendidikan), Status Kependudukan (Hubungan Keluarga, Status Penduduk), Domisili & Pekerjaan (Alamat, Pekerjaan), dan Akun Login (No. WhatsApp, Kata Sandi).
+  - *Deduplikasi NIK Otomatis*: Jika NIK sudah diinput sebelumnya oleh admin di tabel `residents`, sistem otomatis menautkan akun warga ke data kependudukan yang sudah ada tanpa menduplikasi data di infografis demografi.
+  - Jika NIK belum ada, otomatis membuat entitas baru di tabel `residents` sehingga infografis demografi langsung terupdate secara real-time.
+  - *Keamanan NIK Anti-Bocor*: NIK di-hash menggunakan SHA-256 sebelum disimpan ke tabel `citizen_accounts`.
+- **Relasi & Komponen**: Terhubung ke `POST /api/citizen-auth` (action: "register") dan `contexts/CitizenContext.tsx`.
+
+#### `app/(public)/riwayat/page.tsx` — Riwayat Pengajuan Surat & Pengaduan Mandiri
+- **Terkait Apa**: Dashboard pribadi warga untuk memantau status seluruh permohonan surat dan aduan yang pernah diajukan.
+- **Fitur Utama**:
+  - Tab Navigasi: Permohonan Surat dan Pengaduan Aspirasi.
+  - Kartu Status Interaktif: Menampilkan kode tiket, jenis surat / kategori aduan, tanggal pengajuan, badge status (Menunggu Verifikasi, Diproses, Selesai, Ditolak), dan catatan resmi / tanggapan petugas kelurahan.
+  - Tombol Salin Tiket dan Tautan Buka Berkas.
+- **Relasi & Komponen**: Terhubung ke `GET /api/citizen-history` dan `contexts/CitizenContext.tsx`.
 
 #### `app/(public)/layout.tsx` — Kerangka Tata Letak Halaman Publik
 - **Terkait Apa**: Wrapper layout global yang membungkus semua halaman publik.
 - **Fitur Utama**:
-  - Menyematkan `Navbar` di bagian atas, `Footer` di bagian bawah, dan tombol melayang `Chatbot Arba` di pojok kanan bawah.
-
----
+  - Membungkus seluruh aplikasi warga dengan `CitizenProvider` untuk sinkronisasi status login warga secara reaktif.
+  - Menyematkan `Navbar` terintegrasi profil warga di bagian atas, `Footer` di bagian bawah, `Chatbot Arba`, dan `AccessibilityWidget`.
 
 ### 2.2 Layer Halaman Admin Dashboard (`app/dashboard/*`)
 
@@ -188,16 +210,18 @@ Dokumen ini adalah referensi teknis resmi mengenai arsitektur, pemisahan peran (
 - **`app/api/news/views/route.ts`**: Atomic counter untuk menambah jumlah pembaca berita dengan rate limiter agar tidak bisa di-spam.
 - **`app/api/seed/route.ts`**: Endpoint inisialisasi basis data dan data contoh awal.
 - **`app/api/notifications/route.ts`**: Agregasi notifikasi aktivitas masuk warga yang memerlukan tindakan aparatur (permohonan surat baru yang butuh verifikasi dan laporan pengaduan warga berstatus pending) dengan badge counter realtime untuk admin dashboard.
-
+- **`app/api/citizen-auth/route.ts`**: Endpoint autentikasi warga: registrasi akun baru dengan deduplikasi NIK otomatis vs tabel `residents`, login via no. HP + bcrypt, penerbitan cookie HttpOnly `smartvil_citizen`, dan logout penghapusan sesi.
+- **`app/api/citizen-history/route.ts`**: Endpoint pengambilan riwayat permohonan surat (`requests`) dan pengaduan (`complaints`) milik warga yang terotentikasi berdasarkan `citizen_id`.
+- **`app/api/demography-stats/route.ts`**: Endpoint agregasi statistik kependudukan publik (total jiwa, rasio gender, kepala keluarga, piramida usia, pendidikan, dan mata pencaharian) yang dijalankan langsung di MySQL tanpa pernah mengekspos data pribadi maupun NIK mentah.
 ---
 
 ### 2.4 Layer Core Library & Utilitas (`lib/*`, `proxy.ts`)
 
-- **`proxy.ts`**: Middleware gateway keamanan yang menyematkan HTTP Security Headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, CSP) dan memverifikasi cookie sesi pada rute `/dashboard`.
+- **`middleware.ts`**: Middleware gateway keamanan Next.js yang menyematkan HTTP Security Headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy), memproteksi rute `/dashboard` dengan cookie admin `smartvil_token`, serta memproteksi rute `/layanan`, `/pengaduan`, dan `/riwayat` dengan cookie warga `smartvil_citizen`.
+- **`lib/citizen-auth.ts`**: Utilitas otentikasi warga: enkripsi satu arah NIK menggunakan SHA-256 (`hashNik`), hashing kata sandi bcrypt, penerbitan & verifikasi token JWT warga (`signCitizenToken`, `getCitizenSession`).
+- **`contexts/CitizenContext.tsx`**: React Context penyedia status sesi warga login di seluruh komponen publik, auto-restore sesi saat refresh, serta fungsi logout instan.
 - **`lib/db.ts`**: Singleton connection pool MySQL berbasis `mysql2/promise` dengan prepared statement otomatis untuk mencegah SQL Injection.
 - **`lib/records.ts`**: Mesin pembatas tabel dan whitelist kolom untuk mencegah akses tidak sah ke database master.
-- **`lib/auth-server.ts`**: Logika verifikasi token JWT, hashing kata sandi bcrypt, dan ekstraksi identitas petugas dari cookie request.
-- **`lib/rate-limit.ts`**: Sliding-window in-memory limiter untuk mencegah brute-force login dan flood traffic pada endpoint publik.
 - **`lib/letter-template.ts`**: Parser berkas Microsoft Word (`.docx`) yang membuka arsip zip, mendeteksi placeholder XML `{{variabel}}`, dan menyuntikkan data warga ke dalam template surat.
 - **`lib/letters.ts` & `lib/letter-constants.ts`**: Katalog master jenis surat administrasi kelurahan, status alur kerja tiket, dan aturan format penomoran surat.
 - **`lib/permissions.ts`**: Matriks Role-Based Access Control (RBAC) yang memetakan modul dashboard mana saja yang dapat diakses oleh masing-masing jabatan petugas kelurahan.

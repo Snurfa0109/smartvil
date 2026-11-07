@@ -7,10 +7,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
-import { Menu, X, Search } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Menu, X, Search, User, LogOut, History, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GlobalSearchModal } from "@/components/search/global-search-modal";
+import { useCitizen } from "@/contexts/CitizenContext";
 
 const navLinks = [
   { href: "/", label: "Beranda" },
@@ -19,12 +20,16 @@ const navLinks = [
   { href: "/berita", label: "Berita" },
   { href: "/layanan", label: "Layanan Surat" },
   { href: "/pengaduan", label: "Pengaduan" },
+  { href: "/riwayat", label: "Riwayat" },
 ];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const { citizen, loading: citizenLoading, signOut } = useCitizen();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,6 +40,16 @@ export function Navbar() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -79,7 +94,7 @@ export function Navbar() {
               })}
             </div>
 
-            <div className="hidden md:flex items-center gap-3 shrink-0">
+            <div className="hidden md:flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
@@ -91,11 +106,62 @@ export function Navbar() {
                 <span>Cari di portal...</span>
               </button>
 
-              <Link href="/layanan">
-                <Button size="sm" className="text-xs font-semibold rounded-lg shadow-xs bg-[#1b365d] hover:bg-[#152a48] text-white">
-                  Ajukan Surat
-                </Button>
-              </Link>
+              {!citizenLoading && (
+                <>
+                  {citizen ? (
+                    <div className="relative" ref={profileRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-[#1b365d] flex items-center justify-center">
+                          <User className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="max-w-[100px] truncate">{citizen.nama.split(" ")[0]}</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      {isProfileOpen && (
+                        <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5 z-50">
+                          <div className="px-3.5 py-2 border-b border-slate-100">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{citizen.nama}</p>
+                            <p className="text-[11px] text-slate-500">{citizen.phone}</p>
+                          </div>
+                          <Link
+                            href="/riwayat"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                          >
+                            <History className="w-4 h-4" />
+                            Riwayat Pengajuan
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => { setIsProfileOpen(false); signOut(); }}
+                            className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 hover:bg-red-50 w-full transition-colors cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Keluar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <Link href="/masuk">
+                        <Button size="sm" variant="outline" className="text-xs font-semibold rounded-lg border-slate-300 text-slate-700 hover:bg-slate-50">
+                          Masuk
+                        </Button>
+                      </Link>
+                      <Link href="/daftar">
+                        <Button size="sm" className="text-xs font-semibold rounded-lg shadow-xs bg-[#1b365d] hover:bg-[#152a48] text-white">
+                          Daftar
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="md:hidden flex items-center gap-1.5">
@@ -141,12 +207,45 @@ export function Navbar() {
                 </Link>
               );
             })}
-            <div className="pt-2 border-t border-slate-100">
-              <Link href="/layanan" onClick={() => setIsOpen(false)}>
-                <Button className="w-full text-xs font-semibold bg-[#1b365d] text-white">
-                  Ajukan Surat Online
-                </Button>
-              </Link>
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              {!citizenLoading && (
+                <>
+                  {citizen ? (
+                    <>
+                      <div className="flex items-center gap-2.5 px-3 py-2">
+                        <div className="w-7 h-7 rounded-full bg-[#1b365d] flex items-center justify-center">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800 truncate">{citizen.nama}</p>
+                          <p className="text-[11px] text-slate-500">{citizen.phone}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setIsOpen(false); signOut(); }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Keluar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/masuk" onClick={() => setIsOpen(false)}>
+                        <Button variant="outline" className="w-full text-xs font-semibold border-slate-300">
+                          Masuk
+                        </Button>
+                      </Link>
+                      <Link href="/daftar" onClick={() => setIsOpen(false)}>
+                        <Button className="w-full text-xs font-semibold bg-[#1b365d] text-white">
+                          Daftar Akun Warga
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}

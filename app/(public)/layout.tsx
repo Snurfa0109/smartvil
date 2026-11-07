@@ -7,6 +7,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ChatWidget } from "@/components/chatbot/chat-widget";
 import { AccessibilityWidget } from "@/components/layout/accessibility-widget";
+import { CitizenProvider } from "@/contexts/CitizenContext";
 
 export default function PublicLayout({
   children,
@@ -14,7 +15,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
+    <CitizenProvider>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#1b365d] focus:text-white focus:font-bold focus:rounded-xl focus:shadow-lg focus:outline-hidden focus:ring-3 focus:ring-amber-400"
@@ -28,7 +29,7 @@ export default function PublicLayout({
       <Footer />
       <ChatWidget />
       <AccessibilityWidget />
-    </>
+    </CitizenProvider>
   );
 }
 

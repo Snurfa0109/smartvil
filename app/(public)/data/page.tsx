@@ -118,19 +118,12 @@ export default function DataPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        let residents: ResidentRecord[] = [];
+        let statsData = null;
         try {
-          const apiData = await apiList("residents");
-          if (Array.isArray(apiData) && apiData.length > 0) {
-            residents = apiData.map((row: Record<string, unknown>) => ({
-              gender: row.gender as string | undefined,
-              birthDate: row.birth_date as string | undefined,
-              occupation: row.occupation as string | undefined,
-              agama: row.agama as string | undefined,
-              education: row.education as string | undefined,
-              status: row.status as string | undefined,
-              statusKeluarga: row.status_keluarga as string | undefined,
-            }));
+          const res = await fetch("/api/demography-stats");
+          const body = await res.json().catch(() => ({}));
+          if (body.data) {
+            statsData = body.data;
           }
         } catch {
         }
@@ -150,92 +143,26 @@ export default function DataPage() {
         } catch {
         }
 
-        if (residents.length === 0) {
-          const demo = siteConfig?.demography || DEFAULT_SITE_SETTINGS.demography!;
-          setStats({
-            total: demo.total,
-            male: demo.male,
-            female: demo.female,
-            kk: demo.kk,
-            ageGroups: {
-              children: demo.ageChildren,
-              adults: demo.ageAdults,
-              seniors: demo.ageSeniors,
-            },
-            educations: [],
-            occupations: [],
-            religions: [],
-          });
+        if (statsData) {
+          setStats(statsData);
           setLoading(false);
           return;
         }
 
-        const total = residents.length;
-        let male = 0;
-        let female = 0;
-        let kkCount = 0;
-
-        const ageGroups: AgeGroups = { children: 0, adults: 0, seniors: 0 };
-        const occupationMap = new Map<string, number>();
-        const religionMap = new Map<string, number>();
-        const educationMap = new Map<string, number>();
-
-        const now = new Date();
-
-        residents.forEach((r) => {
-          if (r.gender === "Laki-laki") male += 1;
-          if (r.gender === "Perempuan") female += 1;
-
-          if (typeof r.birthDate === "string") {
-            const birth = new Date(r.birthDate);
-            if (!Number.isNaN(birth.getTime())) {
-              let age = now.getFullYear() - birth.getFullYear();
-              const m = now.getMonth() - birth.getMonth();
-              if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
-                age -= 1;
-              }
-              if (age <= 17) ageGroups.children += 1;
-              else if (age <= 59) ageGroups.adults += 1;
-              else ageGroups.seniors += 1;
-            }
-          }
-
-          if (r.occupation) {
-            const key = String(r.occupation);
-            occupationMap.set(key, (occupationMap.get(key) || 0) + 1);
-          }
-
-          const agamaKey = r.agama ? String(r.agama) : "Tidak diisi";
-          religionMap.set(agamaKey, (religionMap.get(agamaKey) || 0) + 1);
-
-          if (r.education) {
-            const key = String(r.education);
-            educationMap.set(key, (educationMap.get(key) || 0) + 1);
-          }
-
-          if (r.status === "Kepala Keluarga" || r.statusKeluarga === "Kepala Keluarga") {
-            kkCount += 1;
-          }
-        });
-
-        if (kkCount === 0 && total > 0) {
-          kkCount = Math.max(1, Math.floor(total / 3));
-        }
-
-        const mapToArray = (m: Map<string, number>): CountEntry[] =>
-          Array.from(m.entries())
-            .sort((a, b) => b[1] - a[1])
-            .map(([name, count]) => ({ name, count }));
-
+        const demo = siteConfig?.demography || DEFAULT_SITE_SETTINGS.demography!;
         setStats({
-          total,
-          male,
-          female,
-          kk: kkCount,
-          ageGroups,
-          occupations: mapToArray(occupationMap).slice(0, 6),
-          religions: mapToArray(religionMap),
-          educations: mapToArray(educationMap).slice(0, 6),
+          total: demo.total,
+          male: demo.male,
+          female: demo.female,
+          kk: demo.kk,
+          ageGroups: {
+            children: demo.ageChildren,
+            adults: demo.ageAdults,
+            seniors: demo.ageSeniors,
+          },
+          educations: [],
+          occupations: [],
+          religions: [],
         });
       } catch (error) {
         console.error("Error fetching stats:", error);

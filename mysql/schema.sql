@@ -135,3 +135,18 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   detail TEXT,
   INDEX idx_audit_timestamp (timestamp)
 );
+
+CREATE TABLE IF NOT EXISTS citizen_accounts (
+  id VARCHAR(36) PRIMARY KEY,
+  nik_hash VARCHAR(64) NOT NULL,
+  phone VARCHAR(32) NOT NULL,
+  nama VARCHAR(255) NOT NULL DEFAULT '',
+  password_hash VARCHAR(255) NOT NULL DEFAULT '',
+  resident_id VARCHAR(36) NOT NULL DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE INDEX idx_citizen_nik_hash (nik_hash),
+  UNIQUE INDEX idx_citizen_phone (phone)
+);
+
+ALTER TABLE requests ADD COLUMN citizen_id VARCHAR(36) DEFAULT '' AFTER admin_notes;
+ALTER TABLE complaints ADD COLUMN citizen_id VARCHAR(36) DEFAULT '' AFTER admin_response;

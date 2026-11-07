@@ -48,8 +48,8 @@ const MENU_ITEMS: MenuItemConfig[] = [
   { key: "data", title: "Informasi", path: "/data", icon: BarChart3 },
   { key: "layanan", title: "Layanan Surat", path: "/layanan", icon: FileText },
   { key: "pengaduan", title: "Pengaduan", path: "/pengaduan", icon: Megaphone },
+  { key: "riwayat", title: "Riwayat", path: "/riwayat", icon: FileText },
 ];
-
 const PRESET_PHOTOS: Record<BannerPages, { label: string; url: string; meaning: string }[]> = {
   beranda: [
     {
@@ -101,6 +101,13 @@ const PRESET_PHOTOS: Record<BannerPages, { label: string; url: string; meaning: 
       label: "Keterbukaan & Aspirasi Warga",
       url: "/images/banner-pengaduan.jpg",
       meaning: "Timbangan keadilan dan keterbukaan ruang penampungan saran serta pengaduan masyarakat.",
+    },
+  ],
+  riwayat: [
+    {
+      label: "Buku Catatan Administrasi Resmi",
+      url: "/images/banner-layanan.jpg",
+      meaning: "Rekam jejak tertib permohonan surat dan laporan aspirasi warga yang terdokumentasi rapi.",
     },
   ],
 };
