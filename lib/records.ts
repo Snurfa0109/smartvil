@@ -16,6 +16,7 @@ export const TABLES = [
   "agenda",
   "settings",
   "audit_logs",
+  "citizen_accounts",
 ] as const;
 
 export type TableName = (typeof TABLES)[number];
@@ -33,12 +34,13 @@ const TABLE_KEYS: Record<string, string[]> = {
   profiles: ["id", "email", "display_name", "role", "active", "department", "permissions", "last_login"],
   residents: ["id", "nik", "nama", "gender", "address", "occupation", "birth_date", "status", "status_keluarga", "status_penduduk", "agama", "education"],
   news: ["id", "title", "category", "content", "date", "image_url", "views"],
-  complaints: ["id", "ticket_code", "nama", "email", "phone", "category", "title", "message", "photo_url", "status", "admin_response"],
-  requests: ["id", "ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "status", "form_data", "template_narrative", "admin_notes"],
+  complaints: ["id", "ticket_code", "nama", "email", "phone", "category", "title", "message", "photo_url", "status", "admin_response", "citizen_id"],
+  requests: ["id", "ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "status", "form_data", "template_narrative", "admin_notes", "citizen_id"],
   letter_types: ["id", "code", "name", "description", "requirements", "template_narrative", "active", "sort_order", "template_file_url", "template_data", "template_placeholders", "custom_fields"],
   agenda: ["id", "title", "category", "category_color", "schedule", "description", "time_location", "date_start", "date_end", "time_start", "time_end", "location", "active", "sort_order"],
   settings: ["key", "value"],
   audit_logs: ["id", "uid", "email", "display_name", "role", "action", "module", "detail"],
+  citizen_accounts: ["id", "nik_hash", "phone", "nama", "password_hash", "resident_id"],
 };
 
 function selectColumns(table: string): string {

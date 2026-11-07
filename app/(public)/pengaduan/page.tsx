@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
 import { uploadImageToStorage } from "@/lib/uploadImage";
 import { PageBanner } from "@/components/layout/page-banner";
+import { useCitizen } from "@/contexts/CitizenContext";
 import { generateRandomCode } from "@/lib/utils";
 
 const complaintCategories = [
@@ -46,6 +47,7 @@ interface TrackedComplaintItem {
 
 export default function ComplaintsPage() {
   const { success, error: showError, warning } = useToast();
+  const { citizen } = useCitizen();
   const [activeTab, setActiveTab] = useState<"form" | "track">("form");
 
   const [formData, setFormData] = useState({
@@ -85,6 +87,11 @@ export default function ComplaintsPage() {
   useEffect(() => {
     document.title = "Pengaduan | Kelurahan";
   }, []);
+  useEffect(() => {
+    if (citizen) {
+      setFormData(prev => ({ ...prev, nama: citizen.nama, phone: citizen.phone }));
+    }
+  }, [citizen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -141,6 +148,7 @@ export default function ComplaintsPage() {
         photo_url: photoUrl,
         status: "pending",
         admin_response: "",
+        citizen_id: citizen?.id || "",
       };
 
       await apiInsert("complaints", payload);
@@ -534,7 +542,6 @@ export default function ComplaintsPage() {
           </div>
         </div>
       ) : (
-        /* Tracking Tab via Phone Number */
         <div className="max-w-3xl mx-auto space-y-6">
           <Card className="border-slate-200/90 shadow-xs">
             <CardHeader className="border-b border-slate-100 pb-4">

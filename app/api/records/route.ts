@@ -39,8 +39,8 @@ function redactSettingsRows(rows: Record<string, unknown>[]): Record<string, unk
 }
 
 const ANON_ALLOWED_FIELDS: Record<string, string[]> = {
-  requests: ["ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "form_data"],
-  complaints: ["ticket_code", "nama", "phone", "email", "category", "title", "message", "photo_url"],
+  requests: ["ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "form_data", "citizen_id"],
+  complaints: ["ticket_code", "nama", "phone", "email", "category", "title", "message", "photo_url", "citizen_id"],
 };
 
 const TABLE_PERMISSION: Record<string, string> = {

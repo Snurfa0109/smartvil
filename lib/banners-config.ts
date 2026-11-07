@@ -6,29 +6,21 @@
 import { getSetting, saveSetting } from "@/lib/settings-store";
 
 export interface PageBannerData {
-  enabledCustom: boolean;        // Jika true, gunakan banner event/custom ini
-  badge: string;                 // Badge atas (misal: "PORTAL RESMI PELAYANAN KELURAHAN BANJAR AGUNG")
-  title: string;                 // Judul utama banner
-  subtitle: string;              // Subjudul banner
-  imageUrl: string;              // URL gambar latar belakang simbolis tanpa orang (objek/arsitektur)
-  imageMeaning: string;          // Makna filosofis gambar tersebut
-  eventDate?: string;            // Tanggal pelaksanaan (jika mode event)
-  actionText?: string;           // Tombol utama (misal: "Lihat Layanan")
-  actionUrl?: string;            // Tautan tombol utama
-  secondaryActionText?: string;  // Tombol kedua (misal: "Pengaduan Online")
-  secondaryActionUrl?: string;   // Tautan tombol kedua
+  enabledCustom: boolean;
+  badge: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  imageMeaning: string;
+  eventDate?: string;
+  actionText?: string;
+  actionUrl?: string;
+  secondaryActionText?: string;
+  secondaryActionUrl?: string;
 }
 
-export type BannerPages = "beranda" | "profil" | "berita" | "data" | "layanan" | "pengaduan";
+export type BannerPages = "beranda" | "profil" | "berita" | "data" | "layanan" | "pengaduan" | "riwayat";
 
-/**
- * Foto-foto simbolik formal pemerintahan TANPA GAMBAR ORANG:
- * - Pengaduan: Timbangan keadilan (Scales of Justice)
- * - Layanan Surat: Dokumen resmi, pena eksekutif, dan stempel administrasi
- * - Informasi: Infografis, chart analitik digital & peta tata ruang
- * - Profil: Pilar arsitektur marmer pemerintahan yang kokoh & berintegritas
- * - Beranda: Gedung balai pemerintahan megah dan gerbang pelayanan publik
- */
 export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
   beranda: {
     enabledCustom: false,
@@ -90,6 +82,16 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
     secondaryActionText: "Cek Riwayat Aduan",
     secondaryActionUrl: "#riwayat",
   },
+  riwayat: {
+    enabledCustom: false,
+    badge: "RIWAYAT PENGAJUAN & PENGADUAN ANDA",
+    title: "Riwayat Pengajuan & Pengaduan",
+    subtitle: "Pantau status permohonan surat dan pengaduan yang telah Anda ajukan secara transparan dan real-time.",
+    imageUrl: "/images/banner-layanan.jpg",
+    imageMeaning: "Dokumen Administrasi: Melambangkan pencatatan dan pelacakan layanan publik yang tertib dan akuntabel.",
+    actionText: "Lihat Riwayat",
+    actionUrl: "#riwayat",
+  },
   berita: {
     enabledCustom: false,
     badge: "WARTA RESMI & PUBLIKASI PEMERINTAHAN",
@@ -102,9 +104,6 @@ export const DEFAULT_PAGE_BANNERS: Record<BannerPages, PageBannerData> = {
   },
 };
 
-/**
- * Mengambil konfigurasi seluruh banner dari settings store.
- */
 export async function getAllBanners(): Promise<Record<BannerPages, PageBannerData>> {
   try {
     const data = await getSetting<Partial<Record<BannerPages, Partial<PageBannerData>>>>("banners", {});
@@ -126,9 +125,6 @@ export async function getAllBanners(): Promise<Record<BannerPages, PageBannerDat
   return DEFAULT_PAGE_BANNERS;
 }
 
-/**
- * Menyimpan banner untuk halaman tertentu ke settings store.
- */
 export async function saveBanner(pageKey: BannerPages, config: Partial<PageBannerData>): Promise<void> {
   const current = await getAllBanners();
   const updated = {
