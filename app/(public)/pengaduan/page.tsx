@@ -8,7 +8,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Phone, Mail, MapPin, Upload, X, CheckCircle, Clock, ArrowRight, History, AlertCircle, ShieldCheck } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
@@ -206,8 +206,11 @@ export default function ComplaintsPage() {
     }
   };
 
+  const trackPhoneRef = useRef(trackPhone);
+  trackPhoneRef.current = trackPhone;
+
   const handleTrackWithPhone = useCallback(async (phoneNumber?: string) => {
-    const rawSearch = (phoneNumber || trackPhone).trim();
+    const rawSearch = (phoneNumber ?? trackPhoneRef.current).trim();
     if (!rawSearch) return;
     setTrackingLoading(true);
     try {
@@ -235,7 +238,7 @@ export default function ComplaintsPage() {
     } finally {
       setTrackingLoading(false);
     }
-  }, [trackPhone, showError]);
+  }, [showError]);
 
   useEffect(() => {
     const ticket = searchParams.get("ticket");

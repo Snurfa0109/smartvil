@@ -31,7 +31,7 @@ import {
   Scroll,
   Info,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
@@ -240,8 +240,11 @@ export default function ServicesPage() {
     }
   };
 
+  const trackInputRef = useRef(trackInput);
+  trackInputRef.current = trackInput;
+
   const handleTrackSearch = useCallback(async (queryParam?: string) => {
-    const rawSearch = (queryParam || trackInput).trim();
+    const rawSearch = (queryParam ?? trackInputRef.current).trim();
     if (!rawSearch) return;
     setTrackLoading(true);
     try {
@@ -263,7 +266,7 @@ export default function ServicesPage() {
     } finally {
       setTrackLoading(false);
     }
-  }, [trackInput, showError]);
+  }, [showError]);
 
   useEffect(() => {
     const ticket = searchParams.get("ticket");
