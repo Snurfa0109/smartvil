@@ -72,26 +72,28 @@ export function Navbar() {
             </Link>
 
             <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`relative px-3.5 py-2 text-sm font-semibold transition-colors ${
-                      isActive
-                        ? "text-[#1b365d]"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    {link.label}
-                    {isActive && (
-                      <span className="absolute -bottom-1.5 left-2.5 right-2.5 h-0.5 bg-amber-500 rounded-full" />
-                    )}
-                  </Link>
-                );
-              })}
+              {navLinks
+                .filter((link) => link.href !== "/riwayat" || !!citizen)
+                .map((link) => {
+                  const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`relative px-3.5 py-2 text-sm font-semibold transition-colors ${
+                        isActive
+                          ? "text-[#1b365d]"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {link.label}
+                      {isActive && (
+                        <span className="absolute -bottom-1.5 left-2.5 right-2.5 h-0.5 bg-amber-500 rounded-full" />
+                      )}
+                    </Link>
+                  );
+                })}
             </div>
 
             <div className="hidden md:flex items-center gap-2 shrink-0">
@@ -190,23 +192,25 @@ export function Navbar() {
 
         {isOpen && (
           <div id="mobile-nav-menu" className="md:hidden border-t border-border bg-white px-4 py-3 space-y-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`block px-3 py-2 rounded-lg text-sm font-medium ${
-                    isActive
-                      ? "text-primary bg-secondary font-semibold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+            {navLinks
+              .filter((link) => link.href !== "/riwayat" || !!citizen)
+              .map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-sm font-medium ${
+                      isActive
+                        ? "text-primary bg-secondary font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
             <div className="pt-2 border-t border-slate-100 space-y-2">
               {!citizenLoading && (
                 <>

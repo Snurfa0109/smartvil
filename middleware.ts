@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
 
-const CITIZEN_PROTECTED = ["/layanan", "/pengaduan", "/riwayat"];
+const CITIZEN_PROTECTED = ["/riwayat"];
 
 export function middleware(req: NextRequest) {
   const res = NextResponse.next();
