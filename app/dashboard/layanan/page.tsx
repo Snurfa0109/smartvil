@@ -181,7 +181,7 @@ export default function LayananDashboardPage() {
     fetchLetterTypes();
   }, [fetchRequests, fetchLetterTypes]);
 
-  usePolling(refreshAll, 15_000);
+  usePolling(refreshAll, 15_000, !printRequest && !isTypeModalOpen);
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     try {
@@ -1613,6 +1613,7 @@ export default function LayananDashboardPage() {
           printConfig={printConfig}
           onPrintConfigChange={setPrintConfig}
           onClose={() => setPrintRequest(null)}
+          onSaved={fetchRequests}
         />
       )}
     </div>

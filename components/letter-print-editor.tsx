@@ -28,10 +28,13 @@ import {
   Bold,
   AlignCenter,
   AlignJustify,
+  Save,
+  Check,
 } from "lucide-react";
 import type { LetterType } from "@/lib/letters";
 import type { LetterPrintConfig } from "@/components/letter-print-document";
 import LetterPrintDocument from "@/components/letter-print-document";
+import { apiUpdate } from "@/lib/api";
 import {
   buildTemplateData,
   generateFilledDocx,
@@ -136,6 +139,7 @@ interface LetterPrintEditorProps {
   printConfig: LetterPrintConfig;
   onPrintConfigChange: (cfg: LetterPrintConfig) => void;
   onClose: () => void;
+  onSaved?: () => void;
 }
 
 interface EditableRequest {
@@ -153,8 +157,13 @@ export default function LetterPrintEditor({
   printConfig,
   onPrintConfigChange,
   onClose,
+  onSaved,
 }: LetterPrintEditorProps) {
   const letterType = letterTypes.find((lt) => lt.code === (request as Record<string, string>)?.type);
+
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const isLoadedRef = useRef(false);
 
   const [editable, setEditable] = useState<EditableRequest>(() => {
     const rawFormData = Object.fromEntries(
@@ -211,7 +220,7 @@ export default function LetterPrintEditor({
   const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
   useEffect(() => {
-    if (!hasDocxTemplate) return;
+    if (!hasDocxTemplate || isLoadedRef.current) return;
     const loadNarratives = async () => {
       try {
         const src = letterType?.templateFileUrl || letterType?.templateData;
@@ -228,25 +237,44 @@ export default function LetterPrintEditor({
         const paras = extracted.map((e) => e.text);
         setNarratives(paras);
         setOriginalNarratives(paras);
-        setNarrativeStyles(extracted.map((e) => e.style));
 
-        const initialEdited = paras.map((p) => {
-          if (
-            editable.keperluan &&
-            (p.toLowerCase().includes("dipergunakan untuk") ||
-              p.toLowerCase().includes("keperluan"))
-          ) {
-            if (/[._\u2026]{3,}/.test(p)) {
-              return p.replace(/[._\u2026]{3,}/g, editable.keperluan.trim());
-            }
-            if (/dipergunakan\s+untuk\s*$/i.test(p)) {
-              return `${p.trim()} ${editable.keperluan.trim()}`;
-            }
-          }
-          return p;
-        });
+        // Pulihkan narasi dan gaya yang sudah pernah disimpan jika ada
+        const savedForm = (request?.formData as Record<string, unknown>) ?? {};
+        const savedNarratives = Array.isArray(savedForm._editedNarratives)
+          ? (savedForm._editedNarratives as string[])
+          : null;
+        const savedStyles = Array.isArray(savedForm._narrativeStyles)
+          ? (savedForm._narrativeStyles as NarrativeStyle[])
+          : null;
 
-        setEditedNarratives(initialEdited);
+        if (savedNarratives && savedNarratives.length === paras.length) {
+          setEditedNarratives(savedNarratives);
+        } else {
+          const initialEdited = paras.map((p) => {
+            if (
+              editable.keperluan &&
+              (p.toLowerCase().includes("dipergunakan untuk") ||
+                p.toLowerCase().includes("keperluan"))
+            ) {
+              if (/[._\u2026]{3,}/.test(p)) {
+                return p.replace(/[._\u2026]{3,}/g, editable.keperluan.trim());
+              }
+              if (/dipergunakan\s+untuk\s*$/i.test(p)) {
+                return `${p.trim()} ${editable.keperluan.trim()}`;
+              }
+            }
+            return p;
+          });
+          setEditedNarratives(initialEdited);
+        }
+
+        if (savedStyles && savedStyles.length === paras.length) {
+          setNarrativeStyles(savedStyles);
+        } else {
+          setNarrativeStyles(extracted.map((e) => e.style));
+        }
+
+        isLoadedRef.current = true;
       } catch {
         setNarratives([]);
         setOriginalNarratives([]);
@@ -255,7 +283,7 @@ export default function LetterPrintEditor({
       }
     };
     loadNarratives();
-  }, [hasDocxTemplate, letterType]);
+  }, [hasDocxTemplate, letterType?.templateFileUrl, letterType?.templateData]);
 
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const [previewStatus, setPreviewStatus] = useState<"idle" | "rendering" | "done" | "error">("idle");
@@ -415,6 +443,36 @@ export default function LetterPrintEditor({
     }
   }, [generateBlob, request, editable.nama, letterType]);
 
+  const handleSave = async () => {
+    const reqId = String(request?.id || "");
+    if (!reqId) return;
+    setSaving(true);
+    try {
+      const rawForm = (request?.formData as Record<string, unknown>) ?? {};
+      const updatedFormData = {
+        ...rawForm,
+        ...editable.formData,
+        _editedNarratives: editedNarratives,
+        _narrativeStyles: narrativeStyles,
+        _printConfig: printConfig,
+      };
+      await apiUpdate("requests", reqId, {
+        nama: editable.nama,
+        nik: editable.nik,
+        phone: editable.phone,
+        keperluan: editable.keperluan,
+        form_data: updatedFormData,
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      onSaved?.();
+    } catch (err) {
+      console.error("Gagal menyimpan perubahan:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -449,6 +507,26 @@ export default function LetterPrintEditor({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className={`font-semibold h-8 text-xs gap-1.5 px-3.5 shadow-sm transition-all ${
+                saveSuccess
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+              }`}
+            >
+              {saving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : saveSuccess ? (
+                <Check className="h-3.5 w-3.5 text-emerald-300" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              {saving ? "Menyimpan..." : saveSuccess ? "Tersimpan!" : "Simpan"}
+            </Button>
+
             {hasDocxTemplate && (
               <Button
                 size="sm"
@@ -757,21 +835,44 @@ export default function LetterPrintEditor({
             </div>
 
             
-            <div className="shrink-0 p-4 border-t border-slate-200 bg-white space-y-2">
-              {hasDocxTemplate && (
+            <div className="shrink-0 p-3.5 border-t border-slate-200 bg-white space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
-                  onClick={handleInternalDownloadDocx}
-                  disabled={internalDownloading}
-                  className="w-full bg-[#1b365d] hover:bg-[#152a48] h-10 gap-2 font-semibold"
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  variant="outline"
+                  className={`h-9.5 text-xs font-semibold gap-1.5 transition-all ${
+                    saveSuccess
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                      : "border-slate-300 hover:bg-slate-50 text-slate-700"
+                  }`}
                 >
-                  {internalDownloading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  {saving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : saveSuccess ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
                   ) : (
-                    <Download className="h-4 w-4" />
+                    <Save className="h-3.5 w-3.5 text-slate-600" />
                   )}
-                  {internalDownloading ? "Membuat DOCX..." : "Unduh DOCX"}
+                  {saving ? "Menyimpan..." : saveSuccess ? "Tersimpan!" : "Simpan Data"}
                 </Button>
-              )}
+
+                {hasDocxTemplate && (
+                  <Button
+                    onClick={handleInternalDownloadDocx}
+                    disabled={internalDownloading}
+                    className="bg-[#1b365d] hover:bg-[#152a48] text-white h-9.5 gap-1.5 text-xs font-semibold shadow-xs"
+                  >
+                    {internalDownloading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {internalDownloading ? "Membuat..." : "Unduh DOCX"}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
