@@ -18,6 +18,15 @@ export interface CitizenSession {
   phone: string;
   nama: string;
   residentId: string;
+  nik?: string;
+  gender?: string;
+  address?: string;
+  occupation?: string;
+  birthDate?: string;
+  statusKeluarga?: string;
+  statusPenduduk?: string;
+  agama?: string;
+  education?: string;
 }
 
 export function hashNik(nik: string): string {
@@ -59,15 +68,39 @@ export async function getCitizenSession(req: Request): Promise<CitizenSession | 
   const payload = verifyCitizenToken(token);
   if (!payload) return null;
   const rows = await query<Record<string, unknown>[]>(
-    "SELECT id, phone, nama, resident_id FROM citizen_accounts WHERE id = ? LIMIT 1",
+    `SELECT ca.id, ca.phone, ca.nama, ca.resident_id,
+            r.nik, r.gender, r.address, r.occupation, r.birth_date,
+            r.status_keluarga, r.status_penduduk, r.agama, r.education
+     FROM citizen_accounts ca
+     LEFT JOIN residents r ON ca.resident_id = r.id
+     WHERE ca.id = ? LIMIT 1`,
     [payload.cid]
   );
   const row = rows[0];
   if (!row) return null;
+
+  let formattedBirthDate = "";
+  if (row.birth_date) {
+    if (row.birth_date instanceof Date) {
+      formattedBirthDate = row.birth_date.toISOString().split("T")[0];
+    } else {
+      formattedBirthDate = String(row.birth_date).slice(0, 10);
+    }
+  }
+
   return {
     id: String(row.id),
     phone: String(row.phone),
     nama: String(row.nama),
     residentId: String(row.resident_id || ""),
+    nik: String(row.nik || ""),
+    gender: String(row.gender || ""),
+    address: String(row.address || ""),
+    occupation: String(row.occupation || ""),
+    birthDate: formattedBirthDate,
+    statusKeluarga: String(row.status_keluarga || ""),
+    statusPenduduk: String(row.status_penduduk || ""),
+    agama: String(row.agama || ""),
+    education: String(row.education || ""),
   };
 }

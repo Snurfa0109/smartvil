@@ -35,10 +35,10 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { apiInsert } from "@/lib/api";
-import { LetterType, getLetterTypes } from "@/lib/letters";
+import { LetterType, getLetterTypes, LetterCustomFieldDef } from "@/lib/letters";
 import { getSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-config";
 import { PageBanner } from "@/components/layout/page-banner";
-import { useCitizen } from "@/contexts/CitizenContext";
+import { useCitizen, CitizenProfile } from "@/contexts/CitizenContext";
 import { generateRandomCode } from "@/lib/utils";
 
 interface StoredTicket {
@@ -55,6 +55,67 @@ interface TrackedRequestItem {
   status: string;
   adminNotes?: string;
   createdAt: string;
+}
+
+function getAutoFillCustomFields(
+  fields: LetterCustomFieldDef[],
+  citizen: CitizenProfile | null
+): Record<string, string> {
+  if (!citizen) return {};
+  const data: Record<string, string> = {};
+  for (const f of fields) {
+    const k = f.key.toLowerCase();
+    const l = f.label.toLowerCase();
+    if ((k === "nik" || k.includes("nik") || l.includes("nik")) && citizen.nik) {
+      data[f.key] = citizen.nik;
+    } else if (
+      (k === "nama" || k.includes("nama") || l.includes("nama pemohon") || l.includes("nama lengkap")) &&
+      citizen.nama
+    ) {
+      data[f.key] = citizen.nama;
+    } else if (
+      (k.includes("telepon") || k.includes("hp") || k.includes("wa") || k.includes("phone")) &&
+      citizen.phone
+    ) {
+      data[f.key] = citizen.phone;
+    } else if (
+      (k.includes("alamat") || k.includes("domisili") || l.includes("alamat")) &&
+      citizen.address
+    ) {
+      data[f.key] = citizen.address;
+    } else if (
+      (k.includes("pekerjaan") || l.includes("pekerjaan") || k.includes("profesi")) &&
+      citizen.occupation
+    ) {
+      data[f.key] = citizen.occupation;
+    } else if (
+      (k.includes("kelamin") || k.includes("gender") || l.includes("jenis kelamin")) &&
+      citizen.gender
+    ) {
+      data[f.key] = citizen.gender;
+    } else if (
+      (k.includes("agama") || l.includes("agama")) &&
+      citizen.agama
+    ) {
+      data[f.key] = citizen.agama;
+    } else if (
+      (k.includes("tanggal_lahir") || k.includes("tgl_lahir") || l.includes("tanggal lahir") || l.includes("tgl lahir")) &&
+      citizen.birthDate
+    ) {
+      data[f.key] = citizen.birthDate;
+    } else if (
+      (k.includes("status_kawin") || k.includes("status_perkawinan") || l.includes("status perkawinan") || k.includes("status_keluarga")) &&
+      citizen.statusKeluarga
+    ) {
+      data[f.key] = citizen.statusKeluarga;
+    } else if (
+      (k.includes("pendidikan") || l.includes("pendidikan")) &&
+      citizen.education
+    ) {
+      data[f.key] = citizen.education;
+    }
+  }
+  return data;
 }
 
 function ServicesContent() {
@@ -101,9 +162,18 @@ function ServicesContent() {
   }, []);
   useEffect(() => {
     if (citizen) {
-      setFormData(prev => ({ ...prev, nama: citizen.nama, phone: citizen.phone }));
+      setFormData((prev) => ({
+        ...prev,
+        nama: citizen.nama || prev.nama,
+        phone: citizen.phone || prev.phone,
+        nik: citizen.nik || prev.nik,
+      }));
+      if (activeLetterObj?.customFields) {
+        const autofill = getAutoFillCustomFields(activeLetterObj.customFields, citizen);
+        setCustomFormData((prev) => ({ ...autofill, ...prev }));
+      }
     }
-  }, [citizen]);
+  }, [citizen, activeLetterObj]);
   useEffect(() => {
     document.title = "Layanan Surat | Kelurahan";
   }, []);
@@ -229,7 +299,12 @@ function ServicesContent() {
         }),
       });
 
-      setFormData({ nik: "", nama: "", keperluan: "", phone: "" });
+      setFormData({
+        nik: citizen?.nik || "",
+        nama: citizen?.nama || "",
+        keperluan: "",
+        phone: citizen?.phone || "",
+      });
       setCustomFormData({});
       setSelectedLetter(null);
     } catch (error) {
@@ -549,7 +624,10 @@ function ServicesContent() {
                             return;
                           }
                           setSelectedLetter(letterKey);
-                          setCustomFormData({});
+                          const targetLetter = letterTypesList.find(
+                            (l) => (l.id || l.code) === letterKey || l.code === letterKey
+                          );
+                          setCustomFormData(getAutoFillCustomFields(targetLetter?.customFields || [], citizen));
                         }}
                         className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer group border ${
                           isSelected

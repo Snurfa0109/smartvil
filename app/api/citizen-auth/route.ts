@@ -119,7 +119,21 @@ async function handleRegister(body: Record<string, unknown>, proto: string) {
   const token = signCitizenToken({ cid: citizenId, phone });
   const res = NextResponse.json({
     ok: true,
-    citizen: { id: citizenId, phone, nama, residentId },
+    citizen: {
+      id: citizenId,
+      phone,
+      nama,
+      residentId,
+      nik,
+      gender,
+      address,
+      occupation,
+      birthDate,
+      statusKeluarga,
+      statusPenduduk,
+      agama,
+      education,
+    },
   });
   setCitizenCookie(res, token, proto);
   return res;
@@ -134,7 +148,12 @@ async function handleLogin(body: Record<string, unknown>, proto: string) {
   }
 
   const rows = await query<Record<string, unknown>[]>(
-    "SELECT id, phone, nama, password_hash, resident_id FROM citizen_accounts WHERE phone = ? LIMIT 1",
+    `SELECT ca.id, ca.phone, ca.nama, ca.password_hash, ca.resident_id,
+            r.nik, r.gender, r.address, r.occupation, r.birth_date,
+            r.status_keluarga, r.status_penduduk, r.agama, r.education
+     FROM citizen_accounts ca
+     LEFT JOIN residents r ON ca.resident_id = r.id
+     WHERE ca.phone = ? LIMIT 1`,
     [phone]
   );
   const row = rows[0];
@@ -147,10 +166,33 @@ async function handleLogin(body: Record<string, unknown>, proto: string) {
     return NextResponse.json({ error: "Nomor HP atau kata sandi tidak sesuai." }, { status: 401 });
   }
 
+  let formattedBirthDate = "";
+  if (row.birth_date) {
+    if (row.birth_date instanceof Date) {
+      formattedBirthDate = row.birth_date.toISOString().split("T")[0];
+    } else {
+      formattedBirthDate = String(row.birth_date).slice(0, 10);
+    }
+  }
+
   const token = signCitizenToken({ cid: String(row.id), phone: String(row.phone) });
   const res = NextResponse.json({
     ok: true,
-    citizen: { id: String(row.id), phone: String(row.phone), nama: String(row.nama), residentId: String(row.resident_id || "") },
+    citizen: {
+      id: String(row.id),
+      phone: String(row.phone),
+      nama: String(row.nama),
+      residentId: String(row.resident_id || ""),
+      nik: String(row.nik || ""),
+      gender: String(row.gender || ""),
+      address: String(row.address || ""),
+      occupation: String(row.occupation || ""),
+      birthDate: formattedBirthDate,
+      statusKeluarga: String(row.status_keluarga || ""),
+      statusPenduduk: String(row.status_penduduk || ""),
+      agama: String(row.agama || ""),
+      education: String(row.education || ""),
+    },
   });
   setCitizenCookie(res, token, proto);
   return res;

@@ -13,6 +13,15 @@ export interface CitizenProfile {
   phone: string;
   nama: string;
   residentId: string;
+  nik?: string;
+  gender?: string;
+  address?: string;
+  occupation?: string;
+  birthDate?: string;
+  statusKeluarga?: string;
+  statusPenduduk?: string;
+  agama?: string;
+  education?: string;
 }
 
 interface CitizenContextType {
