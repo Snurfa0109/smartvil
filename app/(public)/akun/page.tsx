@@ -188,12 +188,10 @@ export default function CitizenAccountPage() {
   return (
     <div className="min-h-screen bg-slate-50/70 pb-16">
       <PageBanner
-        title="Profil Akun Warga"
-        subtitle="Kelola identitas kependudukan dan informasi akun Anda untuk kemudahan pelayanan surat otomatis."
-        breadcrumbs={[
-          { label: "Beranda", href: "/" },
-          { label: "Profil Warga", href: "/akun" },
-        ]}
+        pageKey="riwayat"
+        overrideBadge="PORTAL WARGA"
+        overrideTitle="Profil Akun Warga"
+        overrideSubtitle="Kelola identitas kependudukan dan informasi akun Anda untuk kemudahan pelayanan surat otomatis."
       />
 
       <div className="max-w-4xl mx-auto px-4 -mt-8 relative z-10">

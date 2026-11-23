@@ -35,27 +35,37 @@ export function PageBanner({
   sideContent,
   children,
 }: PageBannerProps) {
-  const [banner, setBanner] = useState<PageBannerData>(DEFAULT_PAGE_BANNERS[pageKey]);
+  const fallback = DEFAULT_PAGE_BANNERS[pageKey] || DEFAULT_PAGE_BANNERS.beranda || {
+    enabledCustom: false,
+    badge: "PORTAL KELURAHAN",
+    title: "Kelurahan Banjar Agung",
+    subtitle: "",
+    imageUrl: "/images/banner-beranda-bogeg.jpg",
+    imageMeaning: "",
+  };
+  const [banner, setBanner] = useState<PageBannerData>(fallback);
 
   useEffect(() => {
     let isMounted = true;
-    getAllBanners()
-      .then((configs) => {
-        if (isMounted && configs[pageKey]) {
-          setBanner(configs[pageKey]);
-        }
-      })
-      .catch((err) => console.error("Banner fetch error:", err));
+    if (pageKey) {
+      getAllBanners()
+        .then((configs) => {
+          if (isMounted && configs[pageKey]) {
+            setBanner(configs[pageKey]);
+          }
+        })
+        .catch((err) => console.error("Banner fetch error:", err));
+    }
 
     return () => {
       isMounted = false;
     };
   }, [pageKey]);
 
-  const activeTitle = overrideTitle || banner.title;
-  const activeSubtitle = overrideSubtitle || banner.subtitle;
-  const activeBadge = overrideBadge || banner.badge;
-  const isCustomEvent = banner.enabledCustom;
+  const activeTitle = overrideTitle || banner?.title || "";
+  const activeSubtitle = overrideSubtitle || banner?.subtitle || "";
+  const activeBadge = overrideBadge || banner?.badge || "";
+  const isCustomEvent = Boolean(banner?.enabledCustom);
 
   return (
     <div className="relative w-full min-h-[380px] md:min-h-[430px] bg-[#0B1B2B] text-white overflow-hidden flex items-center border-b border-slate-800">
