@@ -178,7 +178,12 @@ export async function smartTemplateFromStaticDocx(
         injected.push({ label: "NIP Pejabat", key });
         return replaceAllRuns(paraXml, rprTag, `NIP. {{${key}}}`);
       }
-      if (/^[A-Z][A-Z\s.,]+$/.test(trimmed) && trimmed.length >= 5 && trimmed.length < 40
+      if (/^(an\.\s*|a\.n\.\s*|sekretaris|lurah|kepala|camat|plt|plh|pj|ketua|pejabat)/i.test(trimmed) && trimmed.length < 60) {
+        const key = uniqueKey("jabatan_pejabat");
+        injected.push({ label: "Jabatan Pejabat", key });
+        return replaceAllRuns(paraXml, rprTag, `{{${key}}}`);
+      }
+      if (/^[A-Z][A-Za-z\s.,]+$/.test(trimmed) && trimmed.length >= 4 && trimmed.length < 50
           && !/^(AN\.|A\.N\.|LURAH|CAMAT|KEPALA|SEKRETARIS|PLT|PLH|MENGETAHUI|DIKETAHUI|HORMAT|TEMBUSAN)/i.test(trimmed)) {
         const key = uniqueKey("nama_pejabat");
         injected.push({ label: "Nama Pejabat", key });
@@ -509,41 +514,112 @@ function patchSignerZone(zip: PizZip, data: Record<string, string>) {
     return runs.join("");
   });
 
-  const tanggal = data.tanggal_surat || data.tanggalSurat || data.tanggal || "";
-  const nipPejabat = data.nip_pejabat || "";
-  const namaPejabat = data.nama_pejabat || "";
+  const tanggal = (data.tanggal_surat || data.tanggalSurat || data.tanggal || "").trim();
+  const nipPejabat = (data.nip_pejabat || "").trim();
+  const namaPejabat = (data.nama_pejabat || "").trim();
+  const jabatanPejabat = (data.jabatan_pejabat || "").trim();
+
+  const startIndex = Math.floor(texts.length * 0.4);
+
+  // 1. Cari NIP Index
+  let nipIdx = -1;
+  for (let i = texts.length - 1; i >= startIndex; i--) {
+    if (/^nip[\s.:]/i.test(texts[i].trim())) {
+      nipIdx = i;
+      break;
+    }
+  }
+
+  // 2. Cari Nama Pejabat Index (baris teks sebelum NIP)
+  let namaIdx = -1;
+  if (nipIdx !== -1) {
+    for (let i = nipIdx - 1; i >= startIndex; i--) {
+      if (texts[i].trim().length > 0) {
+        namaIdx = i;
+        break;
+      }
+    }
+  } else {
+    for (let i = texts.length - 1; i >= startIndex; i--) {
+      const t = texts[i].trim();
+      if (
+        (/^[A-Z][A-Za-z\s.,]+$/.test(t) && t.length >= 4 && t.length <= 50) ||
+        /^[._\u2026\s]{4,}$/.test(t) ||
+        /^\(.*\)$/.test(t)
+      ) {
+        if (!/^(an\.|a\.n\.|lurah|camat|kepala|sekretaris|plt|plh|pj|ketua|pejabat)/i.test(t)) {
+          namaIdx = i;
+          break;
+        }
+      }
+    }
+  }
+
+  // 3. Cari Jabatan Pejabat Index (sebelum nama dan di atas spasi tanda tangan)
+  let jabatanIdx = -1;
+  const searchUpper = namaIdx !== -1 ? namaIdx - 1 : texts.length - 1;
+  for (let i = searchUpper; i >= startIndex; i--) {
+    const t = texts[i].trim();
+    if (/^(an\.\s*|a\.n\.\s*|sekretaris|lurah|kepala|camat|plt|plh|pj|ketua|pejabat)/i.test(t)) {
+      jabatanIdx = i;
+      break;
+    }
+  }
+
+  // 4. Cari Tanggal Surat Index
+  let tanggalIdx = -1;
+  for (let i = startIndex; i < texts.length; i++) {
+    const t = texts[i].trim();
+    if (/^[A-Za-z\s]+,\s*(\d|\{\{|[._\u2026])/i.test(t)) {
+      tanggalIdx = i;
+      break;
+    }
+  }
 
   let changed = false;
 
-  for (let i = 0; i < texts.length; i++) {
-    const t = texts[i].trim();
-    if (!t) continue;
-
-    if (tanggal && /^[A-Za-z]+\s*,\s*[._\u2026\s]*$/i.test(t)) {
-      const commaIdx = t.indexOf(",");
-      const cityName = t.slice(0, commaIdx).trim();
-      const newText = `${cityName}, ${tanggal}`;
-      const patched = patchParaText(paras[i], newText);
-      if (patched !== paras[i]) {
-        docXml = docXml.replace(paras[i], patched);
-        changed = true;
-      }
+  // Terapkan Tanggal Surat
+  if (tanggalIdx !== -1 && tanggal) {
+    const t = texts[tanggalIdx].trim();
+    const commaIdx = t.indexOf(",");
+    const cityName = commaIdx !== -1 ? t.slice(0, commaIdx).trim() : "Banjaragung";
+    const newDateText = tanggal.toLowerCase().startsWith(cityName.toLowerCase())
+      ? tanggal
+      : `${cityName}, ${tanggal}`;
+    const updated = updateSignerParaContent(paras[tanggalIdx], newDateText);
+    if (updated !== paras[tanggalIdx]) {
+      docXml = docXml.replace(paras[tanggalIdx], updated);
+      changed = true;
     }
+  }
 
-    if (nipPejabat && /^nip[\s.:]/i.test(t) && /[._\u2026]{3,}/.test(t)) {
-      const patched = patchParaText(paras[i], `NIP. ${nipPejabat}`);
-      if (patched !== paras[i]) {
-        docXml = docXml.replace(paras[i], patched);
-        changed = true;
-      }
+  // Terapkan Jabatan Pejabat
+  if (jabatanIdx !== -1 && jabatanPejabat) {
+    const updated = updateSignerParaContent(paras[jabatanIdx], jabatanPejabat);
+    if (updated !== paras[jabatanIdx]) {
+      docXml = docXml.replace(paras[jabatanIdx], updated);
+      changed = true;
     }
+  }
 
-    if (namaPejabat && /^[._\u2026\s]{4,}$/.test(t.replace(/\s/g, "")) && i > texts.length * 0.6) {
-      const patched = patchParaText(paras[i], namaPejabat);
-      if (patched !== paras[i]) {
-        docXml = docXml.replace(paras[i], patched);
-        changed = true;
-      }
+  // Terapkan Nama Pejabat (pastikan tetap bold dan bergaris bawah)
+  if (namaIdx !== -1 && namaPejabat) {
+    const updated = updateSignerParaContent(paras[namaIdx], namaPejabat, true);
+    if (updated !== paras[namaIdx]) {
+      docXml = docXml.replace(paras[namaIdx], updated);
+      changed = true;
+    }
+  }
+
+  // Terapkan NIP Pejabat
+  if (nipIdx !== -1 && nipPejabat) {
+    const formattedNip = nipPejabat.toUpperCase().startsWith("NIP")
+      ? nipPejabat
+      : `NIP. ${nipPejabat}`;
+    const updated = updateSignerParaContent(paras[nipIdx], formattedNip);
+    if (updated !== paras[nipIdx]) {
+      docXml = docXml.replace(paras[nipIdx], updated);
+      changed = true;
     }
   }
 
@@ -552,17 +628,58 @@ function patchSignerZone(zip: PizZip, data: Record<string, string>) {
   }
 }
 
-function patchParaText(paraXml: string, newText: string): string {
-  const runs = [...paraXml.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)];
-  if (runs.length === 0) return paraXml;
-  let firstDone = false;
-  return paraXml.replace(/<w:t([^>]*)>[^<]*<\/w:t>/g, (_m, attrs) => {
-    if (!firstDone) {
-      firstDone = true;
-      return `<w:t${attrs}>${escapeXml(newText)}</w:t>`;
+function updateSignerParaContent(paraXml: string, newContent: string, ensureUnderline = false): string {
+  const runMatches = [...paraXml.matchAll(/<w:r\b[\s\S]*?<\/w:r>/g)];
+  if (runMatches.length === 0) {
+    const uTag = ensureUnderline ? '<w:u w:val="single"/>' : "";
+    return paraXml.replace(
+      /<\/w:p>\s*$/,
+      `<w:r><w:rPr>${TNR_FONTS}<w:b/><w:bCs/>${uTag}</w:rPr><w:t xml:space="preserve">${escapeXml(newContent)}</w:t></w:r></w:p>`
+    );
+  }
+
+  let targetRunIdx = -1;
+  let leadingSpaces = "";
+
+  for (let i = 0; i < runMatches.length; i++) {
+    const tMatch = runMatches[i][0].match(/<w:t[^>]*>([^<]*?)<\/w:t>/);
+    if (tMatch && tMatch[1].trim().length > 0) {
+      targetRunIdx = i;
+      const m = tMatch[1].match(/^(\s*)/);
+      leadingSpaces = m ? m[1] : "";
+      break;
     }
-    return `<w:t${attrs}></w:t>`;
-  });
+  }
+
+  if (targetRunIdx === -1) targetRunIdx = runMatches.length - 1;
+
+  let result = paraXml;
+  for (let i = 0; i < runMatches.length; i++) {
+    const runXml = runMatches[i][0];
+    if (i === targetRunIdx) {
+      let replacedRun = runXml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/, (_m, attrs) => {
+        const cleanAttrs = attrs.replace(/\s*xml:space="[^"]*"/g, "");
+        return `<w:t${cleanAttrs} xml:space="preserve">${leadingSpaces}${escapeXml(newContent)}</w:t>`;
+      });
+      if (ensureUnderline) {
+        if (replacedRun.includes("<w:rPr>")) {
+          if (!replacedRun.includes("<w:u")) {
+            replacedRun = replacedRun.replace("</w:rPr>", '<w:u w:val="single"/></w:rPr>');
+          }
+          if (!replacedRun.includes("<w:b")) {
+            replacedRun = replacedRun.replace("</w:rPr>", '<w:b/><w:bCs/></w:rPr>');
+          }
+        } else {
+          replacedRun = replacedRun.replace("<w:r>", `<w:r><w:rPr><w:b/><w:bCs/><w:u w:val="single"/></w:rPr>`);
+        }
+      }
+      result = result.replace(runXml, replacedRun);
+    } else if (i > targetRunIdx) {
+      const clearedRun = runXml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/g, "<w:t$1></w:t>");
+      result = result.replace(runXml, clearedRun);
+    }
+  }
+  return result;
 }
 
 export function blobToDataUrl(blob: Blob): Promise<string> {
