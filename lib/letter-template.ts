@@ -590,10 +590,15 @@ export function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-export function extractNarrativesFromDocx(buf: ArrayBuffer): string[] {
+export function extractNarrativesWithStylesFromDocx(buf: ArrayBuffer): { text: string; style: NarrativeStyle }[] {
   const zip = new PizZip(buf);
   const docXml = zip.file("word/document.xml")?.asText() ?? "";
-  const texts = paragraphTexts(docXml);
+  const paras = docXml.match(/<w:p\b[\s\S]*?<\/w:p>/g) || [];
+
+  const texts = paras.map((pa) => {
+    const runs = [...pa.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)].map((x) => x[1]);
+    return runs.join("");
+  });
 
   const SIGNER_KEYS = new Set(["tanggal_surat", "tanggal", "nama_pejabat", "jabatan_pejabat", "nip_pejabat"]);
 
@@ -626,18 +631,39 @@ export function extractNarrativesFromDocx(buf: ArrayBuffer): string[] {
     break;
   }
 
-  const narratives: string[] = [];
+  const results: { text: string; style: NarrativeStyle }[] = [];
   for (let i = lastFieldIdx + 1; i < narrativeEnd; i++) {
     const t = texts[i].trim();
-    if (t.length > 5 && !isSignerLine(t)) narratives.push(t);
+    if (t.length > 5 && !isSignerLine(t)) {
+      const paXml = paras[i];
+      const isCenter = /<w:jc\b[^>]*w:val="center"/i.test(paXml);
+      const isBold = /<w:b\b/i.test(paXml) && !/<w:b\b[^>]*w:val="(0|false|none)"/i.test(paXml);
+      results.push({
+        text: t,
+        style: {
+          isBold,
+          align: isCenter ? "center" : "justify",
+        },
+      });
+    }
   }
-  return narratives;
+  return results;
+}
+
+export function extractNarrativesFromDocx(buf: ArrayBuffer): string[] {
+  return extractNarrativesWithStylesFromDocx(buf).map((n) => n.text);
+}
+
+export interface NarrativeStyle {
+  isBold?: boolean;
+  align?: "left" | "center" | "justify" | "right";
 }
 
 export function replaceNarrativesInDocx(
   buf: ArrayBuffer,
   originalNarratives: string[],
-  editedNarratives: string[]
+  editedNarratives: string[],
+  narrativeStyles?: NarrativeStyle[]
 ): ArrayBuffer {
   if (originalNarratives.length === 0) return buf;
   const zip = new PizZip(buf);
@@ -646,7 +672,9 @@ export function replaceNarrativesInDocx(
   for (let i = 0; i < originalNarratives.length; i++) {
     const orig = originalNarratives[i];
     const edited = editedNarratives[i];
-    if (orig === edited || edited === undefined) continue;
+    const style = narrativeStyles?.[i];
+    if (orig === undefined || edited === undefined) continue;
+    if (orig === edited && !style) continue;
 
     const paraRe = new RegExp(`(<w:p\\b[\\s\\S]*?</w:p>)`, "g");
     let match: RegExpExecArray | null;
@@ -655,13 +683,67 @@ export function replaceNarrativesInDocx(
       const runs = [...paraXml.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)].map((x) => x[1]);
       const paraText = runs.join("").trim();
       if (paraText === orig) {
+        // Alignment
+        let pprTag = "";
         const pprMatch = paraXml.match(/<w:pPr\b[\s\S]*?<\/w:pPr>/);
-        const pprTag = pprMatch ? pprMatch[0] : "";
+        if (pprMatch) {
+          pprTag = pprMatch[0];
+          if (style?.align) {
+            const jcVal = style.align === "center" ? "center" : style.align === "justify" ? "both" : style.align;
+            if (pprTag.includes("<w:jc")) {
+              pprTag = pprTag.replace(/<w:jc\b[^>]*\/>/, `<w:jc w:val="${jcVal}"/>`);
+            } else {
+              pprTag = pprTag.replace("</w:pPr>", `<w:jc w:val="${jcVal}"/></w:pPr>`);
+            }
+            if (style.align === "center") {
+              // Hapus indentasi firstLine agar benar-benar berada di tengah
+              pprTag = pprTag.replace(/<w:ind\b[^>]*\/>/g, "");
+            }
+          }
+        } else if (style?.align) {
+          const jcVal = style.align === "center" ? "center" : style.align === "justify" ? "both" : style.align;
+          pprTag = `<w:pPr><w:jc w:val="${jcVal}"/></w:pPr>`;
+        }
+
+        // Run properties (Font, Size, Bold)
         const rprMatch = paraXml.match(/<w:r\b[^>]*>\s*(<w:rPr\b[\s\S]*?<\/w:rPr>)/);
-        const rprTag = rprMatch ? rprMatch[1] : "";
+        let rprTag = rprMatch ? rprMatch[1] : "";
+
+        if (!rprTag) {
+          rprTag = `<w:rPr>${TNR_FONTS}<w:sz w:val="24"/><w:szCs w:val="24"/>${style?.isBold ? "<w:b/><w:bCs/>" : ""}</w:rPr>`;
+        } else {
+          if (style?.isBold) {
+            if (!rprTag.includes("<w:b/>") && !rprTag.includes("<w:b ")) {
+              rprTag = rprTag.replace("</w:rPr>", "<w:b/><w:bCs/></w:rPr>");
+            }
+          } else if (style && style.isBold === false) {
+            rprTag = rprTag.replace(/<w:b\b[^>]*\/>/g, "").replace(/<w:bCs\b[^>]*\/>/g, "");
+          }
+        }
+
         const openP = paraXml.match(/^<w:p\b[^>]*>/)?.[0] || "<w:p>";
-        const newRun = `<w:r>${rprTag}<w:t xml:space="preserve">${escapeXml(edited)}</w:t></w:r>`;
-        const rebuilt = `${openP}${pprTag}${newRun}</w:p>`;
+        
+        let runsXml = "";
+        if (edited.includes("**")) {
+          const parts = edited.split(/(\*\*.*?\*\*)/g);
+          for (const part of parts) {
+            if (!part) continue;
+            if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+              const innerText = part.slice(2, -2);
+              let boldRpr = rprTag;
+              if (!boldRpr.includes("<w:b")) {
+                boldRpr = boldRpr ? boldRpr.replace("</w:rPr>", "<w:b/><w:bCs/></w:rPr>") : `<w:rPr>${TNR_FONTS}<w:sz w:val="24"/><w:szCs w:val="24"/><w:b/><w:bCs/></w:rPr>`;
+              }
+              runsXml += `<w:r>${boldRpr}<w:t xml:space="preserve">${escapeXml(innerText)}</w:t></w:r>`;
+            } else {
+              runsXml += `<w:r>${rprTag}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r>`;
+            }
+          }
+        } else {
+          runsXml = `<w:r>${rprTag}<w:t xml:space="preserve">${escapeXml(edited)}</w:t></w:r>`;
+        }
+
+        const rebuilt = `${openP}${pprTag}${runsXml}</w:p>`;
         docXml = docXml.replace(paraXml, rebuilt);
         break;
       }

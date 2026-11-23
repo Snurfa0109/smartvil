@@ -25,11 +25,23 @@ import {
   ChevronUp,
   Loader2,
   AlertTriangle,
+  Bold,
+  AlignCenter,
+  AlignJustify,
 } from "lucide-react";
 import type { LetterType } from "@/lib/letters";
 import type { LetterPrintConfig } from "@/components/letter-print-document";
 import LetterPrintDocument from "@/components/letter-print-document";
-import { buildTemplateData, generateFilledDocx, dataUrlToBuffer, extractNarrativesFromDocx, replaceNarrativesInDocx, downloadBlob } from "@/lib/letter-template";
+import {
+  buildTemplateData,
+  generateFilledDocx,
+  dataUrlToBuffer,
+  extractNarrativesFromDocx,
+  extractNarrativesWithStylesFromDocx,
+  replaceNarrativesInDocx,
+  downloadBlob,
+  type NarrativeStyle,
+} from "@/lib/letter-template";
 import { ADMIN_ONLY_FIELDS } from "@/lib/letter-constants";
 import { DOCX_PREVIEW_CSS } from "@/lib/docx-preview-styles";
 import styles from "@/app/letter-print.module.css";
@@ -195,6 +207,8 @@ export default function LetterPrintEditor({
   const [narratives, setNarratives] = useState<string[]>([]);
   const [originalNarratives, setOriginalNarratives] = useState<string[]>([]);
   const [editedNarratives, setEditedNarratives] = useState<string[]>([]);
+  const [narrativeStyles, setNarrativeStyles] = useState<NarrativeStyle[]>([]);
+  const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
   useEffect(() => {
     if (!hasDocxTemplate) return;
@@ -210,9 +224,11 @@ export default function LetterPrintEditor({
           if (!res.ok) return;
           buf = await res.arrayBuffer();
         }
-        const paras = extractNarrativesFromDocx(buf);
+        const extracted = extractNarrativesWithStylesFromDocx(buf);
+        const paras = extracted.map((e) => e.text);
         setNarratives(paras);
         setOriginalNarratives(paras);
+        setNarrativeStyles(extracted.map((e) => e.style));
 
         const initialEdited = paras.map((p) => {
           if (
@@ -235,6 +251,7 @@ export default function LetterPrintEditor({
         setNarratives([]);
         setOriginalNarratives([]);
         setEditedNarratives([]);
+        setNarrativeStyles([]);
       }
     };
     loadNarratives();
@@ -257,11 +274,48 @@ export default function LetterPrintEditor({
     const buf = await getTemplateBuffer();
     if (!buf) return null;
     const patched = originalNarratives.length > 0
-      ? replaceNarrativesInDocx(buf, originalNarratives, editedNarratives)
+      ? replaceNarrativesInDocx(buf, originalNarratives, editedNarratives, narrativeStyles)
       : buf;
     const data = buildTemplateData(mergedRequest, printConfig);
     return generateFilledDocx(patched, data);
-  }, [getTemplateBuffer, mergedRequest, printConfig, originalNarratives, editedNarratives]);
+  }, [getTemplateBuffer, mergedRequest, printConfig, originalNarratives, editedNarratives, narrativeStyles]);
+
+  const handleToggleBold = (index: number) => {
+    const textarea = textareaRefs.current[index];
+    if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentText = editedNarratives[index] || "";
+      const selected = currentText.substring(start, end);
+      let newText = "";
+      if (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4) {
+        newText = currentText.substring(0, start) + selected.slice(2, -2) + currentText.substring(end);
+      } else {
+        newText = currentText.substring(0, start) + `**${selected}**` + currentText.substring(end);
+      }
+      const updated = [...editedNarratives];
+      updated[index] = newText;
+      setEditedNarratives(updated);
+      return;
+    }
+
+    setNarrativeStyles((prev) => {
+      const next = [...prev];
+      const cur = next[index] || { isBold: false, align: "justify" };
+      next[index] = { ...cur, isBold: !cur.isBold };
+      return next;
+    });
+  };
+
+  const handleToggleAlign = (index: number, targetAlign: "center" | "justify") => {
+    setNarrativeStyles((prev) => {
+      const next = [...prev];
+      const cur = next[index] || { isBold: false, align: "justify" };
+      const newAlign = cur.align === targetAlign && targetAlign === "center" ? "justify" : targetAlign;
+      next[index] = { ...cur, align: newAlign };
+      return next;
+    });
+  };
 
   const renderDocxPreview = useCallback(async () => {
     if (!hasDocxTemplate) return;
@@ -522,21 +576,94 @@ export default function LetterPrintEditor({
                     open={openSections["narasi"]}
                     onToggle={() => toggleSection("narasi")}
                   >
-                    <p className="text-[10px] text-slate-500 mb-2">Paragraf narasi dari template. Anda bisa mengedit teks di bawah ini sebelum mencetak surat.</p>
-                    {editedNarratives.map((text, i) => (
-                      <div key={i} className="mb-2">
-                        <Label className="text-[10px] text-slate-400 mb-1">Paragraf {i + 1}</Label>
-                        <Textarea
-                          value={text}
-                          onChange={(e) => {
-                            const updated = [...editedNarratives];
-                            updated[i] = e.target.value;
-                            setEditedNarratives(updated);
-                          }}
-                          className="min-h-[72px] resize-none text-xs leading-relaxed"
-                        />
-                      </div>
-                    ))}
+                    <p className="text-[10px] text-slate-500 mb-2.5">
+                      Paragraf narasi dari template. Anda dapat mengedit teks serta mengatur gaya <strong>Tebal (Bold)</strong> dan <strong>Rata Tengah (Center)</strong> sesuka hati sebelum mencetak.
+                    </p>
+                    <div className="space-y-3">
+                      {editedNarratives.map((text, i) => {
+                        const style = narrativeStyles[i] || { isBold: false, align: "justify" };
+                        const isCenter = style.align === "center";
+                        const isBold = !!style.isBold;
+
+                        return (
+                          <div key={i} className="p-2.5 rounded-lg border border-slate-200 bg-white shadow-2xs space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-[11px] font-semibold text-slate-700">
+                                Paragraf {i + 1}
+                              </Label>
+                              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleBold(i)}
+                                  title={isBold ? "Hapus Tebal (Normal)" : "Jadikan Tebal (Bold)"}
+                                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                                    isBold
+                                      ? "bg-[#1b365d] text-white shadow-xs"
+                                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/80"
+                                  }`}
+                                >
+                                  <Bold className="w-3 h-3 stroke-[2.5]" />
+                                  <span>Tebal</span>
+                                </button>
+
+                                <div className="w-px h-3 bg-slate-300" />
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAlign(i, "center")}
+                                  title={isCenter ? "Kembalikan Rata Kiri/Kanan" : "Rata Tengah (Center)"}
+                                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                                    isCenter
+                                      ? "bg-[#1b365d] text-white shadow-xs"
+                                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/80"
+                                  }`}
+                                >
+                                  <AlignCenter className="w-3 h-3 stroke-[2.5]" />
+                                  <span>Center</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAlign(i, "justify")}
+                                  title="Rata Kiri / Kanan (Justify)"
+                                  className={`flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold transition-all ${
+                                    !isCenter
+                                      ? "bg-slate-200 text-slate-800"
+                                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/80"
+                                  }`}
+                                >
+                                  <AlignJustify className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <Textarea
+                              ref={(el) => {
+                                textareaRefs.current[i] = el;
+                              }}
+                              value={text}
+                              onChange={(e) => {
+                                const updated = [...editedNarratives];
+                                updated[i] = e.target.value;
+                                setEditedNarratives(updated);
+                              }}
+                              className={`min-h-[72px] resize-none text-xs leading-relaxed transition-all ${
+                                isBold ? "font-bold text-slate-900" : "font-normal text-slate-800"
+                              } ${
+                                isCenter ? "text-center" : "text-left"
+                              }`}
+                            />
+                            <div className="flex items-center justify-between text-[9.5px] text-slate-400">
+                              <span>Tip: Blok kata & klik <strong>Tebal</strong> untuk kata tertentu</span>
+                              <div className="flex items-center gap-1.5 font-medium">
+                                {isBold && <span className="text-blue-600">● Paragraf Tebal</span>}
+                                {isCenter && <span className="text-emerald-600">● Rata Tengah</span>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </Accordion>
                 )}
 
