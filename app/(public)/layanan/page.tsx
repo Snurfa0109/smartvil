@@ -129,6 +129,10 @@ function ServicesContent() {
   const [letterTypesList, setLetterTypesList] = useState<LetterType[]>([]);
   const [letterSearch, setLetterSearch] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
+
+  const activeLetterObj = letterTypesList.find(
+    (l) => (l.id || l.code) === selectedLetter || l.code === selectedLetter
+  );
   const [formData, setFormData] = useState({
     nik: "",
     nama: "",
@@ -207,10 +211,6 @@ function ServicesContent() {
   const filteredLetterTypes = letterTypesList.filter((l) =>
     l.name.toLowerCase().includes(letterSearch.toLowerCase()) ||
     l.desc.toLowerCase().includes(letterSearch.toLowerCase())
-  );
-
-  const activeLetterObj = letterTypesList.find(
-    (l) => (l.id || l.code) === selectedLetter || l.code === selectedLetter
   );
 
   const saveTicketToStorage = (ticket: StoredTicket) => {
