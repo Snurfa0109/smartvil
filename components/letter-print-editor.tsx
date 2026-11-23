@@ -379,14 +379,41 @@ export default function LetterPrintEditor({
     try {
       const blob = await generateBlob();
       if (!blob) return;
-      const name = `${(request as Record<string, string>)?.typeName || "surat"}-${(request as Record<string, string>)?.ticketCode || "doc"}.docx`;
+
+      const sanitizeFileName = (str: string) =>
+        str
+          .replace(/[\\/:*?"<>|]+/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const rawType =
+        letterType?.name ||
+        (request as Record<string, string>)?.typeName ||
+        "Surat";
+      const cleanType = sanitizeFileName(
+        rawType.replace(/[-_]test$/i, "").replace(/_/g, " ")
+      );
+      const cleanName = sanitizeFileName(
+        editable.nama || (request as Record<string, string>)?.nama || ""
+      );
+      const ticket = sanitizeFileName(
+        (request as Record<string, string>)?.ticketCode || ""
+      );
+
+      const baseName = cleanName
+        ? `${cleanType || "Surat"} - ${cleanName}`
+        : ticket
+        ? `${cleanType || "Surat"} - ${ticket}`
+        : `${cleanType || "Surat"}`;
+
+      const name = `${baseName}.docx`;
       downloadBlob(blob, name);
     } catch (err) {
       console.error("Download DOCX gagal:", err);
     } finally {
       setInternalDownloading(false);
     }
-  }, [generateBlob, request]);
+  }, [generateBlob, request, editable.nama, letterType]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
