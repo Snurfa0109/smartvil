@@ -576,17 +576,30 @@ function patchSignerZone(zip: PizZip, data: Record<string, string>) {
     }
   }
 
+  // Dapatkan indentasi kolom tanda tangan agar Tanggal, Jabatan, Nama, dan NIP 100% presisi dan segaris
+  let leftIndent = "5200";
+  if (nipIdx !== -1) {
+    const indM = paras[nipIdx].match(/<w:ind\b[^>]*w:left="([^"]+)"/);
+    if (indM) leftIndent = indM[1];
+  } else if (namaIdx !== -1) {
+    const indM = paras[namaIdx].match(/<w:ind\b[^>]*w:left="([^"]+)"/);
+    if (indM) leftIndent = indM[1];
+  }
+
   let changed = false;
 
   // Terapkan Tanggal Surat
-  if (tanggalIdx !== -1 && tanggal) {
+  if (tanggalIdx !== -1) {
     const t = texts[tanggalIdx].trim();
     const commaIdx = t.indexOf(",");
     const cityName = commaIdx !== -1 ? t.slice(0, commaIdx).trim() : "Banjaragung";
-    const newDateText = tanggal.toLowerCase().startsWith(cityName.toLowerCase())
-      ? tanggal
-      : `${cityName}, ${tanggal}`;
-    const updated = updateSignerParaContent(paras[tanggalIdx], newDateText);
+    let finalDateText = t;
+    if (tanggal) {
+      finalDateText = tanggal.toLowerCase().startsWith(cityName.toLowerCase())
+        ? tanggal
+        : `${cityName}, ${tanggal}`;
+    }
+    const updated = makePreciseSignerPara(paras[tanggalIdx], finalDateText, leftIndent, false, false);
     if (updated !== paras[tanggalIdx]) {
       docXml = docXml.replace(paras[tanggalIdx], updated);
       changed = true;
@@ -594,29 +607,34 @@ function patchSignerZone(zip: PizZip, data: Record<string, string>) {
   }
 
   // Terapkan Jabatan Pejabat
-  if (jabatanIdx !== -1 && jabatanPejabat) {
-    const updated = updateSignerParaContent(paras[jabatanIdx], jabatanPejabat);
+  if (jabatanIdx !== -1) {
+    const finalJabatan = jabatanPejabat || texts[jabatanIdx].trim();
+    const updated = makePreciseSignerPara(paras[jabatanIdx], finalJabatan, leftIndent, false, false);
     if (updated !== paras[jabatanIdx]) {
       docXml = docXml.replace(paras[jabatanIdx], updated);
       changed = true;
     }
   }
 
-  // Terapkan Nama Pejabat (pastikan tetap bold dan bergaris bawah)
-  if (namaIdx !== -1 && namaPejabat) {
-    const updated = updateSignerParaContent(paras[namaIdx], namaPejabat, true);
+  // Terapkan Nama Pejabat (tebal & bergaris bawah)
+  if (namaIdx !== -1) {
+    const finalNama = namaPejabat || texts[namaIdx].trim();
+    const updated = makePreciseSignerPara(paras[namaIdx], finalNama, leftIndent, true, true);
     if (updated !== paras[namaIdx]) {
       docXml = docXml.replace(paras[namaIdx], updated);
       changed = true;
     }
   }
 
-  // Terapkan NIP Pejabat
-  if (nipIdx !== -1 && nipPejabat) {
-    const formattedNip = nipPejabat.toUpperCase().startsWith("NIP")
-      ? nipPejabat
-      : `NIP. ${nipPejabat}`;
-    const updated = updateSignerParaContent(paras[nipIdx], formattedNip);
+  // Terapkan NIP Pejabat (tebal)
+  if (nipIdx !== -1) {
+    let finalNip = texts[nipIdx].trim();
+    if (nipPejabat) {
+      finalNip = nipPejabat.toUpperCase().startsWith("NIP")
+        ? nipPejabat
+        : `NIP. ${nipPejabat}`;
+    }
+    const updated = makePreciseSignerPara(paras[nipIdx], finalNip, leftIndent, true, false);
     if (updated !== paras[nipIdx]) {
       docXml = docXml.replace(paras[nipIdx], updated);
       changed = true;
@@ -628,58 +646,19 @@ function patchSignerZone(zip: PizZip, data: Record<string, string>) {
   }
 }
 
-function updateSignerParaContent(paraXml: string, newContent: string, ensureUnderline = false): string {
-  const runMatches = [...paraXml.matchAll(/<w:r\b[\s\S]*?<\/w:r>/g)];
-  if (runMatches.length === 0) {
-    const uTag = ensureUnderline ? '<w:u w:val="single"/>' : "";
-    return paraXml.replace(
-      /<\/w:p>\s*$/,
-      `<w:r><w:rPr>${TNR_FONTS}<w:b/><w:bCs/>${uTag}</w:rPr><w:t xml:space="preserve">${escapeXml(newContent)}</w:t></w:r></w:p>`
-    );
-  }
+function makePreciseSignerPara(
+  origParaXml: string,
+  newText: string,
+  leftIndent: string,
+  isBold = false,
+  isUnderline = false
+): string {
+  const uTag = isUnderline ? '<w:u w:val="single"/>' : "";
+  const bTag = isBold ? "<w:b/><w:bCs/>" : "";
+  const rpr = `${TNR_FONTS}<w:sz w:val="24"/><w:szCs w:val="24"/>${bTag}${uTag}`;
 
-  let targetRunIdx = -1;
-  let leadingSpaces = "";
-
-  for (let i = 0; i < runMatches.length; i++) {
-    const tMatch = runMatches[i][0].match(/<w:t[^>]*>([^<]*?)<\/w:t>/);
-    if (tMatch && tMatch[1].trim().length > 0) {
-      targetRunIdx = i;
-      const m = tMatch[1].match(/^(\s*)/);
-      leadingSpaces = m ? m[1] : "";
-      break;
-    }
-  }
-
-  if (targetRunIdx === -1) targetRunIdx = runMatches.length - 1;
-
-  let result = paraXml;
-  for (let i = 0; i < runMatches.length; i++) {
-    const runXml = runMatches[i][0];
-    if (i === targetRunIdx) {
-      let replacedRun = runXml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/, (_m, attrs) => {
-        const cleanAttrs = attrs.replace(/\s*xml:space="[^"]*"/g, "");
-        return `<w:t${cleanAttrs} xml:space="preserve">${leadingSpaces}${escapeXml(newContent)}</w:t>`;
-      });
-      if (ensureUnderline) {
-        if (replacedRun.includes("<w:rPr>")) {
-          if (!replacedRun.includes("<w:u")) {
-            replacedRun = replacedRun.replace("</w:rPr>", '<w:u w:val="single"/></w:rPr>');
-          }
-          if (!replacedRun.includes("<w:b")) {
-            replacedRun = replacedRun.replace("</w:rPr>", '<w:b/><w:bCs/></w:rPr>');
-          }
-        } else {
-          replacedRun = replacedRun.replace("<w:r>", `<w:r><w:rPr><w:b/><w:bCs/><w:u w:val="single"/></w:rPr>`);
-        }
-      }
-      result = result.replace(runXml, replacedRun);
-    } else if (i > targetRunIdx) {
-      const clearedRun = runXml.replace(/<w:t([^>]*)>([^<]*)<\/w:t>/g, "<w:t$1></w:t>");
-      result = result.replace(runXml, clearedRun);
-    }
-  }
-  return result;
+  const openP = origParaXml.match(/^<w:p\b[^>]*>/)?.[0] || "<w:p>";
+  return `${openP}<w:pPr><w:spacing w:after="0"/><w:ind w:left="${leftIndent}"/><w:jc w:val="center"/><w:rPr>${rpr}</w:rPr></w:pPr><w:r><w:rPr>${rpr}</w:rPr><w:t xml:space="preserve">${escapeXml(newText)}</w:t></w:r></w:p>`;
 }
 
 export function blobToDataUrl(blob: Blob): Promise<string> {
