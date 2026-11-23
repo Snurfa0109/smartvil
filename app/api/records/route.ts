@@ -139,8 +139,14 @@ export async function POST(req: NextRequest) {
     }
     const data = await insertRecord(table, row);
     return NextResponse.json({ data });
-  } catch (err) {
-    return NextResponse.json({ error: "Gagal menyimpan." }, { status: 500 });
+  } catch (err: unknown) {
+    console.error("Error in records POST:", err);
+    const sqlErr = err as { code?: string; message?: string };
+    if (sqlErr?.code === "ER_DUP_ENTRY") {
+      return NextResponse.json({ error: "Data dengan kode atau identitas tersebut sudah terdaftar di sistem (duplikat)." }, { status: 400 });
+    }
+    const msg = err instanceof Error ? err.message : "Gagal menyimpan.";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -167,10 +173,12 @@ export async function PUT(req: NextRequest) {
     await updateRecord(table, id, patch);
     return NextResponse.json({ ok: true });
   } catch (err) {
+    console.error("Error in records PUT:", err);
     if (err instanceof NotFoundError) {
       return NextResponse.json({ error: err.message }, { status: 404 });
     }
-    return NextResponse.json({ error: "Gagal mengubah." }, { status: 500 });
+    const msg = err instanceof Error ? err.message : "Gagal mengubah.";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 

@@ -420,7 +420,22 @@ export default function LayananDashboardPage() {
 
   const handleSaveType = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!typeForm.name.trim()) return;
+    if (!typeForm.name.trim()) {
+      showError("Nama jenis surat wajib diisi.");
+      return;
+    }
+    const finalCode = typeForm.code.trim()
+      ? typeForm.code.trim().toLowerCase().replace(/\s+/g, "_")
+      : `srt_${Date.now().toString().slice(-4)}`;
+
+    const existing = letterTypes.find(
+      (t) => t.code === finalCode && t.id !== editingTypeId
+    );
+    if (existing) {
+      showError(`Kode jenis surat "${finalCode}" sudah digunakan oleh "${existing.name}". Silakan gunakan kode lain.`);
+      return;
+    }
+
     if (typeForm.templatePlaceholders.length > 0 && !typeForm.templateFileUrl && !typeForm.templateData) {
       setTemplateError("File template belum selesai diproses. Tunggu hingga tulisan 'Mengunggah...' hilang, atau pilih ulang file bila ada pesan gagal.");
       return;
@@ -433,7 +448,7 @@ export default function LayananDashboardPage() {
         .filter(Boolean);
 
       const payload = {
-        code: typeForm.code.trim().toLowerCase().replace(/\s+/g, "_"),
+        code: finalCode,
         name: typeForm.name.trim(),
         description: typeForm.desc.trim(),
         requirements: reqArray,
