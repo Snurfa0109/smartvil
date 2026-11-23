@@ -69,6 +69,7 @@ export default function DaftarPage() {
   const [nik, setNik] = useState("");
   const [nama, setNama] = useState("");
   const [gender, setGender] = useState("");
+  const [birthPlace, setBirthPlace] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [agama, setAgama] = useState("");
   const [education, setEducation] = useState("");
@@ -100,7 +101,7 @@ export default function DaftarPage() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "register", nik, nama: nama.trim(), gender, birthDate,
+          action: "register", nik, nama: nama.trim(), gender, birthPlace: birthPlace.trim(), birthDate,
           agama, education, statusKeluarga, statusPenduduk,
           address: address.trim(), occupation, phone: phone.trim(), password,
         }),
@@ -193,6 +194,11 @@ export default function DaftarPage() {
               <div className="mb-3">
                 <FL id="gender">Jenis Kelamin</FL>
                 <FS id="gender" value={gender} onChange={setGender} options={GENDER_OPTIONS} required />
+              </div>
+
+              <div className="mb-3">
+                <FL id="birthPlace">Tempat Lahir</FL>
+                <FI id="birthPlace" type="text" value={birthPlace} onChange={(e) => setBirthPlace(e.target.value)} placeholder="Contoh: Serang" required />
               </div>
 
               <div className="mb-3">

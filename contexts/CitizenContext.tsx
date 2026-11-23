@@ -18,6 +18,7 @@ export interface CitizenProfile {
   address?: string;
   occupation?: string;
   birthDate?: string;
+  birthPlace?: string;
   statusKeluarga?: string;
   statusPenduduk?: string;
   agama?: string;

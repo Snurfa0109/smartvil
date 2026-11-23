@@ -23,6 +23,7 @@ export interface CitizenSession {
   address?: string;
   occupation?: string;
   birthDate?: string;
+  birthPlace?: string;
   statusKeluarga?: string;
   statusPenduduk?: string;
   agama?: string;
@@ -69,7 +70,7 @@ export async function getCitizenSession(req: Request): Promise<CitizenSession | 
   if (!payload) return null;
   const rows = await query<Record<string, unknown>[]>(
     `SELECT ca.id, ca.phone, ca.nama, ca.resident_id,
-            r.nik, r.gender, r.address, r.occupation, r.birth_date,
+            r.nik, r.gender, r.address, r.occupation, r.birth_date, r.birth_place,
             r.status_keluarga, r.status_penduduk, r.agama, r.education
      FROM citizen_accounts ca
      LEFT JOIN residents r ON ca.resident_id = r.id
@@ -98,6 +99,7 @@ export async function getCitizenSession(req: Request): Promise<CitizenSession | 
     address: String(row.address || ""),
     occupation: String(row.occupation || ""),
     birthDate: formattedBirthDate,
+    birthPlace: String(row.birth_place || ""),
     statusKeluarga: String(row.status_keluarga || ""),
     statusPenduduk: String(row.status_penduduk || ""),
     agama: String(row.agama || ""),

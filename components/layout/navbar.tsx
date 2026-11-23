@@ -130,11 +130,19 @@ export function Navbar() {
                             <p className="text-[11px] text-slate-500">{citizen.phone}</p>
                           </div>
                           <Link
+                            href="/akun"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                          >
+                            <User className="w-4 h-4 text-slate-400" />
+                            Profil Saya
+                          </Link>
+                          <Link
                             href="/riwayat"
                             onClick={() => setIsProfileOpen(false)}
                             className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                           >
-                            <History className="w-4 h-4" />
+                            <History className="w-4 h-4 text-slate-400" />
                             Riwayat Pengajuan
                           </Link>
                           <button
@@ -216,7 +224,7 @@ export function Navbar() {
                 <>
                   {citizen ? (
                     <>
-                      <div className="flex items-center gap-2.5 px-3 py-2">
+                      <div className="flex items-center gap-2.5 px-3 py-2 bg-slate-50 rounded-lg">
                         <div className="w-7 h-7 rounded-full bg-[#1b365d] flex items-center justify-center">
                           <User className="w-4 h-4 text-white" />
                         </div>
@@ -225,6 +233,22 @@ export function Navbar() {
                           <p className="text-[11px] text-slate-500">{citizen.phone}</p>
                         </div>
                       </div>
+                      <Link
+                        href="/akun"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                      >
+                        <User className="w-4 h-4 text-slate-400" />
+                        Profil Saya
+                      </Link>
+                      <Link
+                        href="/riwayat"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                      >
+                        <History className="w-4 h-4 text-slate-400" />
+                        Riwayat Pengajuan
+                      </Link>
                       <button
                         type="button"
                         onClick={() => { setIsOpen(false); signOut(); }}

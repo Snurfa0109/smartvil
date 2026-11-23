@@ -57,6 +57,24 @@ interface TrackedRequestItem {
   createdAt: string;
 }
 
+function formatIndoDate(dateStr?: string): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const months = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    const y = parts[0];
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    if (m >= 0 && m < 12 && !isNaN(d)) {
+      return `${d} ${months[m]} ${y}`;
+    }
+  }
+  return dateStr;
+}
+
 function getAutoFillCustomFields(
   fields: LetterCustomFieldDef[],
   citizen: CitizenProfile | null
@@ -66,7 +84,30 @@ function getAutoFillCustomFields(
   for (const f of fields) {
     const k = f.key.toLowerCase();
     const l = f.label.toLowerCase();
-    if ((k === "nik" || k.includes("nik") || l.includes("nik")) && citizen.nik) {
+
+    // Deteksi Tempat Tanggal Lahir (kombinasi TTL)
+    const isTtl =
+      (k.includes("tempat") && (k.includes("lahir") || k.includes("tgl"))) ||
+      (l.includes("tempat") && (l.includes("lahir") || l.includes("tgl"))) ||
+      k === "ttl" ||
+      l === "ttl";
+
+    const isTempatLahirOnly =
+      !isTtl && (k.includes("tempat_lahir") || l.includes("tempat lahir") || (k.includes("tempat") && !k.includes("tgl")));
+
+    const isTanggalLahirOnly =
+      !isTtl && (k.includes("tanggal_lahir") || k.includes("tgl_lahir") || l.includes("tanggal lahir") || l.includes("tgl lahir"));
+
+    if (isTtl) {
+      const parts: string[] = [];
+      if (citizen.birthPlace) parts.push(citizen.birthPlace);
+      if (citizen.birthDate) parts.push(formatIndoDate(citizen.birthDate));
+      data[f.key] = parts.join(", ");
+    } else if (isTempatLahirOnly && citizen.birthPlace) {
+      data[f.key] = citizen.birthPlace;
+    } else if (isTanggalLahirOnly && citizen.birthDate) {
+      data[f.key] = f.type === "date" ? citizen.birthDate : formatIndoDate(citizen.birthDate);
+    } else if ((k === "nik" || k.includes("nik") || l.includes("nik")) && citizen.nik) {
       data[f.key] = citizen.nik;
     } else if (
       (k === "nama" || k.includes("nama") || l.includes("nama pemohon") || l.includes("nama lengkap")) &&
@@ -98,11 +139,6 @@ function getAutoFillCustomFields(
       citizen.agama
     ) {
       data[f.key] = citizen.agama;
-    } else if (
-      (k.includes("tanggal_lahir") || k.includes("tgl_lahir") || l.includes("tanggal lahir") || l.includes("tgl lahir")) &&
-      citizen.birthDate
-    ) {
-      data[f.key] = citizen.birthDate;
     } else if (
       (k.includes("status_kawin") || k.includes("status_perkawinan") || l.includes("status perkawinan") || k.includes("status_keluarga")) &&
       citizen.statusKeluarga

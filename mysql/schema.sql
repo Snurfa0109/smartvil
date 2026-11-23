@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS residents (
   address TEXT,
   occupation VARCHAR(255) DEFAULT '',
   birth_date DATE NULL,
+  birth_place VARCHAR(128) DEFAULT '',
   status VARCHAR(64) NOT NULL DEFAULT 'Tetap',
   status_keluarga VARCHAR(64) DEFAULT '',
   status_penduduk VARCHAR(64) DEFAULT 'Tetap',

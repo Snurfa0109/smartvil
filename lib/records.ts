@@ -32,7 +32,7 @@ const ANON_INSERT: Record<string, true> = { complaints: true, requests: true };
 
 const TABLE_KEYS: Record<string, string[]> = {
   profiles: ["id", "email", "display_name", "role", "active", "department", "permissions", "last_login"],
-  residents: ["id", "nik", "nama", "gender", "address", "occupation", "birth_date", "status", "status_keluarga", "status_penduduk", "agama", "education"],
+  residents: ["id", "nik", "nama", "gender", "address", "occupation", "birth_date", "birth_place", "status", "status_keluarga", "status_penduduk", "agama", "education"],
   news: ["id", "title", "category", "content", "date", "image_url", "views"],
   complaints: ["id", "ticket_code", "nama", "email", "phone", "category", "title", "message", "photo_url", "status", "admin_response", "citizen_id"],
   requests: ["id", "ticket_code", "type", "type_name", "nama", "nik", "phone", "keperluan", "status", "form_data", "template_narrative", "admin_notes", "citizen_id"],

@@ -57,6 +57,7 @@ async function handleRegister(body: Record<string, unknown>, proto: string) {
   const address = String(body.address || "").trim();
   const occupation = String(body.occupation || "").trim();
   const birthDate = String(body.birthDate || body.birth_date || "").trim();
+  const birthPlace = String(body.birthPlace || body.birth_place || "").trim();
   const statusKeluarga = String(body.statusKeluarga || body.status_keluarga || "").trim();
   const statusPenduduk = String(body.statusPenduduk || body.status_penduduk || "").trim();
   const agama = String(body.agama || "").trim();
@@ -104,8 +105,8 @@ async function handleRegister(body: Record<string, unknown>, proto: string) {
   } else {
     residentId = randomUUID();
     await query(
-      "INSERT INTO residents (id, nik, nama, gender, address, occupation, birth_date, status, status_keluarga, status_penduduk, agama, education) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [residentId, nik, nama, gender, address, occupation, birthDate, "Tetap", statusKeluarga, statusPenduduk, agama, education]
+      "INSERT INTO residents (id, nik, nama, gender, address, occupation, birth_date, birth_place, status, status_keluarga, status_penduduk, agama, education) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [residentId, nik, nama, gender, address, occupation, birthDate, birthPlace, "Tetap", statusKeluarga, statusPenduduk, agama, education]
     );
   }
 
@@ -129,6 +130,7 @@ async function handleRegister(body: Record<string, unknown>, proto: string) {
       address,
       occupation,
       birthDate,
+      birthPlace,
       statusKeluarga,
       statusPenduduk,
       agama,
@@ -232,6 +234,116 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Citizen auth error:", err);
     return NextResponse.json({ error: "Terjadi kesalahan server. Coba lagi." }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getCitizenSession(req);
+    if (!session) {
+      return NextResponse.json(
+        { error: "Sesi tidak valid atau telah berakhir. Silakan login kembali." },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const nama = String(body.nama || "").trim();
+    const phone = String(body.phone || "").trim();
+    const birthPlace = String(body.birthPlace || body.birth_place || "").trim();
+    const birthDate = String(body.birthDate || body.birth_date || "").trim();
+    const gender = String(body.gender || "").trim();
+    const address = String(body.address || "").trim();
+    const occupation = String(body.occupation || "").trim();
+    const agama = String(body.agama || "").trim();
+    const statusKeluarga = String(body.statusKeluarga || body.status_keluarga || "").trim();
+    const statusPenduduk = String(body.statusPenduduk || body.status_penduduk || "").trim();
+    const education = String(body.education || "").trim();
+    const newPassword = String(body.newPassword || "").trim();
+
+    if (!nama) {
+      return NextResponse.json({ error: "Nama lengkap wajib diisi." }, { status: 400 });
+    }
+    if (!phone) {
+      return NextResponse.json({ error: "Nomor WhatsApp/HP wajib diisi." }, { status: 400 });
+    }
+
+    if (phone !== session.phone) {
+      const existingPhone = await query<Record<string, unknown>[]>(
+        "SELECT id FROM citizen_accounts WHERE phone = ? AND id != ? LIMIT 1",
+        [phone, session.id]
+      );
+      if (existingPhone.length > 0) {
+        return NextResponse.json({ error: "Nomor HP sudah digunakan oleh akun lain." }, { status: 409 });
+      }
+    }
+
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return NextResponse.json({ error: "Kata sandi baru minimal 6 karakter." }, { status: 400 });
+      }
+      const pwHash = await hashPassword(newPassword);
+      await query(
+        "UPDATE citizen_accounts SET nama = ?, phone = ?, password_hash = ? WHERE id = ?",
+        [nama, phone, pwHash, session.id]
+      );
+    } else {
+      await query(
+        "UPDATE citizen_accounts SET nama = ?, phone = ? WHERE id = ?",
+        [nama, phone, session.id]
+      );
+    }
+
+    if (session.residentId) {
+      await query(
+        `UPDATE residents SET
+          nama = ?, gender = ?, address = ?, occupation = ?,
+          birth_date = ?, birth_place = ?, agama = ?, status_keluarga = ?,
+          status_penduduk = ?, education = ?
+        WHERE id = ?`,
+        [
+          nama,
+          gender || session.gender || "",
+          address || session.address || "",
+          occupation || session.occupation || "",
+          birthDate || session.birthDate || null,
+          birthPlace || session.birthPlace || "",
+          agama || session.agama || "",
+          statusKeluarga || session.statusKeluarga || "",
+          statusPenduduk || session.statusPenduduk || "",
+          education || session.education || "",
+          session.residentId,
+        ]
+      );
+    }
+
+    const proto = req.headers.get("x-forwarded-proto") || req.nextUrl.protocol.replace(":", "");
+    const token = signCitizenToken({ cid: session.id, phone });
+
+    const updatedSession = await getCitizenSession(req);
+    const res = NextResponse.json({
+      ok: true,
+      message: "Profil berhasil diperbarui.",
+      citizen: updatedSession || {
+        ...session,
+        nama,
+        phone,
+        birthPlace,
+        birthDate,
+        gender,
+        address,
+        occupation,
+        agama,
+        statusKeluarga,
+        statusPenduduk,
+        education,
+      },
+    });
+    setCitizenCookie(res, token, proto);
+    return res;
+  } catch (err) {
+    console.error("Error updating citizen profile:", err);
+    return NextResponse.json({ error: "Gagal menyimpan perubahan profil." }, { status: 500 });
   }
 }
 
