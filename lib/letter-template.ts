@@ -655,18 +655,14 @@ export function replaceNarrativesInDocx(
       const runs = [...paraXml.matchAll(/<w:t[^>]*>([^<]*?)<\/w:t>/g)].map((x) => x[1]);
       const paraText = runs.join("").trim();
       if (paraText === orig) {
-        const firstRunMatch = paraXml.match(/(<w:t[^>]*>)[^<]*?(<\/w:t>)/);
-        if (firstRunMatch) {
-          const newParaXml = paraXml
-            .replace(/<w:r>\s*<w:rPr>[\s\S]*?<\/w:rPr>\s*<w:t[^>]*>[^<]*?<\/w:t>\s*<\/w:r>/g, "")
-            .replace(/<w:r>\s*<w:t[^>]*>[^<]*?<\/w:t>\s*<\/w:r>/g, "");
-          const rprMatch = paraXml.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
-          const rprTag = rprMatch ? `<w:rPr>${rprMatch[1]}</w:rPr>` : "";
-          const newRun = `<w:r>${rprTag}<w:t xml:space="preserve">${escapeXml(edited)}</w:t></w:r>`;
-          const insertPoint = newParaXml.lastIndexOf("</w:p>");
-          const rebuilt = newParaXml.slice(0, insertPoint) + newRun + newParaXml.slice(insertPoint);
-          docXml = docXml.replace(paraXml, rebuilt);
-        }
+        const pprMatch = paraXml.match(/<w:pPr\b[\s\S]*?<\/w:pPr>/);
+        const pprTag = pprMatch ? pprMatch[0] : "";
+        const rprMatch = paraXml.match(/<w:r\b[^>]*>\s*(<w:rPr\b[\s\S]*?<\/w:rPr>)/);
+        const rprTag = rprMatch ? rprMatch[1] : "";
+        const openP = paraXml.match(/^<w:p\b[^>]*>/)?.[0] || "<w:p>";
+        const newRun = `<w:r>${rprTag}<w:t xml:space="preserve">${escapeXml(edited)}</w:t></w:r>`;
+        const rebuilt = `${openP}${pprTag}${newRun}</w:p>`;
+        docXml = docXml.replace(paraXml, rebuilt);
         break;
       }
     }

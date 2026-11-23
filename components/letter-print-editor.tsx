@@ -213,7 +213,24 @@ export default function LetterPrintEditor({
         const paras = extractNarrativesFromDocx(buf);
         setNarratives(paras);
         setOriginalNarratives(paras);
-        setEditedNarratives([...paras]);
+
+        const initialEdited = paras.map((p) => {
+          if (
+            editable.keperluan &&
+            (p.toLowerCase().includes("dipergunakan untuk") ||
+              p.toLowerCase().includes("keperluan"))
+          ) {
+            if (/[._\u2026]{3,}/.test(p)) {
+              return p.replace(/[._\u2026]{3,}/g, editable.keperluan.trim());
+            }
+            if (/dipergunakan\s+untuk\s*$/i.test(p)) {
+              return `${p.trim()} ${editable.keperluan.trim()}`;
+            }
+          }
+          return p;
+        });
+
+        setEditedNarratives(initialEdited);
       } catch {
         setNarratives([]);
         setOriginalNarratives([]);
@@ -428,7 +445,28 @@ export default function LetterPrintEditor({
                     <Field label="Keperluan">
                       <Input
                         value={editable.keperluan}
-                        onChange={(e) => setEditable((p) => ({ ...p, keperluan: e.target.value }))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditable((p) => ({ ...p, keperluan: val }));
+                          setEditedNarratives((prev) =>
+                            prev.map((text, idx) => {
+                              const orig = originalNarratives[idx] || "";
+                              if (
+                                orig.toLowerCase().includes("dipergunakan untuk") ||
+                                orig.toLowerCase().includes("keperluan")
+                              ) {
+                                if (/[._\u2026]{3,}/.test(orig)) {
+                                  return orig.replace(/[._\u2026]{3,}/g, val.trim() || "…………………………………..");
+                                }
+                                if (/dipergunakan\s+untuk/i.test(orig)) {
+                                  const prefix = orig.split(/dipergunakan\s+untuk/i)[0] + "dipergunakan untuk ";
+                                  return val.trim() ? `${prefix}${val.trim()}` : orig;
+                                }
+                              }
+                              return text;
+                            })
+                          );
+                        }}
                         placeholder="Tujuan surat"
                         className="h-9 text-sm"
                       />
