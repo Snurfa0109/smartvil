@@ -45,13 +45,6 @@ async function verifyJwt(token: string, secret: string): Promise<Record<string, 
 }
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  res.headers.set("X-Frame-Options", "DENY");
-  res.headers.set("X-Content-Type-Options", "nosniff");
-  res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.headers.set("X-DNS-Prefetch-Control", "off");
-  res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-
   if (req.nextUrl.pathname.startsWith("/dashboard")) {
     const token = req.cookies.get("smartvil_token")?.value;
     if (!token) return NextResponse.redirect(new URL("/login", req.url));
@@ -66,7 +59,7 @@ export async function middleware(req: NextRequest) {
     if (!payload || payload.role !== "warga") return NextResponse.redirect(new URL("/masuk", req.url));
   }
 
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {
